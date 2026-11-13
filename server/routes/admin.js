@@ -285,8 +285,13 @@ router.post('/reports/:id/resolve', async (req, res) => {
     if (!rows.length) return res.status(404).json({ message: 'Report not found' });
     const r = rows[0];
     if (req.body.delete_content === true) {
-      const t = { post: 'posts', comment: 'post_comments', message: 'messages', story: 'stories' }[r.target_type];
-      if (t) await pool.query(`DELETE FROM ${t} WHERE id = ?`, [r.target_id]);
+      const t = { post: 'posts', message: 'messages', story: 'stories' }[r.target_type];
+      if (r.target_type === 'comment') {
+        // Replies have no parent_id foreign key; remove them explicitly with the parent.
+        await pool.query('DELETE FROM post_comments WHERE id = ? OR parent_id = ?', [r.target_id, r.target_id]);
+      } else if (t) {
+        await pool.query(`DELETE FROM ${t} WHERE id = ?`, [r.target_id]);
+      }
     }
     await pool.query('UPDATE reports SET status = ? WHERE id = ?', [req.body.status === 'dismissed' ? 'dismissed' : 'resolved', r.id]);
     res.json({ success: true });
