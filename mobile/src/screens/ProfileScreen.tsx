@@ -95,14 +95,14 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  banner: { width: '100%', height: 130, backgroundColor: '#333' },
+  banner: { width: '100%', height: 156, backgroundColor: '#252B45' },
   topBar: { position: 'absolute', left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between' },
   circle: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
-  info: { paddingHorizontal: 16, paddingBottom: 14 },
+  info: { paddingHorizontal: 18, paddingBottom: 18 },
   avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -40, marginBottom: 8 },
   avatarRing: { borderWidth: 4, borderRadius: 48 },
-  editBtn: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, height: 36, alignItems: 'center', justifyContent: 'center' },
-  name: { fontSize: 22, fontWeight: '800' },
+  editBtn: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 18, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: c.card },
+  name: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 10 },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   counts: { flexDirection: 'row', gap: 18, marginTop: 10 },
