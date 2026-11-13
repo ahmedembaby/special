@@ -175,8 +175,9 @@ function RootNavigator() {
       if (Platform.OS === 'ios') ScreenCapture.disableAppSwitcherProtectionAsync().catch(() => {});
     };
   }, [token]);
-  React.useEffect(() => onSocket('security_key_changed', (event: { userName?: string }) => {
-    Alert.alert('Encryption key changed', (event.userName || 'A contact') + ' changed their encryption key. Open the conversation and verify the new safety number before trusting it.');
+  React.useEffect(() => onSocket('security_key_changed', (event: { userName?: string; fingerprint?: string }) => {
+    const fingerprint = event.fingerprint ? '\\n\\nNew key fingerprint: ' + event.fingerprint : '';
+    Alert.alert('Encryption key changed', (event.userName || 'A contact') + ' changed their encryption key. Do not trust the new key until you verify it with them.' + fingerprint);
   }), []);
 
   if (loading || !ready) {

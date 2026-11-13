@@ -110,9 +110,10 @@ router.put('/me/key', async (req, res) => {
     if (changed) {
       const [peers] = await pool.query("SELECT DISTINCT cp.user_id AS id FROM conversations c JOIN conversation_participants me ON me.conversation_id = c.id AND me.user_id = ? JOIN conversation_participants cp ON cp.conversation_id = c.id AND cp.user_id <> ? WHERE c.type = 'direct'", [req.user.id, req.user.id]);
       const peerIds = peers.map((p) => Number(p.id)).filter((id) => id > 0);
-      const payload = { userId: req.user.id, userName: current[0].name, changedAt: new Date().toISOString() };
+      const fingerprint = require('crypto').createHash('sha256').update(key).digest('hex').slice(0, 20).toUpperCase().match(/.{1,4}/g).join(' ');
+      const payload = { userId: req.user.id, userName: current[0].name, fingerprint, changedAt: new Date().toISOString() };
       realtime.emitToUsers(peerIds, 'security_key_changed', payload);
-      if (peerIds.length) pushToUsers(peerIds, { title: 'Special security alert', body: current[0].name + ' changed their encryption key. Verify the new safety number before trusting this chat.', data: { type: 'security_key_changed', userId: req.user.id } }).catch(() => {});
+      if (peerIds.length) pushToUsers(peerIds, { title: 'Special security alert', body: current[0].name + ' changed their encryption key. Fingerprint: ' + fingerprint + '. Verify it before trusting this chat.', data: { type: 'security_key_changed', userId: req.user.id, fingerprint } }).catch(() => {});
     }
     res.json({ public_key: key, changed });
   } catch (err) {

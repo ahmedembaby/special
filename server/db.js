@@ -435,7 +435,7 @@ const TABLES = [
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
-  `CREATE TABLE IF NOT EXISTS device_sessions (id CHAR(36) PRIMARY KEY, token_hash CHAR(64) DEFAULT NULL UNIQUE, user_id INT NOT NULL, device_name VARCHAR(120) NOT NULL DEFAULT 'Unknown device', platform VARCHAR(20) NOT NULL DEFAULT 'unknown', created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, last_active_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, expires_at DATETIME NOT NULL, revoked_at DATETIME DEFAULT NULL, INDEX idx_device_sessions_user (user_id, revoked_at, last_active_at), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+  `CREATE TABLE IF NOT EXISTS device_sessions (id CHAR(36) PRIMARY KEY, token_hash CHAR(64) DEFAULT NULL, user_id INT NOT NULL, device_name VARCHAR(120) NOT NULL DEFAULT 'Unknown device', platform VARCHAR(20) NOT NULL DEFAULT 'unknown', created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, last_active_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, expires_at DATETIME NOT NULL, revoked_at DATETIME DEFAULT NULL, INDEX idx_device_sessions_user (user_id, revoked_at, last_active_at), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 
 // Columns added after the first release.
@@ -503,6 +503,14 @@ const COLUMNS = [
   ['messages', 'status', "ENUM('sending','sent','delivered','read') DEFAULT 'sent'"],
   ['messages', 'edited_at', 'TIMESTAMP NULL DEFAULT NULL'],
   ['messages', 'read_at', 'TIMESTAMP NULL DEFAULT NULL'],
+
+  // Additive migration for deployments where device_sessions already exists.
+  ['device_sessions', 'token_hash', 'CHAR(64) DEFAULT NULL'],
+  ['device_sessions', 'device_name', "VARCHAR(120) NOT NULL DEFAULT 'Unknown device'"],
+  ['device_sessions', 'platform', "VARCHAR(20) NOT NULL DEFAULT 'unknown'"],
+  ['device_sessions', 'last_active_at', 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'],
+  ['device_sessions', 'expires_at', 'DATETIME NULL DEFAULT NULL'],
+  ['device_sessions', 'revoked_at', 'DATETIME DEFAULT NULL'],
 ];
 
 // Modifications for older database schemas
@@ -528,6 +536,7 @@ const MODIFY = [
 const INDEXES = [
   ['users', 'uniq_users_phone', '(phone)', true],
   ['messages', 'uniq_messages_client', '(sender_id, client_id)', true],
+  ['device_sessions', 'uniq_device_sessions_token_hash', '(token_hash)', true],
 
   ['message_stars', 'idx_stars_user', '(user_id, created_at)', false],
   ['message_reads', 'idx_reads_user', '(user_id)', false],
