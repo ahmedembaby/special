@@ -62,6 +62,7 @@ router.get('/stats', async (req, res) => {
     const [[bn]] = await pool.query('SELECT COUNT(*) AS c FROM users WHERE banned = 1');
     const [[nt]] = await pool.query('SELECT COUNT(*) AS c FROM users WHERE created_at >= CURDATE()');
     const [[mt]] = await pool.query('SELECT COUNT(*) AS c FROM messages WHERE created_at >= CURDATE()');
+    const [[or]] = await pool.query("SELECT COUNT(*) AS c FROM reports WHERE status = 'open'");
     const series = async (table) => {
       const [rows] = await pool.query(
         `SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS d, COUNT(*) AS c FROM ${table}
@@ -80,6 +81,7 @@ router.get('/stats', async (req, res) => {
       bannedUsers: bn.c,
       newUsersToday: nt.c,
       messagesToday: mt.c,
+      openReports: or.c,
       activity: { users: await series('users'), messages: await series('messages'), posts: await series('posts') },
       totalUsers: u.c,
       totalConversations: c.c,
