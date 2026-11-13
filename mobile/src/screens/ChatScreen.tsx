@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import * as ScreenCapture from 'expo-screen-capture';
 import { Icon } from '../components/Icon';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
@@ -209,15 +208,6 @@ export default function ChatScreen() {
     return () => { active = false; };
   }, [conversationId]);
 
-  useEffect(() => {
-    if (!isFocused) return undefined;
-    ScreenCapture.preventScreenCaptureAsync('special-chat').catch(() => {});
-    if (Platform.OS === 'ios') ScreenCapture.enableAppSwitcherProtectionAsync(0.9).catch(() => {});
-    return () => {
-      ScreenCapture.allowScreenCaptureAsync('special-chat').catch(() => {});
-      if (Platform.OS === 'ios') ScreenCapture.disableAppSwitcherProtectionAsync().catch(() => {});
-    };
-  }, [isFocused]);
 
   useEffect(() => {
     if (!isFocused && chatLocked) setChatUnlocked(false);

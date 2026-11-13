@@ -4,7 +4,8 @@ import { NavigationContainer, DefaultTheme, DarkTheme, getFocusedRouteNameFromRo
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Alert, Platform } from 'react-native';
+import * as ScreenCapture from 'expo-screen-capture';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -165,6 +166,15 @@ function RootNavigator() {
   const { darkMode } = useThemeSettings();
   const c = darkMode ? Colors.dark : Colors.light;
 
+  React.useEffect(() => {
+    if (!token) return undefined;
+    ScreenCapture.preventScreenCaptureAsync('special-private-app').catch(() => {});
+    if (Platform.OS === 'ios') ScreenCapture.enableAppSwitcherProtectionAsync(0.9).catch(() => {});
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync('special-private-app').catch(() => {});
+      if (Platform.OS === 'ios') ScreenCapture.disableAppSwitcherProtectionAsync().catch(() => {});
+    };
+  }, [token]);
   React.useEffect(() => onSocket('security_key_changed', (event: { userName?: string }) => {
     Alert.alert('Encryption key changed', (event.userName || 'A contact') + ' changed their encryption key. Open the conversation and verify the new safety number before trusting it.');
   }), []);
