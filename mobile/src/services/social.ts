@@ -104,8 +104,7 @@ export const TRENDING = [
 
 // ---------- posts ----------
 export const listPosts = async (username?: string): Promise<Post[]> => {
-  // main feed: ranked by engagement and recency (newest-first stays the server default)
-  const url = username ? `/social/posts/user/${encodeURIComponent(username)}` : '/social/posts?sort=ranked';
+  const url = username ? `/social/posts/user/${encodeURIComponent(username)}` : '/social/posts';
   const res = await api.get<Post[]>(url);
   return res.data || [];
 };
