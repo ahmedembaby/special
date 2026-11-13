@@ -51,7 +51,7 @@ export default function ProfileScreen() {
             <Avatar source={me.avatar} name={me.name} size={80} onPress={me.avatar ? () => setAvatarViewer(true) : undefined} />
             {avatarViewer ? <ImageViewer uri={resolveUrl(me.avatar)} onClose={() => setAvatarViewer(false)} /> : null}
           </View>
-          <TouchableOpacity style={[styles.editBtn, { borderColor: c.inputBorder }]} onPress={() => nav.navigate('ProfileEdit')} activeOpacity={0.7}>
+          <TouchableOpacity style={[styles.editBtn, { borderColor: c.inputBorder, backgroundColor: c.card }]} onPress={() => nav.navigate('ProfileEdit')} activeOpacity={0.7}>
             <Text style={{ color: c.text, fontWeight: '800', fontSize: 14 }}>Edit profile</Text>
           </TouchableOpacity>
         </View>
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   info: { paddingHorizontal: 18, paddingBottom: 18 },
   avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -40, marginBottom: 8 },
   avatarRing: { borderWidth: 4, borderRadius: 48 },
-  editBtn: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 18, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: c.card },
+  editBtn: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 18, height: 40, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 10 },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
