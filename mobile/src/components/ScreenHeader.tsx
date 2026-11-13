@@ -55,12 +55,12 @@ export const ScreenHeader = (p: Props) => {
         <View style={[styles.actions, { alignItems: 'flex-end' }]}>
           {p.onSearchPress ? (
             <TouchableOpacity onPress={p.onSearchPress} hitSlop={8} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t('Search')}>
-              <Icon name="search" size={22} color={c.text} />
+              <Icon name="search" size={25} color={c.text} strokeWidth={2.2} />
             </TouchableOpacity>
           ) : null}
           {p.onMessagesPress ? (
             <TouchableOpacity onPress={p.onMessagesPress} hitSlop={8} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t('Messages')}>
-              <Icon name="mail" size={22} color={c.text} />
+              <Icon name="mail" size={25} color={c.text} strokeWidth={2.2} />
             </TouchableOpacity>
           ) : null}
           {!p.onSearchPress && !p.onMessagesPress && p.rightIcon ? (
@@ -84,9 +84,9 @@ const styles = StyleSheet.create({
   side: { width: 42, justifyContent: 'center' },
   center: { flex: 1, alignItems: 'flex-start', justifyContent: 'center', paddingHorizontal: 8 },
   logoCenter: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: 9 },
-  actions: { width: 88, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 },
+  actions: { width: 96, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 },
   logoDot: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 19, fontWeight: '700', letterSpacing: -0.35 },
   sub: { fontSize: 12, marginTop: 2 },
-  iconBtn: { width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 });
