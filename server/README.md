@@ -1,4 +1,4 @@
-# E-Chat server
+# Special server
 
 1. `cp .env.example .env` and fill in DB_*, JWT_SECRET (long random), CLIENT_URL.
 2. `npm install && npm start` — tables/columns are created/migrated automatically (database.sql is only a reference).
