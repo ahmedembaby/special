@@ -164,9 +164,7 @@ const MainTabs = () => {
       }}
     >
       <Tabs.Screen name="Home" component={HomeStackScreen} />
-      <Tabs.Screen name="Search" component={SearchScreen} options={{ tabBarButton: () => null }} />
       <Tabs.Screen name="Notifications" component={NotificationsScreen} />
-      <Tabs.Screen name="Messages" component={MessagesStackScreen} options={{ tabBarButton: () => null }} />
       <Tabs.Screen name="Groups" component={GroupsScreen} />
       <Tabs.Screen name="Profile" component={ProfileStackScreen} />
     </Tabs.Navigator>
@@ -206,6 +204,8 @@ function RootNavigator() {
       {token ? (
         <RootStack.Navigator screenOptions={noHeader}>
           <RootStack.Screen name="Main" component={MainTabs} />
+          <RootStack.Screen name="Search" component={SearchScreen} />
+          <RootStack.Screen name="Messages" component={MessagesStackScreen} />
           <RootStack.Screen name="UserProfile" component={UserProfileScreen} />
           <RootStack.Screen name="Hashtag" component={HashtagScreen} />
           <RootStack.Screen name="KeyBackup" component={KeyBackupScreen} />
