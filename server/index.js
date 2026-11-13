@@ -72,9 +72,18 @@ const authorizePrivateUpload = (kind) => async (req, res, next) => {
       ? await canAccessChatMedia(filename, user.id)
       : await canAccessStoryMedia(filename, user.id);
     if (!allowed) return res.status(404).end();
-    res.setHeader('Cache-Control', 'private, no-store');
-    res.setHeader('Vary', 'Authorization');
-    next();
+    // Serve private assets directly so the public static middleware cannot replace
+    // the no-store policy with a cacheable response.
+    return res.sendFile(path.join(uploadsDir, kind, filename), {
+      headers: {
+        'Cache-Control': 'private, no-store',
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'; sandbox",
+        'Cross-Origin-Resource-Policy': 'same-site',
+      },
+    }, (err) => {
+      if (err && !res.headersSent) res.status(404).end();
+    });
   } catch {
     res.status(404).end();
   }
