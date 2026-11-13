@@ -12,6 +12,9 @@ permissions:
 jobs:
   lockfiles:
     name: Refresh npm lockfiles
+    concurrency:
+      group: lockfiles-${{ github.event.pull_request.head.ref || github.ref_name }}
+      cancel-in-progress: false
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -49,12 +52,42 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add server/package-lock.json mobile/package-lock.json
           git commit -m "chore: regenerate npm lockfiles"
-          git push origin "HEAD:$TARGET_BRANCH"
+          for attempt in 1 2 3; do
+            git fetch origin "$TARGET_BRANCH"
+            git rebase "origin/$TARGET_BRANCH"
+            if git push origin "HEAD:$TARGET_BRANCH"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Could not push regenerated lockfiles after three attempts."
+          exit 1
 
   server:
     needs: lockfiles
     name: Server checks
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: special_test_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      NODE_ENV: test
+      MYSQL_INTEGRATION: '1'
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: special_test_ci
     defaults:
       run:
         working-directory: server
@@ -69,11 +102,43 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - name: Install locked server dependencies
         run: npm ci --no-audit --no-fund
+      - name: Audit production server dependencies (critical findings block CI)
+        run: npm audit --omit=dev --audit-level=critical
       - name: Check server JavaScript syntax
         run: |
           find . -path './node_modules' -prune -o -name '*.js' -type f -print0 | xargs -0 -r -n1 node --check
-      - name: Run server unit tests
+      - name: Run server unit and MySQL integration tests
         run: npm test
+      - name: Start isolated staging API
+        env:
+          PORT: 5000
+          JWT_SECRET: ci-only-test-secret-with-at-least-32-characters
+          CLIENT_URLS: http://localhost:8081
+          WHATSAPP_ENABLED: 'false'
+          OTP_DEV_MODE: 'false'
+        run: |
+          nohup npm start > /tmp/special-staging.log 2>&1 &
+          echo $! > /tmp/special-staging.pid
+          for attempt in $(seq 1 30); do
+            if curl --silent --show-error --fail http://127.0.0.1:5000/api/health > /tmp/special-health.json; then
+              node -e "const h=require('/tmp/special-health.json'); if(h.status!=='ok'||h.db!==true) process.exit(1)"
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/special-staging.log
+          exit 1
+      - name: Smoke-test staging authentication boundaries
+        run: |
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5000/api/messages)" = "401"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5000/uploads/chat/unknown.jpg)" = "401"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5000/uploads/stories/unknown.jpg)" = "401"
+      - name: Stop isolated staging API
+        if: always()
+        run: |
+          if [ -f /tmp/special-staging.pid ]; then
+            kill "$(cat /tmp/special-staging.pid)" 2>/dev/null || true
+          fi
 
   mobile:
     needs: lockfiles
