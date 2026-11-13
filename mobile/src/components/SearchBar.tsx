@@ -13,7 +13,7 @@ interface SearchBarProps {
 export const SearchBar = ({ value, onChangeText, placeholder = 'Search', autoFocus, onSubmit }: SearchBarProps) => {
   const { c } = useAppColors();
   return (
-    <View style={[styles.wrap, { backgroundColor: c.inputBg }]}>
+    <View style={[styles.wrap, { backgroundColor: c.inputBg, borderColor: c.inputBorder }]}>
       <Icon name="search" size={18} color={c.textMuted} />
       <TextInput
         style={[styles.input, { color: c.text }]}
@@ -39,7 +39,7 @@ export const SearchBar = ({ value, onChangeText, placeholder = 'Search', autoFoc
 };
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingHorizontal: 16, height: 46, gap: 10 },
+  wrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, height: 48, gap: 10 },
   input: { flex: 1, fontSize: 16, paddingVertical: 0 },
   clear: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
 });
