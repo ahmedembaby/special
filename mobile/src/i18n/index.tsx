@@ -58,6 +58,18 @@ const ar: Record<string, string> = {
   'Cancel': 'إلغاء',
   'Restart needed': 'يلزم إعادة التشغيل',
   'Close and reopen the app to apply the language and layout direction.': 'أغلق التطبيق وافتحه من جديد لتطبيق اللغة واتجاه الواجهة.',
+  'Admin dashboard': 'لوحة تحكم المسؤول',
+  'Overview': 'نظرة عامة',
+  'Users': 'المستخدمون',
+  'Content': 'المحتوى',
+  'Reports': 'البلاغات',
+  'Audit': 'سجل النشاط',
+  'Online': 'متصلون',
+  'New today': 'جدد اليوم',
+  'Banned': 'محظورون',
+  'Messages today': 'رسائل اليوم',
+  'Conversations': 'المحادثات',
+  'Open reports': 'بلاغات مفتوحة',
 };
 
 const dict: Record<Lang, Record<string, string>> = { en: {}, ar };

@@ -9,8 +9,9 @@ import { resolveUrl } from '../config';
 import { useAppColors } from '../theme/useAppColors';
 import { Icon } from '../components/Icon';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../i18n';
 
-type Tab = 'overview' | 'users' | 'content' | 'reports';
+type Tab = 'overview' | 'users' | 'content' | 'reports' | 'audit';
 type ContentKind = 'posts' | 'groups' | 'chats';
 const PAGE = 30;
 
@@ -22,6 +23,7 @@ export default function AdminDashboard() {
   const navigation = useNavigation() as any;
   const { c, isDark } = useAppColors();
   const { user } = useAuth();
+  const { t, lang } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [tab, setTab] = useState<Tab>('overview');
 
@@ -35,21 +37,21 @@ export default function AdminDashboard() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: c.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <View style={[s.header, { borderBottomColor: c.border }]}>
+      <View style={[s.header, { borderBottomColor: c.border, flexDirection: lang === 'ar' ? 'row-reverse' : 'row' }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8} style={{ padding: 6 }}>
           <Icon name="arrowLeft" size={24} color={c.text} />
         </TouchableOpacity>
-        <Text style={[s.headerTitle, { color: c.text }]}>Admin dashboard</Text>
+        <Text style={[s.headerTitle, { color: c.text }]}>{t('Admin dashboard')}</Text>
       </View>
       <View style={[s.tabs, { borderBottomColor: c.border }]}>
-        {(['overview', 'users', 'content', 'reports'] as Tab[]).map((t) => (
-          <TouchableOpacity key={t} style={s.tab} onPress={() => setTab(t)} activeOpacity={0.7}>
-            <Text style={{ color: tab === t ? c.primary : c.textSecondary, fontWeight: '800', textTransform: 'capitalize' }}>{t}</Text>
-            {tab === t ? <View style={[s.tabLine, { backgroundColor: c.primary }]} /> : null}
+        {(['overview', 'users', 'content', 'reports', 'audit'] as Tab[]).map((key) => (
+          <TouchableOpacity key={key} style={s.tab} onPress={() => setTab(key)} activeOpacity={0.7}>
+            <Text style={{ color: tab === key ? c.primary : c.textSecondary, fontWeight: '800', textTransform: 'capitalize' }}>{t(key.charAt(0).toUpperCase() + key.slice(1))}</Text>
+            {tab === key ? <View style={[s.tabLine, { backgroundColor: c.primary }]} /> : null}
           </TouchableOpacity>
         ))}
       </View>
-      {tab === 'overview' ? <Overview c={c} s={s} /> : tab === 'users' ? <Users c={c} s={s} /> : tab === 'reports' ? <Reports c={c} s={s} /> : <Content c={c} s={s} />}
+      {tab === 'overview' ? <Overview c={c} s={s} t={t} /> : tab === 'users' ? <Users c={c} s={s} /> : tab === 'reports' ? <Reports c={c} s={s} /> : tab === 'audit' ? <AuditLog c={c} s={s} /> : <Content c={c} s={s} />}
     </SafeAreaView>
   );
 }
@@ -78,7 +80,7 @@ function Bars({ title, data, c, s }: { title: string; data: { date: string; coun
   );
 }
 
-function Overview({ c, s }: { c: any; s: any }) {
+function Overview({ c, s, t }: { c: any; s: any; t: (value: string) => string }) {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -139,7 +141,7 @@ function Overview({ c, s }: { c: any; s: any }) {
 
   const tiles: [string, any][] = [
     ['Users', stats?.totalUsers], ['Online', stats?.onlineUsers], ['New today', stats?.newUsersToday], ['Banned', stats?.bannedUsers],
-    ['Messages', stats?.totalMessages], ['Msgs today', stats?.messagesToday], ['Posts', stats?.totalPosts], ['Groups', stats?.totalGroups],
+    ['Messages', stats?.totalMessages], ['Messages today', stats?.messagesToday], ['Posts', stats?.totalPosts], ['Groups', stats?.totalGroups], ['Conversations', stats?.totalConversations], ['Open reports', stats?.openReports],
   ];
 
   return (
@@ -148,7 +150,7 @@ function Overview({ c, s }: { c: any; s: any }) {
         {tiles.map(([label, v]) => (
           <View key={label} style={[s.tile, { backgroundColor: c.surface }]}>
             <Text style={[s.tileValue, { color: c.text }]}>{v ?? 0}</Text>
-            <Text style={{ color: c.textSecondary, fontSize: 12 }}>{label}</Text>
+            <Text style={{ color: c.textSecondary, fontSize: 12 }}>{t(label)}</Text>
           </View>
         ))}
       </View>
@@ -408,6 +410,43 @@ function Reports({ c, s }: { c: any; s: any }) {
   );
 }
 
+function AuditLog({ c, s }: { c: any; s: any }) {
+  const [items, setItems] = useState<any[] | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const load = useCallback(async () => {
+    try {
+      const response = await api.get('/admin/audit');
+      setItems(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      Alert.alert('Error', errMsg(error, 'Failed to load admin activity'));
+      setItems((current) => current || []);
+    } finally { setRefreshing(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  if (items === null) return <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />;
+  return (
+    <FlatList
+      data={items}
+      keyExtractor={(item) => String(item.id)}
+      contentContainerStyle={{ padding: 14, gap: 10, paddingBottom: 40 }}
+      refreshing={refreshing}
+      onRefresh={() => { setRefreshing(true); load(); }}
+      ListEmptyComponent={<Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 40 }}>No admin activity recorded</Text>}
+      renderItem={({ item }) => (
+        <View style={[s.card, { backgroundColor: c.surface }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <Text style={{ color: c.text, fontWeight: '800' }}>{item.admin_name || 'Administrator'}</Text>
+            <Text style={{ color: c.textMuted, fontSize: 11 }}>{item.method}</Text>
+          </View>
+          <Text style={{ color: c.primary, marginTop: 5, fontWeight: '700' }} numberOfLines={2}>{item.path}</Text>
+          <Text style={{ color: c.textSecondary, fontSize: 12, marginTop: 5 }}>{new Date(item.created_at).toLocaleString()}</Text>
+          {item.details ? <Text style={{ color: c.textMuted, fontSize: 12, marginTop: 5 }} numberOfLines={3}>{item.details}</Text> : null}
+        </View>
+      )}
+    />
+  );
+}
+
 function Content({ c, s }: { c: any; s: any }) {
   const [kind, setKind] = useState<ContentKind>('posts');
   const [items, setItems] = useState<any[]>([]);
@@ -522,18 +561,18 @@ const makeStyles = (c: any) => StyleSheet.create({
   tabLine: { position: 'absolute', bottom: 0, height: 3, width: 40, borderRadius: 2 },
   scroll: { padding: 16, paddingBottom: 50, gap: 12 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tile: { width: '47.5%', padding: 14, borderRadius: 14 },
+  tile: { width: '48%', flexGrow: 1, minWidth: 138, padding: 16, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
   tileValue: { fontSize: 26, fontWeight: '800' },
-  card: { borderRadius: 14, padding: 14 },
+  card: { borderRadius: 18, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
   cardTitle: { fontSize: 16, fontWeight: '800' },
   section: { fontSize: 18, fontWeight: '800', marginTop: 6 },
   barsRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 10, height: 100 },
   barCol: { alignItems: 'center', justifyContent: 'flex-end', flex: 1, gap: 3 },
   bar: { width: 18, borderRadius: 5 },
-  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, marginBottom: 10, fontSize: 15 },
+  input: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 10, fontSize: 15, backgroundColor: c.background },
   primaryBtn: { height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
   primaryBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16 },
+  chip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   kv: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7 },
   delBtn: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 },
