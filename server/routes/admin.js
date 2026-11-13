@@ -14,9 +14,10 @@ router.use((req, res, next) => {
     res.on('finish', () => {
       if (res.statusCode >= 400) return;
       const body = { ...req.body };
-      delete body.password;
+      for (const key of ['password', 'body', 'token', 'otp', 'secret', 'authorization']) delete body[key];
+      const details = Object.keys(body).length ? JSON.stringify(body).slice(0, 500) : null;
       pool.query('INSERT INTO admin_audit (admin_id, method, path, details) VALUES (?, ?, ?, ?)',
-        [req.user.id, req.method, req.originalUrl.slice(0, 200), JSON.stringify(body).slice(0, 500)]).catch(() => {});
+        [req.user.id, req.method, req.originalUrl.slice(0, 200), details]).catch(() => {});
     });
   }
   next();
@@ -276,11 +277,13 @@ router.get('/reports', async (req, res) => {
 // { status: 'resolved' | 'dismissed', delete_content?: true }
 router.post('/reports/:id/resolve', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM reports WHERE id = ?', [req.params.id]);
+    const reportId = Number(req.params.id);
+    if (!Number.isSafeInteger(reportId) || reportId < 1) return res.status(400).json({ message: 'Invalid report id' });
+    const [rows] = await pool.query('SELECT * FROM reports WHERE id = ?', [reportId]);
     if (!rows.length) return res.status(404).json({ message: 'Report not found' });
     const r = rows[0];
     if (req.body.delete_content === true) {
-      const t = { post: 'posts', comment: 'comments', message: 'messages', story: 'stories' }[r.target_type];
+      const t = { post: 'posts', comment: 'post_comments', message: 'messages', story: 'stories' }[r.target_type];
       if (t) await pool.query(`DELETE FROM ${t} WHERE id = ?`, [r.target_id]);
     }
     await pool.query('UPDATE reports SET status = ? WHERE id = ?', [req.body.status === 'dismissed' ? 'dismissed' : 'resolved', r.id]);
