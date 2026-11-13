@@ -43,7 +43,7 @@ test('MySQL schema, foreign keys and private-media authorization', { skip: !enab
       [conversation.insertId, ownerId, conversation.insertId, memberId]
     );
     await assert.rejects(
-      db.query('INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)', [conversation.insertId, outsiderId]),
+      db.query('INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)', [conversation.insertId, 2147483000]),
       (error) => error.code === 'ER_NO_REFERENCED_ROW_2'
     );
 
