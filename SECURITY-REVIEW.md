@@ -42,3 +42,8 @@ This review did not change the database schema, production secrets, or live depl
 - Private media responses use `Cache-Control: private, no-store`; unknown resources return 404 to avoid disclosing file existence.
 - CI provisions a disposable MySQL 8.4 service and runs integration checks against `special_test_ci`. The integration test refuses to run unless `DB_NAME` uses the `special_test_*` prefix and `NODE_ENV` is not production.
 - The checks cover database initialization, foreign-key enforcement, participant-scoped media access, view-once and per-user deletion behavior, story visibility, and block enforcement. CI also starts the API against the disposable MySQL instance and smoke-tests health and unauthenticated access boundaries for messages and private uploads. This is an ephemeral CI staging runtime, not a persistent deployed staging environment; it does not replace production penetration testing or a migration rehearsal against a production copy.
+
+## Dependency security
+
+- The backend previously depended on Multer 1.x. It is upgraded to Multer 2.5.0 to address the published high-severity multipart denial-of-service advisories affecting older releases.
+- CI now runs `npm audit --omit=dev --audit-level=high` for server production dependencies and fails on high/critical findings. Review audit output when dependency changes are made; a clean audit does not replace runtime security testing.
