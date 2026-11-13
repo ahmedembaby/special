@@ -20,8 +20,8 @@ export const useBiometric = () => {
     setIsAvailable(available && enrolled);
 
     if (available && enrolled) {
-      const type = await LocalAuthentication.getEnrolledLevelAsync();
-      setBiometricType(type);
+      const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      setBiometricType(types[0] ?? null);
     }
   };
 

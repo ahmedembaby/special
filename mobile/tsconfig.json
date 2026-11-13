@@ -17,16 +17,15 @@
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "bundler",
     "paths": {
-      "*": ["./*"]
+      "*": [
+        "./*"
+      ]
     },
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "types": [
-      "react-native"
-    ]
+    "resolveJsonModule": true
   },
   "include": [
     "./src/**/*",

@@ -205,6 +205,11 @@ export default function ChatScreen() {
     e2ee.ensureKeys(user.id, user.public_key).then(setMyKey).catch(() => {});
   }, [user?.id]);
   const encryptionOn = !inGroup && !!peerKey && !!myKey;
+  const requireDirectEncryption = () => {
+    if (inGroup || encryptionOn) return true;
+    Alert.alert('Encryption required', 'This direct conversation cannot send text until both participants have encryption keys configured. Try again after the keys are available.');
+    return false;
+  };
 
   // the text of a message (decrypted when needed)
   const textOf = useCallback((m: { content?: string }): string => {
@@ -388,7 +393,7 @@ export default function ChatScreen() {
 
   const sendMessage = async () => {
     const content = input.trim();
-    if (!content || sending) return;
+    if (!content || sending || !requireDirectEncryption()) return;
     const replying = replyTo;
     setReplyTo(null);
     setSending(true);
@@ -513,7 +518,7 @@ export default function ChatScreen() {
   const [editMessageText, setEditMessageText] = useState('');
 
   const editMessage = async (newContent: string) => {
-    if (!selectedMessageForReaction) return;
+    if (!selectedMessageForReaction || !requireDirectEncryption()) return;
     const text = newContent.trim();
     if (!text) return;
     setSending(true);
@@ -668,14 +673,19 @@ export default function ChatScreen() {
   const forwardTo = async (target: api.Conversation) => {
     const list = forwardMsgs;
     if (!list.length) return;
+    const targetKey = target.type === 'direct' ? target.participants?.[0]?.public_key : null;
+    const hasText = list.some((m) => m.type === 'text' || !m.type);
+    if (target.type === 'direct' && hasText && (!myKey || !targetKey)) {
+      Alert.alert('Encryption required', 'Set up encryption keys for both accounts before forwarding text to a direct conversation.');
+      return;
+    }
     let sent = 0;
     for (const msg of [...list].sort((x, y) => new Date(x.created_at).getTime() - new Date(y.created_at).getTime())) {
       try {
         let content: string | undefined;
         if (msg.type === 'text' || !msg.type) {
           const plain = textOf(msg);
-          const key = target.type === 'direct' ? target.participants?.[0]?.public_key : null;
-          content = key && myKey ? e2ee.encrypt(key, plain) : plain;
+          content = target.type === 'direct' ? e2ee.encrypt(targetKey!, plain) : plain;
         }
         await api.messages.forward(msg.id, [{ conversation_id: target.id, content }]);
         sent += 1;
@@ -700,7 +710,7 @@ export default function ChatScreen() {
     } catch { Alert.alert('Error', 'Could not update the timer'); }
   };
   const showSafety = () => {
-    if (!myKey || !peerKey) return Alert.alert('Encryption', 'The other person has not set up encryption yet, so messages are sent without end-to-end encryption.');
+    if (!myKey || !peerKey) return Alert.alert('Encryption unavailable', 'Both participants must configure encryption before direct text messages can be sent.');
     Alert.alert('End-to-end encrypted', `Compare this number with ${header.name} (in person or by call). If it matches, nobody is in the middle.\n\n${e2ee.safetyNumber(myKey, peerKey)}`);
   };
 
@@ -733,6 +743,7 @@ export default function ChatScreen() {
   };
 
   const sendLocation = async () => {
+    if (!requireDirectEncryption()) return;
     try {
       const Location = await import('expo-location');
       const perm = await Location.requestForegroundPermissionsAsync();
@@ -751,6 +762,7 @@ export default function ChatScreen() {
   const STICKERS = ['🦄', '🐱', '🐶', '🐼', '🦊', '🐸', '🐵', '🐧', '🔥', '💯', '🎉', '🥳', '😍', '🤣', '😭', '😎', '🤝', '👏', '🙏', '💪', '❤️', '💔', '🤔', '🙄', '🥰', '😴', '🤩', '👀', '🍕', '☕', '🎂', '🌹'];
 
   const sendSticker = async (emoji: string) => {
+    if (!requireDirectEncryption()) return;
     setStickerOpen(false);
     try {
       const text = `sticker:${emoji}`;
@@ -770,6 +782,7 @@ export default function ChatScreen() {
   const schedule = async (when: Date) => {
     const text = input.trim();
     if (!text) return Alert.alert('Write a message first', 'Type the message in the box, then choose when to send it.');
+    if (!requireDirectEncryption()) return;
     if (when.getTime() < Date.now() + 60000) return Alert.alert('Pick a later time');
     try {
       const wire = encryptionOn ? e2ee.encrypt(peerKey!, text) : text;
@@ -1072,7 +1085,7 @@ export default function ChatScreen() {
           </View>
         </View>
         <View style={styles.actions}>
-          {!inGroup && header.userId != null ? (
+          {!inGroup && header.userId != null && call.available ? (
             <>
               <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8} onPress={() => call.start({ id: header.userId!, name: header.name, avatar: header.avatar }, 'video')}>
                 <Icon name="video" size={20} color={X_BLUE} />

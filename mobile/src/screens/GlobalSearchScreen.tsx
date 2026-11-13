@@ -60,7 +60,7 @@ export default function GlobalSearchScreen() {
         data={rows}
         keyExtractor={(r) => r.key}
         keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={!loading ? <Text style={[styles.empty, { color: c.textSecondary }]}>{term.length < 2 ? 'Type at least 2 letters.' : 'Nothing found.'}</Text> : null}
+        ListEmptyComponent={!loading ? <Text style={[styles.empty, { color: c.textSecondary }]}>{term.length < 2 ? 'Type at least 2 letters.' : 'Nothing found.'}</Text> : undefined}
         renderItem={({ item }) => (
           <TouchableOpacity activeOpacity={0.8} style={[styles.row, { backgroundColor: c.card, shadowColor: c.shadow }]}
             onPress={() => nav.navigate('Main', { screen: 'Messages', params: { screen: 'Chat', params: { conversationId: item.conversationId } } })}>

@@ -7,15 +7,13 @@ const SYNC_TASK = 'echat-sync-task';
 
 TaskManager.defineTask(SYNC_TASK, async () => {
   try {
-    const pending = await db.getAllAsync<
-      Array<{
-        id: string;
-        conversation_id: string;
-        sender_id: string;
-        content: string;
-        type: string;
-      }>
-    >('SELECT * FROM offline_messages WHERE status = ?', ['pending']);
+    const pending = await db.getAllAsync<{
+      id: string;
+      conversation_id: string;
+      sender_id: string;
+      content: string;
+      type: string;
+    }>('SELECT * FROM offline_messages WHERE status = ?', ['pending']);
 
     for (const msg of pending) {
       await api.post('/messages', {

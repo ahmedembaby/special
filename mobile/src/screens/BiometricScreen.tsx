@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
+import { useAppColors } from '../theme/useAppColors';
 import * as LocalAuthentication from 'expo-local-authentication';
 
 interface BiometricScreenProps {
@@ -17,7 +17,7 @@ export const BiometricScreen: React.FC<BiometricScreenProps> = ({
   onError,
   onAuthenticate,
 }) => {
-  const { colors } = useTheme();
+  const { c } = useAppColors();
 
   const getLabel = () => {
     if (!biometricType) return 'Biometric Authentication';
@@ -38,24 +38,24 @@ export const BiometricScreen: React.FC<BiometricScreenProps> = ({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: c.background }]}>
       <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
+        <Text style={[styles.title, { color: c.text }]}>
           {getLabel()}
         </Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        <Text style={[styles.subtitle, { color: c.textSecondary }]}>
           Authenticate to continue to E-Chat
         </Text>
       </View>
 
       {isAuthenticating ? (
-        <ActivityIndicator style={styles.spinner} size="large" color={colors.primary} />
+        <ActivityIndicator style={styles.spinner} size="large" color={c.primary} />
       ) : (
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.primary }]}
+          style={[styles.button, { backgroundColor: c.primary }]}
           onPress={handlePress}
         >
-          <Text style={[styles.buttonText, { color: colors.textPrimary }]}>
+          <Text style={[styles.buttonText, { color: c.text }]}>
             Authenticate
           </Text>
         </TouchableOpacity>

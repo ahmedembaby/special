@@ -85,7 +85,7 @@ export default function LockScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { ...StyleSheet.absoluteFillObject, alignItems: 'center', zIndex: 1000, elevation: 1000 },
+  root: { ...StyleSheet.absoluteFill, alignItems: 'center', zIndex: 1000, elevation: 1000 },
   title: { fontSize: 22, fontWeight: '800', marginTop: 16, marginBottom: 28 },
   row: { flexDirection: 'row', gap: 20, padding: 10 },
   dot: { width: 18, height: 18, borderRadius: 9, borderWidth: 2 },

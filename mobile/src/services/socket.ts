@@ -1,4 +1,5 @@
-import { io, Socket } from 'socket.io-client';
+import io from 'socket.io-client';
+type Socket = ReturnType<typeof io>;
 import { API_BASE } from '../config';
 
 /**
@@ -27,7 +28,6 @@ export const connectSocket = (token: string): Socket => {
 
 export const disconnectSocket = () => {
   if (socket) {
-    socket.removeAllListeners();
     socket.disconnect();
   }
   socket = null;

@@ -100,7 +100,7 @@ export default function ContactScreen() {
                   {syncing ? 'Searching your contacts…' : fromContacts ? `${fromContacts.length} of your contacts are on the app — tap to show everyone` : '📇 Find friends from your contacts'}
                 </Text>
               </TouchableOpacity>
-            ) : null
+            ) : undefined
           }
           keyExtractor={(item) => String(item.id)}
           ListEmptyComponent={<EmptyState icon="users" title="No contacts" subtitle="No users found." />}

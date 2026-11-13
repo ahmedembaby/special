@@ -6,11 +6,9 @@ Reviewed against the repository state on 2026-11-13. This is a source review, no
 
 ### 1. Direct-message encryption is optional, not guaranteed
 
-The direct-chat screen currently sends readable text when either the peer public key or the local key is unavailable. The same fallback exists in the forwarding path; location, sticker, and scheduled text paths also fall back to plaintext. The integration guide explicitly describes this behavior. Consequently, the product must not claim that all direct messages are end-to-end encrypted.
+The reviewed client previously fell back to plaintext when either peer key was unavailable, and the server accepted plaintext on direct message, edit, schedule and forward routes. The current change makes the client fail closed for direct text, validates the E2EE envelope on the server for send/edit/schedule/forward, and disables direct-chat polls until structured-message encryption exists. Historical plaintext messages remain plaintext; this does not retroactively encrypt them.
 
-Before release, choose and implement one explicit policy:
-- **Strict E2EE:** prevent sending direct-chat text until both keys are available and verified; make the unavailable-key state visible; apply the same rule to forwarding, scheduled messages, stickers and location text; test every send path.
-- **Clearly labelled optional encryption:** show a persistent per-message encryption status and obtain informed user confirmation before sending plaintext.
+The strict fail-closed policy is implemented for direct text routes. Remaining work before claiming production-grade E2EE includes key authenticity and key-change handling, multi-device key management, backup KDF review, cryptographic test vectors, and integration tests against staging MySQL.
 
 Also review public-key authenticity and key-change handling, multi-device behavior, backup KDF strength, recovery, and downgrade resistance. Do not rely on a client-only badge as proof of encryption.
 
@@ -20,7 +18,7 @@ The integration guide states that photos, files and voice messages are not E2EE.
 
 ### 3. Calling is not ready for release
 
-The integration guide says calls require a native development build and WebRTC, but the current mobile dependency manifest does not include `react-native-webrtc` and the guide also says calls are disabled in Expo Go. No working call flow was verified in this source review. Treat voice/video calling as unavailable until the native dependency, platform configuration, signaling, permissions, TURN behavior, incoming-call behavior and real-device tests are implemented and verified.
+The integration guide says calls require a native development build and WebRTC, but the current mobile dependency manifest does not include `react-native-webrtc` and the guide also says calls are disabled in Expo Go. No working call flow was verified in this source review. Voice/video calling is explicitly hidden and incoming calls are rejected when the native WebRTC module is absent. Treat calling as unavailable until the native dependency, platform configuration, signaling, permissions, TURN behavior, incoming-call behavior and real-device tests are implemented and verified.
 
 ## Required staging tests
 
@@ -30,6 +28,7 @@ The integration guide says calls require a native development build and WebRTC, 
 - MySQL migrations from both a fresh database and a copy of the current schema.
 - Redis unavailable/reconnect behavior and OTP counter correctness.
 - E2EE key creation, missing/changed peer keys, tampering, backup/restore and every text-send route.
+- Confirm that old clients and direct-message API routes cannot bypass the server-side E2EE envelope check.
 - Android and iOS development/release builds on physical devices.
 - Push notifications, background/terminated app behavior, privacy settings and account deletion.
 

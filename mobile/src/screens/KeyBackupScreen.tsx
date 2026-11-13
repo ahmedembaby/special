@@ -17,7 +17,7 @@ export default function KeyBackupScreen() {
     if (pass.length < 8) return Alert.alert('Passphrase too short', 'Use at least 8 characters.');
     setBusy(true);
     try {
-      await new Promise((r) => setTimeout(r, 50)); // let the spinner render before the CPU-heavy key derivation
+      await new Promise<void>((resolve) => setTimeout(resolve, 50)); // let the spinner render before the CPU-heavy key derivation
       if (kind === 'backup') {
         await e2ee.ensureKeys(user!.id as string, user!.public_key);
         await e2ee.backupKey(user!.id as string, pass);

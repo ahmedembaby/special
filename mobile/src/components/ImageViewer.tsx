@@ -39,7 +39,7 @@ export const ImageViewer = ({ uri: single, uris, initialIndex = 0, onClose, acti
   const list = uris && uris.length ? uris : single ? [single] : [];
   const [index, setIndex] = useState(initialIndex);
   const uri: string | null = list[index] || null;
-  const pager = useRef<ScrollView>(null);
+  const pager = useRef<any>(null);
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [zoomed, setZoomed] = useState(false);
@@ -87,7 +87,7 @@ export const ImageViewer = ({ uri: single, uris, initialIndex = 0, onClose, acti
 
   return (
     <Modal visible={!!uri} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <StatusBar hidden={Platform.OS === 'ios'} backgroundColor="#000" barStyle="light-content" />
+      <StatusBar hidden={Platform.OS === 'ios'} barStyle="light-content" />
       <View style={styles.root}>
         {uri ? (
           <ScrollView

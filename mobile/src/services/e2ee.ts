@@ -58,7 +58,10 @@ const shared = new Map<string, Uint8Array>();
 
 /** Loads (or creates) this device's key pair and makes sure the server has the public key. */
 export const ensureKeys = async (userId: string | number, serverPublicKey?: string | null): Promise<string> => {
-  if (cache && cache.userId === String(userId)) return cache.publicKey;
+  if (cache && cache.userId === String(userId)) {
+    if (serverPublicKey !== cache.publicKey) await api.users.setPublicKey(cache.publicKey);
+    return cache.publicKey;
+  }
   let secret: Uint8Array;
   let stored: string | null = null;
   try { stored = await SecureStore.getItemAsync(secretName(userId)); } catch { /* unavailable */ }
@@ -71,7 +74,7 @@ export const ensureKeys = async (userId: string | number, serverPublicKey?: stri
   const publicKey = toB64(nacl.box.keyPair.fromSecretKey(secret).publicKey);
   cache = { userId: String(userId), secret, publicKey };
   shared.clear();
-  if (serverPublicKey !== publicKey) await api.users.setPublicKey(publicKey).catch(() => {});
+  if (serverPublicKey !== publicKey) await api.users.setPublicKey(publicKey);
   return publicKey;
 };
 

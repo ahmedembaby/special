@@ -336,7 +336,7 @@ function Users({ c, s }: { c: any; s: any }) {
           onEndReachedThreshold={0.4}
           onEndReached={() => { if (!more && users.length < total) load(false, users.length); }}
           ListEmptyComponent={<Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 30 }}>No users found</Text>}
-          ListFooterComponent={more ? <ActivityIndicator color={c.primary} style={{ margin: 12 }} /> : null}
+          ListFooterComponent={more ? <ActivityIndicator color={c.primary} style={{ margin: 12 }} /> : undefined}
           renderItem={({ item: u }) => (
             <TouchableOpacity style={[s.row, { borderBottomColor: c.border }]} onPress={() => openUser(u)} activeOpacity={0.7}>
               <Avatar u={u} c={c} size={44} />
