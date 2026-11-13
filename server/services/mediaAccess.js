@@ -14,7 +14,7 @@ async function canAccessChatMedia(filename, userId) {
      JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id
      WHERE m.file_url = ? AND cp.user_id = ?
        AND (m.expires_at IS NULL OR m.expires_at > NOW())
-       AND (m.view_once = 0 OR m.opened_at IS NULL)
+       AND (m.view_once = 0 OR m.opened_at IS NOT NULL)
        AND NOT EXISTS (SELECT 1 FROM message_deletions d WHERE d.message_id = m.id AND d.user_id = ?)
      LIMIT 1`,
     [`/uploads/chat/${filename}`, Number(userId), Number(userId)]
