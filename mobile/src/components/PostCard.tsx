@@ -233,7 +233,7 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
 };
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', marginHorizontal: 14, marginTop: 10, paddingHorizontal: 14, paddingVertical: 14, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, gap: 12, shadowOpacity: 0.3, shadowRadius: 9, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
+  card: { flexDirection: 'row', marginHorizontal: 16, marginTop: 8, paddingHorizontal: 15, paddingVertical: 15, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, gap: 12, shadowOpacity: 0, elevation: 0 },
   body: { flex: 1 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   nameRow: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 3 },

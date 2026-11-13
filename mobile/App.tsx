@@ -135,28 +135,25 @@ const MainTabs = () => {
           tabBarStyle: {
             display: hide ? 'none' : 'flex',
             backgroundColor: c.card,
-            borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: c.border,
-            borderTopLeftRadius: 22,
-            borderTopRightRadius: 22,
-            height: 72 + insets.bottom,
-            paddingTop: 7,
-            paddingBottom: Math.max(insets.bottom, 6),
-            shadowColor: '#000',
-            shadowOpacity: darkMode ? 0.5 : 0.1,
-            shadowRadius: 14,
-            shadowOffset: { width: 0, height: -4 },
-            elevation: 12,
+            borderTopWidth: 0,
+            height: 70 + insets.bottom,
+            paddingTop: 6,
+            paddingBottom: Math.max(insets.bottom, 8),
+            shadowColor: '#10152B',
+            shadowOpacity: darkMode ? 0.18 : 0.06,
+            shadowRadius: 18,
+            shadowOffset: { width: 0, height: -5 },
+            elevation: 10,
           },
           tabBarIcon: ({ focused: f, color }: { focused: boolean; color: string }) => {
             const [off, on] = TAB_ICONS[route.name];
             const label = t(route.name === 'Messages' ? 'Messages' : route.name);
             return (
               <View style={{ width: '100%', minWidth: 0, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                <View style={{ width: 40, height: 32, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? c.primaryLight : 'transparent' }}>
+                <View style={{ width: 42, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? c.primaryLight : 'transparent' }}>
                   <Icon name={f ? on : off} size={21} color={color} strokeWidth={f ? 2.2 : 1.75} />
                 </View>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={{ width: '100%', textAlign: 'center', fontSize: 10, lineHeight: 13, fontWeight: f ? '700' : '500', color }}>{label}</Text>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={{ width: '100%', textAlign: 'center', fontSize: 10, lineHeight: 13, letterSpacing: 0.1, fontWeight: f ? '800' : '600', color }}>{label}</Text>
               </View>
             );
           },

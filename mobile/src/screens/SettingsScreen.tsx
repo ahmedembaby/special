@@ -27,7 +27,7 @@ export default function SettingsScreen() {
   const { darkMode, setDarkMode } = useThemeSettings();
 
   const Row = ({ icon, title, sub, onPress, right, danger }: { icon: IconName; title: string; sub?: string; onPress?: () => void; right?: React.ReactNode; danger?: boolean }) => (
-    <TouchableOpacity style={[styles.row, { backgroundColor: c.card }]} onPress={onPress} activeOpacity={onPress ? 0.6 : 1}>
+    <TouchableOpacity style={[styles.row, { backgroundColor: c.card, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth }]} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
       <View style={[styles.iconBox, { backgroundColor: danger ? c.background : c.primaryLight }]}><Icon name={icon} size={20} color={danger ? c.danger : c.primary} /></View>
       <View style={{ flex: 1 }}>
         <Text style={{ color: danger ? c.danger : c.text, fontSize: 16, fontWeight: '600' }}>{title}</Text>

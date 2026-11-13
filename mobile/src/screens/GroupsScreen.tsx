@@ -223,7 +223,7 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
   createButton: { marginTop: 22, paddingHorizontal: 24, height: 48, borderRadius: 16, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' },
   createButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   listContent: { paddingTop: 4, paddingBottom: 110 },
-  groupCard: { backgroundColor: c.card, borderRadius: 22, marginHorizontal: 14, marginTop: 12, padding: 14, shadowColor: c.shadow, shadowOpacity: 1, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  groupCard: { backgroundColor: c.card, borderRadius: 20, marginHorizontal: 16, marginTop: 10, padding: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border, shadowOpacity: 0, elevation: 0 },
   groupHeader: { flexDirection: 'row', gap: 12 },
   avatar: { width: 58, height: 58, borderRadius: 19 },
   avatarPlaceholder: { backgroundColor: c.primary, justifyContent: 'center', alignItems: 'center' },

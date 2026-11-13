@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 40 },
   emptyTitle: { fontSize: 20, fontWeight: '700' },
   fab: {
-    position: 'absolute', right: 18, width: 58, height: 58, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
-    elevation: 6, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
+    position: 'absolute', right: 18, width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
+    elevation: 4, shadowColor: '#10152B', shadowOpacity: 0.14, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
   },
 });

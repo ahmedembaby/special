@@ -52,7 +52,9 @@ export const NotificationItem = ({ item, onDelete, onPress }: { item: AppNotific
   return (
     <TouchableOpacity activeOpacity={0.7} onPress={onPress} onLongPress={confirm} style={[styles.row, { borderBottomColor: c.border }]}>
       <View style={styles.iconCol}>
-        <Icon name={meta.icon} size={26} color={meta.color} strokeWidth={1.2} />
+        <View style={[styles.iconTile, { backgroundColor: c.primaryLight }]}>
+          <Icon name={meta.icon} size={19} color={meta.color} strokeWidth={2} />
+        </View>
       </View>
       <View style={{ flex: 1 }}>
         <View style={styles.top}>
@@ -103,7 +105,8 @@ export const NotificationItem = ({ item, onDelete, onPress }: { item: AppNotific
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 14, gap: 10, borderBottomWidth: StyleSheet.hairlineWidth },
-  iconCol: { width: 36, alignItems: 'flex-end', paddingTop: 2 },
+  iconCol: { width: 40, alignItems: 'flex-start', paddingTop: 2 },
+  iconTile: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   text: { fontSize: 15, lineHeight: 21 },
   quote: { fontSize: 15, marginTop: 4, lineHeight: 21 },

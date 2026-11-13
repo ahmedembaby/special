@@ -22,21 +22,21 @@ interface Props {
   children?: React.ReactNode;
 }
 
-/** Shared top bar for social and messaging screens. */
+/** Shared flat, compact app header. */
 export const ScreenHeader = (p: Props) => {
   const { c } = useAppColors();
   const { lang, t } = useI18n();
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ backgroundColor: c.headerBg, paddingTop: insets.top, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }}>
+    <View style={[styles.shell, { backgroundColor: c.headerBg, borderBottomColor: c.border, paddingTop: insets.top }]}>
       <View style={styles.row}>
-        <View style={[styles.side, p.logo && !p.onBack && !p.onAvatarPress ? styles.logoSide : null]}>
+        <View style={styles.side}>
           {p.onBack ? (
-            <TouchableOpacity onPress={p.onBack} hitSlop={10} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t("Go back")}>
-              <Icon name={lang === 'ar' ? 'arrowRight' : 'arrowLeft'} size={21} color={c.text} />
+            <TouchableOpacity onPress={p.onBack} hitSlop={10} style={[styles.iconBtn, { backgroundColor: c.card }]} accessibilityRole="button" accessibilityLabel={t('Go back')}>
+              <Icon name={lang === 'ar' ? 'arrowRight' : 'arrowLeft'} size={20} color={c.text} />
             </TouchableOpacity>
           ) : p.onAvatarPress ? (
-            <Avatar source={p.avatarUri} name={p.avatarName} size={34} onPress={p.onAvatarPress} />
+            <Avatar source={p.avatarUri} name={p.avatarName} size={36} onPress={p.onAvatarPress} />
           ) : null}
         </View>
         <View style={[styles.center, p.logo ? styles.logoCenter : null]}>
@@ -52,20 +52,20 @@ export const ScreenHeader = (p: Props) => {
             </>
           )}
         </View>
-        <View style={[styles.actions, { alignItems: 'flex-end' }]}>
+        <View style={styles.actions}>
           {p.onSearchPress ? (
-            <TouchableOpacity onPress={p.onSearchPress} hitSlop={8} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t('Search')}>
-              <Icon name="search" size={25} color={c.text} strokeWidth={2.2} />
+            <TouchableOpacity onPress={p.onSearchPress} hitSlop={8} style={[styles.iconBtn, { backgroundColor: c.card }]} accessibilityRole="button" accessibilityLabel={t('Search')}>
+              <Icon name="search" size={20} color={c.text} />
             </TouchableOpacity>
           ) : null}
           {p.onMessagesPress ? (
-            <TouchableOpacity onPress={p.onMessagesPress} hitSlop={8} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t('Messages')}>
-              <Icon name="mail" size={25} color={c.text} strokeWidth={2.2} />
+            <TouchableOpacity onPress={p.onMessagesPress} hitSlop={8} style={[styles.iconBtn, { backgroundColor: c.card }]} accessibilityRole="button" accessibilityLabel={t('Messages')}>
+              <Icon name="mail" size={20} color={c.text} />
             </TouchableOpacity>
           ) : null}
           {!p.onSearchPress && !p.onMessagesPress && p.rightIcon ? (
-            <TouchableOpacity onPress={p.onRightPress} hitSlop={10} style={styles.iconBtn} accessibilityRole="button">
-              <Icon name={p.rightIcon} size={21} color={c.text} />
+            <TouchableOpacity onPress={p.onRightPress} hitSlop={10} style={[styles.iconBtn, { backgroundColor: c.card }]} accessibilityRole="button">
+              <Icon name={p.rightIcon} size={20} color={c.text} />
             </TouchableOpacity>
           ) : !p.onSearchPress && !p.onMessagesPress && p.rightText ? (
             <TouchableOpacity onPress={p.onRightPress} hitSlop={10}>
@@ -80,14 +80,14 @@ export const ScreenHeader = (p: Props) => {
 };
 
 const styles = StyleSheet.create({
-  row: { minHeight: 54, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
-  side: { width: 42, justifyContent: 'center' },
-  logoSide: { width: 0 },
+  shell: { borderBottomWidth: StyleSheet.hairlineWidth },
+  row: { minHeight: 62, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18 },
+  side: { width: 44, justifyContent: 'center' },
   center: { flex: 1, alignItems: 'flex-start', justifyContent: 'center', paddingHorizontal: 8 },
-  logoCenter: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: 9 },
-  actions: { width: 96, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 },
-  logoDot: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 19, fontWeight: '700', letterSpacing: -0.35 },
+  logoCenter: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: 10 },
+  actions: { minWidth: 44, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
+  logoDot: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
   sub: { fontSize: 12, marginTop: 2 },
-  iconBtn: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 });
