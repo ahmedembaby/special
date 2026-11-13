@@ -41,7 +41,7 @@ npm install
 npx expo start
 ```
 
-The server and mobile lockfiles currently need regeneration and review; CI temporarily reconciles dependencies with `npm install` before running checks. Expo compatibility, Expo Doctor and Android export are blocking checks; the current TypeScript check is visible but non-blocking because it exposes pre-existing type errors across several screens and components. Do not treat installs as fully reproducible until both regenerated lockfiles are committed and CI uses `npm ci`.
+CI regenerates both lockfiles from clean dependency manifests on the working PR branch, commits them, and then validates reproducible installs with `npm ci`. Expo compatibility, Expo Doctor, TypeScript and Android export are blocking checks.
 
 ## Release readiness
 
