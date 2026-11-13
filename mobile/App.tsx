@@ -1,9 +1,10 @@
+import React from 'react';
 import 'react-native-gesture-handler';
 import { NavigationContainer, DefaultTheme, DarkTheme, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -51,6 +52,8 @@ import BlockedUsersScreen from './src/screens/BlockedUsersScreen';
 import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
 import HashtagScreen from './src/screens/HashtagScreen';
 import GroupInvitesScreen from './src/screens/GroupInvitesScreen';
+import SessionsScreen from './src/screens/SessionsScreen';
+import { onSocket } from './src/services/socket';
 
 const AuthStack = createStackNavigator();
 const RootStack = createStackNavigator();
@@ -90,6 +93,7 @@ const ProfileStackScreen = () => (
     <ProfileStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
     <ProfileStack.Screen name="Settings" component={SettingsScreen} />
     <ProfileStack.Screen name="Security" component={SecurityScreen} />
+    <ProfileStack.Screen name="Sessions" component={SessionsScreen} />
     <ProfileStack.Screen name="PINSecurity" component={PINSecurityScreen} />
     <ProfileStack.Screen name="FaceID" component={FaceIDScreen} />
     <ProfileStack.Screen name="TouchID" component={TouchIDScreen} />
@@ -108,7 +112,7 @@ const TAB_ICONS: Record<string, [IconName, IconName]> = {
 };
 
 // screens inside a tab that should hide the tab bar (full-screen chat UIs)
-const HIDE_TABBAR = ['Chat', 'GroupChat', 'ContactScreen', 'PostDetail', 'ProfileEdit', 'Settings', 'PrivacySettings', 'Security', 'PINSecurity', 'FaceID', 'TouchID', 'Terms', 'AdminDashboard', 'GroupDetail', 'GroupMembers', 'GroupSettings'];
+const HIDE_TABBAR = ['Chat', 'GroupChat', 'ContactScreen', 'PostDetail', 'ProfileEdit', 'Settings', 'PrivacySettings', 'Security', 'Sessions', 'PINSecurity', 'FaceID', 'TouchID', 'Terms', 'AdminDashboard', 'GroupDetail', 'GroupMembers', 'GroupSettings'];
 
 const MainTabs = () => {
   const { darkMode } = useThemeSettings();
@@ -160,6 +164,10 @@ function RootNavigator() {
   const { locked, ready } = useAppLock();
   const { darkMode } = useThemeSettings();
   const c = darkMode ? Colors.dark : Colors.light;
+
+  React.useEffect(() => onSocket('security_key_changed', (event: { userName?: string }) => {
+    Alert.alert('Encryption key changed', (event.userName || 'A contact') + ' changed their encryption key. Open the conversation and verify the new safety number before trusting it.');
+  }), []);
 
   if (loading || !ready) {
     return (

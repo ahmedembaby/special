@@ -1,5 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
 import { API_URL } from '../config';
 
 const api: AxiosInstance = axios.create({ baseURL: API_URL, timeout: 15000 });
@@ -11,6 +13,8 @@ export const setUnauthorizedHandler = (fn: () => void) => {
 
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync('echat_token');
+  config.headers['X-Device-Name'] = Device.deviceName || Device.modelName || 'Mobile device';
+  config.headers['X-Device-Platform'] = Platform.OS;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -168,7 +172,11 @@ export const auth = {
   setName: (data: { registrationToken: string; name: string }) => api.post('/auth/set-name', data),
   logout: () => api.post('/auth/logout'),
   pushRegister: (data: { token: string }) => api.post('/auth/push/register', data),
+  sessions: () => api.get<DeviceSession[]>('/auth/sessions'),
+  revokeSession: (id: string) => api.delete<{ revoked: boolean; current: boolean }>(`/auth/sessions/${encodeURIComponent(id)}`),
 };
+
+export interface DeviceSession { id: string; device_name: string; platform: string; created_at: string; last_active_at: string; expires_at: string; is_current: boolean; }
 
 export interface UserSettings {
   hide_presence: boolean;

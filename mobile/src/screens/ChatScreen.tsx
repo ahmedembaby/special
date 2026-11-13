@@ -3,7 +3,7 @@ import {
   SafeAreaView, View, FlatList, ActivityIndicator, StatusBar, Platform, KeyboardAvoidingView, Alert, StyleSheet,
   TextInput, TouchableOpacity, Text, Image, Modal, PanResponder, ScrollView,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { Icon } from '../components/Icon';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
@@ -168,6 +168,9 @@ export default function ChatScreen() {
     handle: routePhone || '',
   });
   const [inGroup, setInGroup] = useState(false);
+  const [chatAccessReady, setChatAccessReady] = useState(false);
+  const [chatLocked, setChatLocked] = useState(false);
+  const [chatUnlocked, setChatUnlocked] = useState(false);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -190,6 +193,49 @@ export default function ChatScreen() {
     }).catch(() => {});
   }, [conversationId]);
 
+  useEffect(() => {
+    let active = true;
+    setChatAccessReady(false);
+    setChatUnlocked(false);
+    if (!conversationId) { setChatLocked(false); setChatAccessReady(true); return; }
+    chatSecurity.isConversationLocked(conversationId).then((enabled) => {
+      if (!active) return;
+      setChatLocked(enabled);
+      setChatUnlocked(!enabled);
+      setChatAccessReady(true);
+    });
+    return () => { active = false; };
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!isFocused) return undefined;
+    ScreenCapture.preventScreenCaptureAsync('special-chat').catch(() => {});
+    if (Platform.OS === 'ios') ScreenCapture.enableAppSwitcherProtectionAsync(0.9).catch(() => {});
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync('special-chat').catch(() => {});
+      if (Platform.OS === 'ios') ScreenCapture.disableAppSwitcherProtectionAsync().catch(() => {});
+    };
+  }, [isFocused]);
+
+  const unlockChat = async () => {
+    if (await authenticateBiometric('Unlock this conversation')) setChatUnlocked(true);
+    else Alert.alert('Authentication required', 'Use your device biometrics to open this conversation.');
+  };
+
+  const toggleChatLock = async () => {
+    if (!conversationId) return;
+    if (chatLocked) {
+      if (!(await authenticateBiometric('Remove conversation lock'))) return;
+      await chatSecurity.setConversationLocked(conversationId, false);
+      setChatLocked(false); setChatUnlocked(true); return;
+    }
+    if (!(await biometricAvailable())) {
+      Alert.alert('Biometrics unavailable', 'Set up Face ID or fingerprint on your device before locking a conversation.'); return;
+    }
+    if (!(await authenticateBiometric('Lock this conversation'))) return;
+    try { await chatSecurity.setConversationLocked(conversationId, true); setChatLocked(true); setChatUnlocked(false); }
+    catch { Alert.alert('Error', 'Could not enable the conversation lock on this device.'); }
+  };
   // live online / last-seen of the other person (the server skips users who hide their status)
   useEffect(() => {
     if (!header.userId) return undefined;
@@ -227,6 +273,7 @@ export default function ChatScreen() {
 
   // ---- initial load (reactions come with the messages, no per-message requests) ----
   useEffect(() => {
+    if (!chatAccessReady || (chatLocked && !chatUnlocked)) return undefined;
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -265,7 +312,7 @@ export default function ChatScreen() {
       }
     })();
     return () => { cancelled = true; };
-  }, [conversationId]);
+  }, [conversationId, chatAccessReady, chatLocked, chatUnlocked]);
 
   // draft + theme of this chat
   useEffect(() => {
@@ -823,6 +870,7 @@ export default function ChatScreen() {
   const DISAPPEAR_OPTIONS: Array<[string, number]> = [['Off', 0], ['1 hour', 3600], ['24 hours', 86400], ['7 days', 604800], ['90 days', 7776000]];
 
   const mainMenu: SheetOption[] = [
+    { label: chatLocked ? 'Remove biometric conversation lock' : 'Lock conversation with biometrics', onPress: toggleChatLock },
     { label: showSearch ? 'Hide search' : 'Search in conversation', onPress: () => { setShowSearch((v) => !v); setMsgSearch(''); } },
     { label: meta.muted ? 'Unmute notifications' : 'Mute notifications', onPress: () => (meta.muted ? setMute(0) : setMenu('mute')) },
     { label: `Disappearing messages${meta.disappear ? ' (on)' : ''}`, onPress: () => setMenu('disappear') },
@@ -1052,6 +1100,18 @@ export default function ChatScreen() {
     }
   };
 
+  if (!chatAccessReady || (chatLocked && !chatUnlocked)) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: c.background, alignItems: 'center', justifyContent: 'center', padding: 28 }}>
+        <Icon name="lock" size={48} color={c.primary} />
+        <Text style={{ color: c.text, fontSize: 21, fontWeight: '800', marginTop: 18, marginBottom: 8 }}>Conversation locked</Text>
+        <Text style={{ color: c.textSecondary, textAlign: 'center', marginBottom: 22 }}>Authenticate with Face ID or fingerprint to view these messages.</Text>
+        <TouchableOpacity onPress={unlockChat} style={{ backgroundColor: c.primary, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14 }}>
+          <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Unlock with biometrics</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: wall }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />

@@ -152,6 +152,7 @@ const setPresence = async (userId, status) => {
 io.on('connection', (socket) => {
   const userId = socket.user.id;
   socket.join(`user_${userId}`);
+  if (socket.user.sessionId) socket.join(`session_${socket.user.sessionId}`);
   const count = (rt.online.get(userId) || 0) + 1;
   rt.online.set(userId, count);
   if (count === 1) setPresence(userId, 'online');

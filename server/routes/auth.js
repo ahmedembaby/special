@@ -18,7 +18,18 @@ const OTP_TTL = 300; // seconds
 const OTP_MAX_ATTEMPTS = 5;
 const RESEND_COOLDOWN = 30;
 
-const signToken = (user) => jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+const signToken = (user, sessionId) => jwt.sign({ id: user.id, jti: sessionId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+const createSessionToken = async (req, user) => {
+  const sessionId = crypto.randomUUID();
+  const token = signToken(user, sessionId);
+  const decoded = jwt.decode(token);
+  const deviceName = String(req.get('x-device-name') || 'Unknown device').trim().slice(0, 120) || 'Unknown device';
+  const rawPlatform = String(req.get('x-device-platform') || '').toLowerCase();
+  const platform = ['ios', 'android', 'web'].includes(rawPlatform) ? rawPlatform : 'unknown';
+  const expiresAt = new Date(decoded.exp * 1000).toISOString().slice(0, 19).replace('T', ' ');
+  await pool.query('INSERT INTO device_sessions (id, user_id, device_name, platform, expires_at) VALUES (?, ?, ?, ?, ?)', [sessionId, user.id, deviceName, platform, expiresAt]);
+  return token;
+};
 const publicUserOf = (u) => toUser({ ...u, is_admin: isAdminUser(u) });
 
 const loadUser = async (id) => {
@@ -50,7 +61,7 @@ router.post('/signup', signupRules, async (req, res) => {
     const username = await generateUsername(name, result.insertId);
     await pool.query('UPDATE users SET username = ? WHERE id = ?', [username, result.insertId]);
     const user = await loadUser(result.insertId);
-    res.status(201).json({ token: signToken(user), user: publicUserOf(user) });
+    res.status(201).json({ token: await createSessionToken(req, user), user: publicUserOf(user) });
   } catch (err) {
     console.error('signup:', err.message);
     res.status(500).json({ message: 'Could not create account' });
@@ -67,7 +78,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     if (row.banned) return res.status(403).json({ message: 'This account has been suspended' });
-    res.json({ token: signToken(row), user: publicUserOf(row) });
+    res.json({ token: await createSessionToken(req, row), user: publicUserOf(row) });
   } catch (err) {
     console.error('login:', err.message);
     res.status(500).json({ message: 'Login failed' });
@@ -180,11 +191,35 @@ router.post('/logout', authMiddleware, async (req, res) => {
     const decoded = jwt.decode(req.token);
     const ttl = decoded && decoded.exp ? Math.max(decoded.exp - Math.floor(Date.now() / 1000), 1) : 3600;
     await kv.set(`blacklist:${req.token}`, '1', ttl);
+    if (req.user.sessionId) await pool.query('UPDATE device_sessions SET revoked_at = NOW() WHERE id = ? AND user_id = ? AND revoked_at IS NULL', [req.user.sessionId, req.user.id]);
     await pool.query('UPDATE users SET push_token = NULL WHERE id = ?', [req.user.id]);
     res.json({ message: 'Logged out' });
   } catch (err) {
     res.status(500).json({ message: 'Logout failed' });
   }
+});
+
+router.get('/sessions', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, device_name, platform, created_at, last_active_at, expires_at, (id = ?) AS is_current FROM device_sessions WHERE user_id = ? AND revoked_at IS NULL AND expires_at > NOW() ORDER BY is_current DESC, last_active_at DESC', [req.user.sessionId || '', req.user.id]);
+    res.json(rows);
+  } catch (err) { console.error('list sessions:', err.message); res.status(500).json({ message: 'Could not load sessions' }); }
+});
+
+router.delete('/sessions/:id', authMiddleware, async (req, res) => {
+  try {
+    const sessionId = String(req.params.id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(sessionId)) return res.status(400).json({ message: 'Invalid session id' });
+    const [result] = await pool.query('UPDATE device_sessions SET revoked_at = NOW() WHERE id = ? AND user_id = ? AND revoked_at IS NULL', [sessionId, req.user.id]);
+    if (!result.affectedRows) return res.status(404).json({ message: 'Session not found or already revoked' });
+    require('../services/realtime').disconnectSession(sessionId);
+    if (sessionId === req.user.sessionId) {
+      const decoded = jwt.decode(req.token);
+      const ttl = decoded && decoded.exp ? Math.max(decoded.exp - Math.floor(Date.now() / 1000), 1) : 3600;
+      await kv.set(`blacklist:${req.token}`, '1', ttl);
+    }
+    res.json({ revoked: true, current: sessionId === req.user.sessionId });
+  } catch (err) { console.error('revoke session:', err.message); res.status(500).json({ message: 'Could not revoke session' }); }
 });
 
 router.post('/push/register', authMiddleware, async (req, res) => {
