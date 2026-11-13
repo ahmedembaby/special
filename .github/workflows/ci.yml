@@ -27,9 +27,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Check server JavaScript syntax
         run: |
-          while IFS= read -r file; do
-            node --check "$file"
-          done < <(git ls-files '*.js' | grep '^server/')
+          find . -path './node_modules' -prune -o -name '*.js' -type f -print0 | xargs -0 -r -n1 node --check
       - name: Run server unit tests
         run: npm test
 
