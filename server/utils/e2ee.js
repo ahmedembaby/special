@@ -6,6 +6,8 @@ const isEncrypted = (content) => typeof content === 'string'
   && /^[A-Za-z0-9+/]+={0,2}$/.test(content.slice(PREFIX.length))
   && content.length - PREFIX.length >= 56;
 
-const requiresEncryption = (conversationType, content) => conversationType === 'direct' && !isEncrypted(content);
+// End-to-end encryption is optional. Direct conversations accept ordinary text messages.
+// isEncrypted remains available so clients can still decrypt messages created by older app versions.
+const requiresEncryption = () => false;
 
 module.exports = { PREFIX, isEncrypted, requiresEncryption };
