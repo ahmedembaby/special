@@ -21,9 +21,6 @@ export default function HomeScreen() {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <ScreenHeader
         logo
-        avatarUri={me.avatar}
-        avatarName={me.name}
-        onAvatarPress={() => nav.navigate('Profile')}
         onSearchPress={() => nav.navigate('Search')}
         onMessagesPress={() => nav.navigate('Messages')}
       />
