@@ -19,7 +19,14 @@ export default function HomeScreen() {
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <ScreenHeader logo avatarUri={me.avatar} avatarName={me.name} onAvatarPress={() => nav.navigate('Profile')} />
+      <ScreenHeader
+        logo
+        avatarUri={me.avatar}
+        avatarName={me.name}
+        onAvatarPress={() => nav.navigate('Profile')}
+        onSearchPress={() => nav.navigate('Search')}
+        onMessagesPress={() => nav.navigate('Messages')}
+      />
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />

@@ -17,6 +17,8 @@ interface Props {
   rightIcon?: IconName;
   onRightPress?: () => void;
   rightText?: string;
+  onSearchPress?: () => void;
+  onMessagesPress?: () => void;
   children?: React.ReactNode;
 }
 
@@ -50,12 +52,22 @@ export const ScreenHeader = (p: Props) => {
             </>
           )}
         </View>
-        <View style={[styles.side, { alignItems: 'flex-end' }]}>
-          {p.rightIcon ? (
+        <View style={[styles.actions, { alignItems: 'flex-end' }]}>
+          {p.onSearchPress ? (
+            <TouchableOpacity onPress={p.onSearchPress} hitSlop={8} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t('Search')}>
+              <Icon name="search" size={22} color={c.text} />
+            </TouchableOpacity>
+          ) : null}
+          {p.onMessagesPress ? (
+            <TouchableOpacity onPress={p.onMessagesPress} hitSlop={8} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t('Messages')}>
+              <Icon name="mail" size={22} color={c.text} />
+            </TouchableOpacity>
+          ) : null}
+          {!p.onSearchPress && !p.onMessagesPress && p.rightIcon ? (
             <TouchableOpacity onPress={p.onRightPress} hitSlop={10} style={styles.iconBtn} accessibilityRole="button">
               <Icon name={p.rightIcon} size={21} color={c.text} />
             </TouchableOpacity>
-          ) : p.rightText ? (
+          ) : !p.onSearchPress && !p.onMessagesPress && p.rightText ? (
             <TouchableOpacity onPress={p.onRightPress} hitSlop={10}>
               <Text style={{ color: c.primary, fontWeight: '700', fontSize: 14 }}>{p.rightText}</Text>
             </TouchableOpacity>
@@ -72,6 +84,7 @@ const styles = StyleSheet.create({
   side: { width: 42, justifyContent: 'center' },
   center: { flex: 1, alignItems: 'flex-start', justifyContent: 'center', paddingHorizontal: 8 },
   logoCenter: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: 9 },
+  actions: { width: 88, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 },
   logoDot: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 19, fontWeight: '700', letterSpacing: -0.35 },
   sub: { fontSize: 12, marginTop: 2 },
