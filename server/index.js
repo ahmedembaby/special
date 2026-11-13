@@ -59,15 +59,28 @@ app.use('/uploads', (req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
 });
-// chat media and stories are private: they need a valid session token (?t=<jwt> or Authorization header)
-app.use(['/uploads/chat', '/uploads/stories'], async (req, res, next) => {
+// Private media requires a valid session and resource-level authorization.
+const { canAccessChatMedia, canAccessStoryMedia } = require('./services/mediaAccess');
+const authorizePrivateUpload = (kind) => async (req, res, next) => {
   try {
     const raw = req.query.t || getToken(req);
     const user = await authenticateToken(raw);
     if (!user) return res.status(401).end();
+    const filename = path.basename(req.path);
+    if (!filename || filename !== req.path.replace(/^\\/+/, '')) return res.status(404).end();
+    const allowed = kind === 'chat'
+      ? await canAccessChatMedia(filename, user.id)
+      : await canAccessStoryMedia(filename, user.id);
+    if (!allowed) return res.status(404).end();
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Vary', 'Authorization');
     next();
-  } catch { res.status(401).end(); }
-});
+  } catch {
+    res.status(404).end();
+  }
+};
+app.use('/uploads/chat', authorizePrivateUpload('chat'));
+app.use('/uploads/stories', authorizePrivateUpload('stories'));
 app.use('/uploads', express.static(uploadsDir, { fallthrough: true, index: false }));
 
 const limiter = (windowMs, max, extra = {}) => rateLimit({
