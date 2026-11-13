@@ -30,7 +30,7 @@ export const ScreenHeader = (p: Props) => {
   return (
     <View style={{ backgroundColor: c.headerBg, paddingTop: insets.top, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }}>
       <View style={styles.row}>
-        <View style={styles.side}>
+        <View style={[styles.side, p.logo && !p.onBack && !p.onAvatarPress ? styles.logoSide : null]}>
           {p.onBack ? (
             <TouchableOpacity onPress={p.onBack} hitSlop={10} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t("Go back")}>
               <Icon name={lang === 'ar' ? 'arrowRight' : 'arrowLeft'} size={21} color={c.text} />
@@ -82,6 +82,7 @@ export const ScreenHeader = (p: Props) => {
 const styles = StyleSheet.create({
   row: { minHeight: 54, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
   side: { width: 42, justifyContent: 'center' },
+  logoSide: { width: 0 },
   center: { flex: 1, alignItems: 'flex-start', justifyContent: 'center', paddingHorizontal: 8 },
   logoCenter: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: 9 },
   actions: { width: 96, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 },
