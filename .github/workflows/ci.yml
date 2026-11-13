@@ -23,10 +23,14 @@ jobs:
           node-version: 22
       - name: Regenerate server lockfile
         working-directory: server
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+        run: |
+          rm -f package-lock.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
       - name: Regenerate mobile lockfile
         working-directory: mobile
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+        run: |
+          rm -f package-lock.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
       - name: Commit updated lockfiles to the working branch
         env:
           TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
