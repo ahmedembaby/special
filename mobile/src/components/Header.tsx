@@ -25,7 +25,7 @@ export const Header = ({ title, subtitle, onBack, onRightPress, rightIcon = 'sea
       { paddingTop: insets.top + 8, backgroundColor: c.headerBg, borderBottomColor: c.border },
     ]}>
       {onBack ? (
-        <TouchableOpacity style={styles.iconButton} onPress={onBack} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Go back">
+        <TouchableOpacity style={styles.iconButton} onPress={onBack} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={lang === "ar" ? "رجوع" : "Go back"}>
           <Icon name={lang === 'ar' ? 'arrowRight' : 'arrowLeft'} size={21} color={c.text} />
         </TouchableOpacity>
       ) : null}
