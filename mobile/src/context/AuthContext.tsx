@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import { setMediaToken } from '../config';
 import { cacheClear } from '../services/cache';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import * as api from '../services/api';
 import { setUnauthorizedHandler } from '../services/api';
 import { connectSocket, disconnectSocket } from '../services/socket';
@@ -44,10 +45,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     (async () => {
       try {
-        const [t, u] = await Promise.all([
+        const [secureToken, legacyToken, u] = await Promise.all([
+          SecureStore.getItemAsync('echat_token'),
           AsyncStorage.getItem('echat_token'),
           AsyncStorage.getItem('echat_user'),
         ]);
+        const t = secureToken || legacyToken;
+        if (!secureToken && legacyToken) await SecureStore.setItemAsync('echat_token', legacyToken);
+        if (legacyToken) await AsyncStorage.removeItem('echat_token');
         if (t) {
           setMediaToken(t);
           setToken(t);
@@ -71,10 +76,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = useCallback(async (newToken: string, userData?: User) => {
     // The token must be in storage before any screen mounts and fires requests
-    await AsyncStorage.multiSet([
-      ['echat_token', newToken],
-      ['echat_user', JSON.stringify(userData || {})],
-    ]).catch(() => {});
+    await SecureStore.setItemAsync('echat_token', newToken);
+    await AsyncStorage.setItem('echat_user', JSON.stringify(userData || {}));
     queryClient.clear();
     setMediaToken(newToken);
     setUser(userData || null);
@@ -89,7 +92,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = useCallback(async () => {
     // Invalidate the token on the server (best effort) before dropping it locally
     try { await api.auth.logout(); } catch { /* offline or already invalid */ }
-    await AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token']);
+    await Promise.all([SecureStore.deleteItemAsync('echat_token'), AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token'])]);
     queryClient.clear(); // never show the previous account's cached data
     cacheClear();
     setMediaToken(null);
@@ -115,7 +118,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // On 401 the token is already invalid: just drop the local session (no server call)
     const handler = () => {
-      AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token']).catch(() => {});
+      Promise.all([SecureStore.deleteItemAsync('echat_token'), AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token'])]).catch(() => {});
+      setMediaToken(null);
+      cacheClear();
       queryClient.clear();
       setUser(null);
       setToken(null);
