@@ -153,10 +153,10 @@ const MainTabs = () => {
             const label = t(route.name === 'Messages' ? 'Messages' : route.name);
             return (
               <View style={{ width: '100%', minWidth: 0, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                <View style={{ width: 40, height: 32, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? c.primaryLight : 'transparent' }}>
+                <View style={{ width: 42, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? c.primaryLight : 'transparent' }}>
                   <Icon name={f ? on : off} size={21} color={color} strokeWidth={f ? 2.2 : 1.75} />
                 </View>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={{ width: '100%', textAlign: 'center', fontSize: 10, lineHeight: 13, fontWeight: f ? '700' : '500', color }}>{label}</Text>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={{ width: '100%', textAlign: 'center', fontSize: 10, lineHeight: 13, letterSpacing: 0.1, fontWeight: f ? '800' : '600', color }}>{label}</Text>
               </View>
             );
           },
