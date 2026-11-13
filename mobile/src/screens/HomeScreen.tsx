@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { View, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet, Text, RefreshControl, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '../theme/useAppColors';
 import { useFeed } from '../hooks/useFeed';
-import { getFollowing } from '../services/social';
 import { ScreenHeader } from '../components/ScreenHeader';
-import { TopTabs } from '../components/Tabs';
 import { PostCard } from '../components/PostCard';
 import { PostComposer } from '../components/PostComposer';
 import { Icon } from '../components/Icon';
@@ -17,28 +15,17 @@ export default function HomeScreen() {
   const { c, isDark } = useAppColors();
   const insets = useSafeAreaInsets();
   const { me, posts, loading, refreshing, refresh, like, remove, create } = useFeed();
-  const [tab, setTab] = useState(0);
-  const [following, setFollowing] = useState<string[]>([]);
-
-  useEffect(() => nav.addListener('focus', () => { getFollowing().then(setFollowing); }), [nav]);
-
-  const data = useMemo(
-    () => (tab === 0 ? posts : posts.filter((p) => p.user.id === me.id || following.includes(p.user.id))),
-    [tab, posts, following, me.id]
-  );
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <ScreenHeader logo avatarUri={me.avatar} avatarName={me.name} onAvatarPress={() => nav.navigate('Profile')}>
-        <TopTabs tabs={['For you', 'Following']} active={tab} onChange={setTab} />
-      </ScreenHeader>
+      <ScreenHeader logo avatarUri={me.avatar} avatarName={me.name} onAvatarPress={() => nav.navigate('Profile')} />
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
       ) : (
         <FlatList
-          data={data}
+          data={posts}
           keyExtractor={(p) => p.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
@@ -46,9 +33,9 @@ export default function HomeScreen() {
           ListHeaderComponent={<View><StoriesBar meId={String(me.id)} meAvatar={me.avatar} meName={me.name} /><PostComposer me={me} onPost={create} /></View>}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={[styles.emptyTitle, { color: c.text }]}>{tab === 1 ? 'Nothing here yet' : 'No posts yet'}</Text>
+              <Text style={[styles.emptyTitle, { color: c.text }]}>No posts yet</Text>
               <Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 6 }}>
-                {tab === 1 ? 'Follow people from the Search tab to see their posts here.' : 'Be the first to post something.'}
+                Follow people from the Search tab or share your first post to start your feed.
               </Text>
             </View>
           }
