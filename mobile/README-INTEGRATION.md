@@ -1,9 +1,15 @@
-The server address is fixed in src/config.ts (SERVER_IP = 192.168.1.18, port 5000); app.json extra.apiBaseUrl and .env are kept in sync but are not used by the app.
-The root .env API_URL is not used by the app.
+## إعداد عنوان الخادم وتخزين الجلسة
 
-After pulling this version run once:
-  npx expo install expo-local-authentication expo-secure-store
-then `npx expo start -c`. (App lock uses the OS keychain; biometrics need a dev build or Expo Go on a real device.)
+يُضبط عنوان API من متغير البيئة `EXPO_PUBLIC_API_BASE_URL`، وليس من عنوان IP ثابت داخل الكود.
+انسخ `.env.example` إلى `.env` داخل مجلد `mobile`، ثم ضع عنوان جهاز الخادم الذي يمكن للهاتف الوصول إليه، مثل:
+
+```env
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.10:5000
+```
+
+استبدل العنوان بعنوان LAN الفعلي عند التطوير على هاتف حقيقي. في الإنتاج يجب استخدام HTTPS.
+رمز الجلسة يُحفظ في `expo-secure-store`؛ وعند أول تشغيل بعد التحديث يُنقل الرمز القديم تلقائيًا من AsyncStorage إلى التخزين الآمن.
+بعد ضبط المتغير شغّل `npx expo start -c`. حزمة `expo-secure-store` موجودة بالفعل في dependencies وExpo plugins.
 
 ## الميزات الجديدة (الدفعة الأخيرة)
 
