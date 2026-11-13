@@ -4,7 +4,7 @@ const keyFor = (conversationId: string | number) => 'special_chat_lock_' + Strin
 
 export async function isConversationLocked(conversationId: string | number): Promise<boolean> {
   try { return (await SecureStore.getItemAsync(keyFor(conversationId))) === '1'; }
-  catch { return false; }
+  catch { return true; }
 }
 
 export async function setConversationLocked(conversationId: string | number, enabled: boolean): Promise<void> {

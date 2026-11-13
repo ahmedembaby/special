@@ -172,6 +172,9 @@ export default function ChatScreen() {
   });
   const [inGroup, setInGroup] = useState(false);
   const [chatAccessReady, setChatAccessReady] = useState(false);
+  const [chatAccessConversationId, setChatAccessConversationId] = useState<string | null>(null);
+  const loadedConversationRef = useRef<string | null>(null);
+  const suppressLockRef = useRef(false);
   const [chatLocked, setChatLocked] = useState(false);
   const [chatUnlocked, setChatUnlocked] = useState(false);
 
@@ -199,11 +202,13 @@ export default function ChatScreen() {
   useEffect(() => {
     let active = true;
     setChatAccessReady(false);
+    setChatAccessConversationId(null);
+    loadedConversationRef.current = null;
     setChatUnlocked(false);
     if (!conversationId) { setChatLocked(false); setChatAccessReady(true); return; }
     chatSecurity.isConversationLocked(conversationId).then((enabled) => {
       if (!active) return;
-      setChatLocked(enabled); setChatUnlocked(!enabled); setChatAccessReady(true);
+      setChatLocked(enabled); setChatUnlocked(!enabled); setChatAccessConversationId(String(conversationId)); setChatAccessReady(true);
     });
     return () => { active = false; };
   }, [conversationId]);
@@ -215,7 +220,7 @@ export default function ChatScreen() {
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
-      if ((state === 'inactive' || state === 'background') && chatLocked) setChatUnlocked(false);
+      if (state === 'background' && chatLocked && !suppressLockRef.current) setChatUnlocked(false);
     });
     return () => sub.remove();
   }, [chatLocked]);
@@ -276,8 +281,11 @@ export default function ChatScreen() {
 
   // ---- initial load (reactions come with the messages, no per-message requests) ----
   useEffect(() => {
-    if (!chatAccessReady || (chatLocked && !chatUnlocked)) return undefined;
+    if (!conversationId || !chatAccessReady || chatAccessConversationId !== String(conversationId) || (chatLocked && !chatUnlocked)) return undefined;
+    if (loadedConversationRef.current === String(conversationId)) return undefined;
+    loadedConversationRef.current = String(conversationId);
     let cancelled = false;
+    let completed = false;
     (async () => {
       setLoading(true);
       try {
@@ -295,6 +303,7 @@ export default function ChatScreen() {
           status: it.failed ? 'failed' : 'queued', created_at: it.createdAt,
         }));
         setMessages([...loaded, ...queued.filter((q) => !loaded.some((m) => m.client_id && m.client_id === q.client_id))]);
+        completed = true;
         if (unreadAtOpen > 0) {
           const incoming = loaded.filter((m) => String(m.sender_id) !== String(currentUserId));
           const first = incoming[Math.max(0, incoming.length - unreadAtOpen)];
@@ -309,13 +318,16 @@ export default function ChatScreen() {
         }
         api.messages.markAllRead(conversationId!).catch(() => {});
       } catch {
-        if (!cancelled) Alert.alert('Error', 'Could not load the conversation');
+        if (!cancelled) { loadedConversationRef.current = null; Alert.alert('Error', 'Could not load the conversation'); }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
-  }, [conversationId, chatAccessReady, chatLocked, chatUnlocked]);
+    return () => {
+      cancelled = true;
+      if (!completed && loadedConversationRef.current === String(conversationId)) loadedConversationRef.current = null;
+    };
+  }, [conversationId, chatAccessReady, chatAccessConversationId, chatLocked, chatUnlocked]);
 
   // draft + theme of this chat
   useEffect(() => {
@@ -416,7 +428,12 @@ export default function ChatScreen() {
         Alert.alert('Permission needed', 'Please allow photo access to send images.');
         return;
       }
-      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+      // Android opens the picker as another activity. Do not re-lock this chat while
+      // the picker we launched is in the foreground.
+      suppressLockRef.current = true;
+      let res;
+      try { res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 }); }
+      finally { suppressLockRef.current = false; }
       if (res.canceled || !res.assets?.[0]) return;
 
       setUploading(true);
@@ -438,6 +455,8 @@ export default function ChatScreen() {
       }
     } catch {
       Alert.alert('Error', 'Failed to pick image');
+    } finally {
+      suppressLockRef.current = false;
     }
   };
 
@@ -920,7 +939,10 @@ export default function ChatScreen() {
     if (recordingRef.current || recording) return;
     try {
       const { AudioModule, RecordingPresets, setAudioModeAsync } = await import('expo-audio');
-      const perm = await AudioModule.requestRecordingPermissionsAsync();
+      suppressLockRef.current = true;
+      let perm;
+      try { perm = await AudioModule.requestRecordingPermissionsAsync(); }
+      finally { suppressLockRef.current = false; }
       if (!perm.granted) {
         Alert.alert('Permission needed', 'Please allow microphone access to record voice messages.');
         return;
