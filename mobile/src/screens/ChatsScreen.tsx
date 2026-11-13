@@ -174,9 +174,9 @@ export default function ChatsScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <Swipeable renderRightActions={() => renderSwipeActions(item)} overshootRight={false} friction={2} rightThreshold={36}>
+            <ReanimatedSwipeable renderRightActions={() => renderSwipeActions(item)} overshootRight={false} friction={2} rightThreshold={36}>
               <ChatItem item={item} draft={drafts[String(item.id)]} onPress={() => navigation.navigate('Chat', { conversationId: item.id, unread: Number(item.unread_count) || 0 })} />
-            </Swipeable>
+            </ReanimatedSwipeable>
           )}
         />
       )}
