@@ -41,7 +41,7 @@ npm install
 npx expo start
 ```
 
-The mobile lockfile currently needs regeneration and review; CI temporarily installs from the manifest and runs Expo compatibility, type-check and Android export checks. Do not treat this as fully reproducible until the regenerated lockfile is committed and CI uses `npm ci`.
+The server and mobile lockfiles currently need regeneration and review; CI temporarily reconciles dependencies with `npm install` before running checks. Do not treat installs as fully reproducible until both regenerated lockfiles are committed and CI uses `npm ci`.
 
 ## Release readiness
 
