@@ -130,6 +130,7 @@ const MainTabs = () => {
           tabBarShowLabel: false,
           tabBarActiveTintColor: c.primary,
           tabBarInactiveTintColor: c.textMuted,
+          tabBarIconStyle: { width: 68, height: 50 },
           tabBarStyle: {
             display: hide ? 'none' : 'flex',
             backgroundColor: c.card,
