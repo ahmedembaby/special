@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const pool = require('../db');
 const upload = require('../middleware/upload');
 const rt = require('../services/realtime');
@@ -138,17 +139,24 @@ router.post('/', async (req, res) => {
   }
 });
 
-// POST /api/messages/upload  multipart: conversation_id, file
+// POST /api/messages/upload multipart: conversation_id, file
+// Remove files that were rejected, duplicated, or otherwise not persisted.
 router.post('/upload', upload.chat.single('file'), async (req, res) => {
+  let persisted = false;
   try {
     const conversationId = Number(req.body.conversation_id);
     if (!conversationId || !req.file) return res.status(400).json({ message: 'conversation_id and file are required' });
     if (!(await isParticipant(conversationId, req.user.id))) return res.status(403).json({ message: 'Not a participant of this conversation' });
+    if (await blockedInDirect(conversationId, req.user.id)) return res.status(403).json({ message: 'You cannot message this user' });
 
     const type = messageTypeFor(req.file.mimetype, req.file.originalname);
     const url = `/uploads/chat/${req.file.filename}`;
     const clientId = cleanClientId(req.body.client_id);
-    if (clientId) { const dup = await existingByClient(req.user.id, clientId); if (dup) return res.status(200).json(dup); }
+    if (clientId) {
+      const dup = await existingByClient(req.user.id, clientId);
+      if (dup) return res.status(200).json(dup);
+    }
+
     let r;
     try {
       [r] = await pool.query(
@@ -158,9 +166,13 @@ router.post('/upload', upload.chat.single('file'), async (req, res) => {
           type === 'voice' && /^[0-9]{10,64}$/.test(String(req.body.voice_waveform || '')) ? String(req.body.voice_waveform) : null, clientId]
       );
     } catch (e) {
-      if (e.code === 'ER_DUP_ENTRY' && clientId) return res.status(200).json(await existingByClient(req.user.id, clientId));
+      if (e.code === 'ER_DUP_ENTRY' && clientId) {
+        const dup = await existingByClient(req.user.id, clientId);
+        if (dup) return res.status(200).json(dup);
+      }
       throw e;
     }
+    persisted = true;
     if (type === 'image' && String(req.body.view_once) === '1') await pool.query('UPDATE messages SET view_once = 1 WHERE id = ?', [r.insertId]);
     const replyTo = await validReplyTo(req.body.reply_to, conversationId);
     if (replyTo) await pool.query('UPDATE messages SET reply_to = ? WHERE id = ?', [replyTo, r.insertId]);
@@ -171,6 +183,12 @@ router.post('/upload', upload.chat.single('file'), async (req, res) => {
   } catch (err) {
     console.error('upload message:', err.message);
     res.status(500).json({ message: 'Could not send file' });
+  } finally {
+    if (req.file && !persisted) {
+      fs.promises.unlink(req.file.path).catch((e) => {
+        if (e.code !== 'ENOENT') console.warn('temporary upload cleanup:', e.message);
+      });
+    }
   }
 });
 
