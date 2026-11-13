@@ -67,7 +67,7 @@ const authorizePrivateUpload = (kind) => async (req, res, next) => {
     const user = await authenticateToken(raw);
     if (!user) return res.status(401).end();
     const filename = path.basename(req.path);
-    if (!filename || filename !== req.path.replace(/^\\/+/, '')) return res.status(404).end();
+    if (!filename || filename !== req.path.slice(1)) return res.status(404).end();
     const allowed = kind === 'chat'
       ? await canAccessChatMedia(filename, user.id)
       : await canAccessStoryMedia(filename, user.id);
