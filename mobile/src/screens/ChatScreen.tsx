@@ -272,12 +272,6 @@ export default function ChatScreen() {
     e2ee.ensureKeys(user.id, user.public_key).then(setMyKey).catch(() => {});
   }, [user?.id]);
   const encryptionOn = !inGroup && !!peerKey && !!myKey;
-  const requireDirectEncryption = () => {
-    if (inGroup || encryptionOn) return true;
-    Alert.alert('Encryption required', 'This direct conversation cannot send text until both participants have encryption keys configured. Try again after the keys are available.');
-    return false;
-  };
-
   // Always resolve the latest peer key and our local key before encrypting a direct message.
   const prepareEncryption = async (): Promise<{ isGroup: boolean; peerKey: string | null }> => {
     if (!conversationId) throw new Error('Conversation is not ready.');
