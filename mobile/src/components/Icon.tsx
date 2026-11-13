@@ -13,7 +13,7 @@ export type IconName =
   | 'edit' | 'trash' | 'messageCircle' | 'repeat' | 'share' | 'heart' | 'home' | 'mail' | 'checkCircle'
   | 'moreHorizontal' | 'sendFeather' | 'imageFeather'
   | 'homeFill' | 'heartFill' | 'bellFill' | 'mailFill' | 'userFill' | 'usersFill' | 'plus' | 'settings' | 'calendar' | 'mapPin'
-  | 'verified' | 'bookmark' | 'link' | 'trending' | 'composeFab' | 'x' | 'bubble' | 'sliders';
+  | 'verified' | 'bookmark' | 'link' | 'trending' | 'composeFab' | 'x' | 'bubble' | 'sliders' | 'flag' | 'archive';
 
 type Node = { t: 'p'; d: string; fill?: boolean } | { t: 'c'; cx: number; cy: number; r: number; fill?: boolean } | { t: 'r'; x: number; y: number; w: number; h: number; rx: number };
 const p = (d: string, fill = false): Node => ({ t: 'p', d, fill });
@@ -77,6 +77,8 @@ const ICONS: Record<IconName, Node[]> = {
   mapPin: [p('M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z'), c(12, 10, 3)],
   verified: [p('M12 2l2.4 1.7 2.9-.1 1 2.7 2.4 1.7-.9 2.8.9 2.8-2.4 1.7-1 2.7-2.9-.1L12 22l-2.4-1.7-2.9.1-1-2.7-2.4-1.7.9-2.8-.9-2.8 2.4-1.7 1-2.7 2.9.1z', true), p('M8.5 12.2l2.5 2.5 4.5-5')],
   bookmark: [p('M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z')],
+  flag: [p('M5 21V4m0 0c5-3 9 3 14 0v10c-5 3-9-3-14 0')],
+  archive: [p('M3 4h18v4H3zM5 8v12h14V8M10 12h4')],
   link: [p('M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7')],
   trending: [p('M23 6l-9.5 9.5-5-5L1 18M17 6h6v6')],
   composeFab: [p('M12 5v14M5 12h14')],
@@ -94,7 +96,7 @@ export interface IconProps {
   strokeWidth?: number;
 }
 
-export const Icon = ({ name, size = 24, color = '#2C2D3A', strokeWidth = 1.8 }: IconProps) => (
+export const Icon = ({ name, size = 24, color = '#62647A', strokeWidth = 1.8 }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     {ICONS[name].map((n, i) => {
       if (n.t === 'c') {
