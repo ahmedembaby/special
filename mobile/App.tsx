@@ -163,9 +163,9 @@ const MainTabs = () => {
       }}
     >
       <Tabs.Screen name="Home" component={HomeStackScreen} />
-      <Tabs.Screen name="Search" component={SearchScreen} />
+      <Tabs.Screen name="Search" component={SearchScreen} options={{ tabBarButton: () => null }} />
       <Tabs.Screen name="Notifications" component={NotificationsScreen} />
-      <Tabs.Screen name="Messages" component={MessagesStackScreen} />
+      <Tabs.Screen name="Messages" component={MessagesStackScreen} options={{ tabBarButton: () => null }} />
       <Tabs.Screen name="Groups" component={GroupsScreen} />
       <Tabs.Screen name="Profile" component={ProfileStackScreen} />
     </Tabs.Navigator>
