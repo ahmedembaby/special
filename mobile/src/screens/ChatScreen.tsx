@@ -750,19 +750,13 @@ export default function ChatScreen() {
   const forwardTo = async (target: api.Conversation) => {
     const list = forwardMsgs;
     if (!list.length) return;
-    const targetKey = target.type === 'direct' ? target.participants?.[0]?.public_key : null;
-    const hasText = list.some((m) => m.type === 'text' || !m.type);
-    if (target.type === 'direct' && hasText && (!myKey || !targetKey)) {
-      Alert.alert('Encryption required', 'Set up encryption keys for both accounts before forwarding text to a direct conversation.');
-      return;
-    }
     let sent = 0;
     for (const msg of [...list].sort((x, y) => new Date(x.created_at).getTime() - new Date(y.created_at).getTime())) {
       try {
         let content: string | undefined;
         if (msg.type === 'text' || !msg.type) {
           const plain = textOf(msg);
-          content = target.type === 'direct' ? e2ee.encrypt(targetKey!, plain) : plain;
+          content = plain;
         }
         await api.messages.forward(msg.id, [{ conversation_id: target.id, content }]);
         sent += 1;
