@@ -18,7 +18,7 @@ jobs:
           cache: npm
           cache-dependency-path: server/package-lock.json
       - name: Install server dependencies
-        run: npm ci --prefix server --no-audit --no-fund
+        run: npm install --prefix server --no-audit --no-fund
       - name: Check server JavaScript syntax
         run: |
           while IFS= read -r file; do
