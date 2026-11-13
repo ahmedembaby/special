@@ -475,10 +475,37 @@ export default function ChatScreen() {
 
   const sendMessage = async () => {
     const content = input.trim();
-    if (!content || sending || !requireDirectEncryption()) return;
+    if (!content || sending || !conversationId) return;
+
+    // Resolve keys at send time instead of relying on effects that may still be running
+    // when the user taps Send immediately after opening the conversation.
+    setSending(true);
+    let sendPeerKey = peerKey;
+    let sendInGroup = inGroup;
+    try {
+      if (!sendInGroup) {
+        if (!user?.id) throw new Error('Your account is not ready for encryption.');
+        await e2ee.ensureKeys(user.id, user.public_key);
+        const freshConversation = await api.conversations.get(conversationId);
+        sendInGroup = freshConversation.data.type === 'group';
+        if (!sendInGroup) {
+          const peer = freshConversation.data.participants?.find((p) => String(p.id) !== String(currentUserId));
+          sendPeerKey = peer?.public_key || null;
+          if (!sendPeerKey) {
+            throw new Error('The other participant has not configured encryption on their account yet. Ask them to open Special and try again.');
+          }
+        }
+        setInGroup(sendInGroup);
+        setPeerKey(sendPeerKey);
+      }
+    } catch (error) {
+      setSending(false);
+      Alert.alert('Encryption unavailable', (error as any)?.response?.data?.message || (error as Error)?.message || 'Could not prepare encryption keys. Check your connection and try again.');
+      return;
+    }
+
     const replying = replyTo;
     setReplyTo(null);
-    setSending(true);
     const clientId = newClientId();
     const tempId = `temp_${clientId}`;
     const createdAt = new Date().toISOString();
@@ -490,7 +517,7 @@ export default function ChatScreen() {
     setDraft(conversationId!, '');
     emitTyping(conversationId!, false);
 
-    const wire = encryptionOn ? e2ee.encrypt(peerKey!, content) : content;
+    const wire = sendInGroup ? content : e2ee.encrypt(sendPeerKey!, content);
     try {
       const res = await api.messages.send({ conversation_id: conversationId!, content: wire, reply_to: replying?.id, client_id: clientId });
       setMessages((prev) => {
