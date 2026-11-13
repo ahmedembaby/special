@@ -5,7 +5,7 @@ import { useI18n } from '../i18n';
 /** Pill-style segmented control ("For you" / "Following"). */
 export const TopTabs = ({ tabs, active, onChange }: { tabs: string[]; active: number; onChange: (i: number) => void }) => {
   const { c } = useAppColors();
-  const { t } = useI18n();
+  const { t: translate } = useI18n();
   return (
     <View style={[styles.row, { backgroundColor: c.inputBg }]}>
       {tabs.map((t, i) => (
@@ -15,7 +15,7 @@ export const TopTabs = ({ tabs, active, onChange }: { tabs: string[]; active: nu
           onPress={() => onChange(i)}
           activeOpacity={0.8}
         >
-          <Text style={[styles.label, { color: i === active ? c.primary : c.textSecondary, fontWeight: i === active ? '700' : '500' }]}>{t(tabs[i])}</Text>
+          <Text style={[styles.label, { color: i === active ? c.primary : c.textSecondary, fontWeight: i === active ? '700' : '500' }]}>{translate(t)}</Text>
         </TouchableOpacity>
       ))}
     </View>
