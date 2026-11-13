@@ -130,7 +130,8 @@ const MainTabs = () => {
           tabBarShowLabel: false,
           tabBarActiveTintColor: c.primary,
           tabBarInactiveTintColor: c.textMuted,
-          tabBarIconStyle: { width: 68, height: 50 },
+          tabBarItemStyle: { flex: 1, minWidth: 0, paddingHorizontal: 0 },
+          tabBarIconStyle: { width: '100%', height: 56, alignItems: 'center', justifyContent: 'center' },
           tabBarStyle: {
             display: hide ? 'none' : 'flex',
             backgroundColor: c.card,
@@ -138,8 +139,8 @@ const MainTabs = () => {
             borderTopColor: c.border,
             borderTopLeftRadius: 22,
             borderTopRightRadius: 22,
-            height: 68 + insets.bottom,
-            paddingTop: 6,
+            height: 72 + insets.bottom,
+            paddingTop: 7,
             paddingBottom: Math.max(insets.bottom, 6),
             shadowColor: '#000',
             shadowOpacity: darkMode ? 0.5 : 0.1,
@@ -151,11 +152,11 @@ const MainTabs = () => {
             const [off, on] = TAB_ICONS[route.name];
             const label = t(route.name === 'Messages' ? 'Messages' : route.name);
             return (
-              <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 48, gap: 3 }}>
-                <View style={{ width: 38, height: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? c.primaryLight : 'transparent' }}>
+              <View style={{ width: '100%', minWidth: 0, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                <View style={{ width: 40, height: 32, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? c.primaryLight : 'transparent' }}>
                   <Icon name={f ? on : off} size={21} color={color} strokeWidth={f ? 2.2 : 1.75} />
                 </View>
-                <Text numberOfLines={1} style={{ fontSize: 10, lineHeight: 13, fontWeight: f ? '700' : '500', color }}>{label}</Text>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={{ width: '100%', textAlign: 'center', fontSize: 10, lineHeight: 13, fontWeight: f ? '700' : '500', color }}>{label}</Text>
               </View>
             );
           },
