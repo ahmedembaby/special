@@ -1,7 +1,7 @@
 {
-  "name": "echat-server",
+  "name": "special-server",
   "version": "1.0.0",
-  "description": "E-Chat backend server with MySQL and Socket.io",
+  "description": "Special backend server with MySQL and Socket.io",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
