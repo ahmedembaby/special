@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  SafeAreaView, View, FlatList, ActivityIndicator, StatusBar, Platform, KeyboardAvoidingView, Alert, StyleSheet,
+  SafeAreaView, View, FlatList, ActivityIndicator, StatusBar, Platform, AppState, KeyboardAvoidingView, Alert, StyleSheet,
   TextInput, TouchableOpacity, Text, Image, Modal, PanResponder, ScrollView,
 } from 'react-native';
 import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
@@ -222,6 +222,13 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!isFocused && chatLocked) setChatUnlocked(false);
   }, [isFocused, chatLocked]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if ((state === 'inactive' || state === 'background') && chatLocked) setChatUnlocked(false);
+    });
+    return () => sub.remove();
+  }, [chatLocked]);
 
   const unlockChat = async () => {
     if (await authenticateBiometric('Unlock this conversation')) setChatUnlocked(true);
