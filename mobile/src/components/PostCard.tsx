@@ -125,7 +125,7 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
             <View style={{ flexDirection: 'row', gap: 14 }}>
               {!post.repost_of ? (
                 <TouchableOpacity onPress={() => { setDraft(content); setEditing(true); }} hitSlop={10}>
-                  <Text style={{ color: c.textSecondary, fontSize: 15 }}>✎</Text>
+                  <Icon name="edit" size={17} color={c.textSecondary} />
                 </TouchableOpacity>
               ) : null}
               <TouchableOpacity onPress={confirmDelete} hitSlop={10}>
@@ -134,7 +134,7 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
             </View>
           ) : (
             <TouchableOpacity onPress={() => setReport({ type: 'post', id: post.id })} hitSlop={10}>
-              <Text style={{ color: c.textSecondary, fontSize: 16 }}>⚑</Text>
+              <Icon name="flag" size={17} color={c.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
