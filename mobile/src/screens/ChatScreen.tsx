@@ -1789,7 +1789,7 @@ const makeStyles = (c: any, k: any) => {
     elevation: 3,
   },
   backWrap: { padding: 6 },
-  headerInfo: { flex: 1, marginLeft: 10 },
+  headerInfo: { flex: 1, minWidth: 0, marginLeft: 10, flexDirection: 'row', alignItems: 'center' },
   avatarWrap: { marginRight: 10 },
   avatar: {
     width: 42,
@@ -1800,7 +1800,7 @@ const makeStyles = (c: any, k: any) => {
     justifyContent: 'center',
   },
   avatarInitial: { fontSize: 14, fontWeight: '700' },
-  nameWrap: { flex: 1 },
+  nameWrap: { flex: 1, minWidth: 0 },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
