@@ -244,6 +244,19 @@ export default function ChatScreen() {
     try { await chatSecurity.setConversationLocked(conversationId, true); setChatLocked(true); setChatUnlocked(false); }
     catch { Alert.alert('Error', 'Could not enable the conversation lock on this device.'); }
   };
+  // Refresh the peer public key after a key-rotation event so the safety number is current.
+  // The user must still compare the updated number with the contact out of band.
+  useEffect(() => {
+    if (!conversationId || !header.userId) return undefined;
+    return onSocket('security_key_changed', (event: { userId?: string | number }) => {
+      if (String(event.userId) !== String(header.userId)) return;
+      api.conversations.get(conversationId).then((res) => {
+        const peer = res.data.participants?.find((p) => String(p.id) === String(header.userId));
+        setPeerKey(peer?.public_key || null);
+      }).catch(() => {});
+    });
+  }, [conversationId, header.userId]);
+
   // live online / last-seen of the other person (the server skips users who hide their status)
   useEffect(() => {
     if (!header.userId) return undefined;
