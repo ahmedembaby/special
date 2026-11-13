@@ -96,7 +96,7 @@ export interface IconProps {
   strokeWidth?: number;
 }
 
-export const Icon = ({ name, size = 24, color = '#62647A', strokeWidth = 1.8 }: IconProps) => (
+export const Icon = ({ name, size = 24, color = '#626B84', strokeWidth = 2 }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     {ICONS[name].map((n, i) => {
       if (n.t === 'c') {
