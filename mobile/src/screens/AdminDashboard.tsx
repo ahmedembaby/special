@@ -51,7 +51,7 @@ export default function AdminDashboard() {
           </TouchableOpacity>
         ))}
       </View>
-      {tab === 'overview' ? <Overview c={c} s={s} /> : tab === 'users' ? <Users c={c} s={s} /> : tab === 'reports' ? <Reports c={c} s={s} /> : tab === 'audit' ? <AuditLog c={c} s={s} /> : <Content c={c} s={s} />}
+      {tab === 'overview' ? <Overview c={c} s={s} t={t} /> : tab === 'users' ? <Users c={c} s={s} /> : tab === 'reports' ? <Reports c={c} s={s} /> : tab === 'audit' ? <AuditLog c={c} s={s} /> : <Content c={c} s={s} />}
     </SafeAreaView>
   );
 }
@@ -80,7 +80,7 @@ function Bars({ title, data, c, s }: { title: string; data: { date: string; coun
   );
 }
 
-function Overview({ c, s }: { c: any; s: any }) {
+function Overview({ c, s, t }: { c: any; s: any; t: (value: string) => string }) {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
