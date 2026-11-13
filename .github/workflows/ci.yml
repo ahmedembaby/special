@@ -2,14 +2,20 @@ name: CI
 
 on:
   push:
+    branches: [main, "chore/**", "fix/**"]
   pull_request:
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
   server:
+    name: Server checks
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,12 +23,36 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: server/package-lock.json
-      - name: Install server dependencies
-        run: npm install --prefix server --no-audit --no-fund
+      - name: Install server dependencies (lockfile reconciliation pending)
+        run: npm install --no-audit --no-fund
       - name: Check server JavaScript syntax
         run: |
-          while IFS= read -r file; do
-            node --check "$file"
-          done < <(git ls-files 'server/*.js' 'server/**/*.js')
-      - name: Run isolated server tests
-        run: npm test --prefix server
+          find . -path './node_modules' -prune -o -name '*.js' -type f -print0 | xargs -0 -r -n1 node --check
+      - name: Run server unit tests
+        run: npm test
+
+  mobile:
+    name: Mobile checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      # npm install reconciles the current mobile lockfile drift in the CI workspace.
+      - name: Install mobile dependencies
+        run: npm install --no-audit --no-fund
+      - name: Check Expo package compatibility
+        run: npx expo install --check
+      - name: Run Expo Doctor
+        run: npx expo-doctor@latest
+      - name: TypeScript baseline (known existing type errors; non-blocking)
+        run: npx tsc --noEmit
+        continue-on-error: true
+      - name: Export Android bundle
+        run: npx expo export --platform android
