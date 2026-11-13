@@ -91,7 +91,7 @@ export default function ChatsScreen() {
               <TouchableOpacity onPress={() => setShowArchived((v) => !v)} style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
                 <Text style={{ color: c.primary, fontWeight: '700' }}>{showArchived ? '← Back to chats' : `🗂 Archived (${archivedCount})`}</Text>
               </TouchableOpacity>
-            ) : null
+            ) : undefined
           }
           keyExtractor={(i) => String(i.id)}
           refreshing={refreshing}

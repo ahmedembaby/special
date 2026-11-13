@@ -25,9 +25,10 @@ type Phase = 'idle' | 'calling' | 'ringing' | 'connecting' | 'active';
 export interface CallPeer { id: string | number; name: string; avatar?: string | null }
 
 interface CallApi {
+  available: boolean;
   start: (peer: CallPeer, type: CallType) => Promise<void>;
 }
-const Ctx = createContext<CallApi>({ start: async () => {} });
+const Ctx = createContext<CallApi>({ available: webrtcReady(), start: async () => {} });
 export const useCall = () => useContext(Ctx);
 
 export const CallProvider = ({ children }: { children: React.ReactNode }) => {
@@ -168,6 +169,7 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user?.id) return undefined;
     const offs = [
       onSocket('call:incoming', (d: any) => {
+        if (!webrtcReady()) { getSocket()?.emit('call:reject', { callId: d.callId }); return; }
         if (phaseRef.current !== 'idle') { getSocket()?.emit('call:reject', { callId: d.callId }); return; }
         callIdRef.current = d.callId;
         incomingOffer.current = d.offer;
@@ -220,7 +222,8 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
   };
   const flipCam = () => localRef.current?.getVideoTracks().forEach((t: any) => t._switchCamera && t._switchCamera());
 
-  const value = useMemo(() => ({ start }), [start]);
+  const available = webrtcReady();
+  const value = useMemo(() => ({ available, start }), [available, start]);
   const mmss = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
   const RTCView = RTC?.RTCView;
   const statusText = phase === 'calling' ? 'Calling…' : phase === 'ringing' ? (type === 'video' ? 'Incoming video call' : 'Incoming voice call') : phase === 'connecting' ? 'Connecting…' : mmss;

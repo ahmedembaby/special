@@ -9,6 +9,7 @@ const { isBlockedBetween } = require('../utils/blocks');
 const { isParticipant, participantIds, MESSAGE_SELECT, visible, attachReactions, getMessage } = require('../services/chat');
 const { toInt } = require('../utils/format');
 const { getPreview } = require('../services/linkpreview');
+const { isEncrypted, requiresEncryption } = require('../utils/e2ee');
 
 const router = express.Router();
 
@@ -20,7 +21,6 @@ const messageTypeFor = (mime = '', name = '') => {
   return 'file';
 };
 
-const isEncrypted = (c) => typeof c === 'string' && c.startsWith('e2ee:');
 const preview = (msg) => (msg.type === 'text' ? (isEncrypted(msg.content) ? '🔒 New message' : msg.content) : msg.type === 'image' ? '📷 Photo' : msg.type === 'voice' ? '🎤 Voice message' : msg.type === 'poll' ? '📊 Poll' : '📎 File');
 
 // Saves the message, fans it out over sockets and sends push to people who are not connected
@@ -61,6 +61,11 @@ const readReceiptsOn = async (userId) => { const [r] = await pool.query('SELECT 
 const pushAllowedIds = (ids) => pushAllowed(ids, 'message');
 
 // direct conversations: no messages when either side blocked the other, or the receiver limited who can write to them
+async function requiresEncryptedDirect(conversationId, content) {
+  const [rows] = await pool.query('SELECT type FROM conversations WHERE id = ?', [conversationId]);
+  return requiresEncryption(rows[0]?.type, content);
+}
+
 async function blockedInDirect(conversationId, userId) {
   const [c] = await pool.query("SELECT type FROM conversations WHERE id = ?", [conversationId]);
   if (!c[0] || c[0].type !== 'direct') return false;
@@ -115,6 +120,7 @@ router.post('/', async (req, res) => {
     if (content.length > 5000) return res.status(400).json({ message: 'Message is too long' });
     if (!(await isParticipant(conversationId, req.user.id))) return res.status(403).json({ message: 'Not a participant of this conversation' });
     if (await blockedInDirect(conversationId, req.user.id)) return res.status(403).json({ message: 'You cannot message this user' });
+    if (await requiresEncryptedDirect(conversationId, content)) return res.status(409).json({ message: 'Direct text messages require end-to-end encryption. Configure keys on both accounts first.' });
 
     // retried sends (offline queue) carry a client_id: the same message is never stored twice
     const clientId = cleanClientId(req.body.client_id);
@@ -380,6 +386,7 @@ router.post('/poll', async (req, res) => {
     if (!conversationId || !question || options.length < 2) return res.status(400).json({ message: 'A question and at least 2 options are required' });
     if (!(await isParticipant(conversationId, req.user.id))) return res.status(403).json({ message: 'Not a participant of this conversation' });
     if (await blockedInDirect(conversationId, req.user.id)) return res.status(403).json({ message: 'You cannot message this user' });
+    if (await requiresEncryptedDirect(conversationId, question)) return res.status(409).json({ message: 'Polls are disabled in direct conversations until structured-message encryption is supported.' });
     const [r] = await pool.query("INSERT INTO messages (conversation_id, sender_id, content, type, status) VALUES (?, ?, ?, 'poll', 'sent')", [conversationId, req.user.id, question]);
     for (let i = 0; i < options.length; i++) await pool.query('INSERT INTO chat_poll_options (message_id, text, position) VALUES (?, ?, ?)', [r.insertId, options[i], i]);
     await applyExpiry(r.insertId, conversationId);
@@ -490,6 +497,7 @@ router.put('/:id', async (req, res) => {
     if (error) return fail(res, error);
     if (message.sender_id !== req.user.id) return res.status(403).json({ message: 'You can only edit your own messages' });
     if (message.type !== 'text') return res.status(400).json({ message: 'Only text messages can be edited' });
+    if (await requiresEncryptedDirect(message.conversation_id, content)) return res.status(409).json({ message: 'Direct text messages require end-to-end encryption.' });
     await pool.query('UPDATE messages SET content = ?, edited_at = NOW() WHERE id = ?', [content, message.id]);
     const updated = await getMessage(message.id, req.user.id);
     rt.emitToConversation(message.conversation_id, 'message_edited', { message_id: message.id, conversation_id: message.conversation_id, message: updated });
@@ -528,6 +536,7 @@ router.post('/schedule', async (req, res) => {
     if (when.getTime() < Date.now() + 20 * 1000) return res.status(400).json({ message: 'Choose a time in the future' });
     if (when.getTime() > Date.now() + 365 * 86400 * 1000) return res.status(400).json({ message: 'Too far in the future' });
     if (!(await isParticipant(conversationId, req.user.id))) return res.status(403).json({ message: 'Not a participant of this conversation' });
+    if (await requiresEncryptedDirect(conversationId, content)) return res.status(409).json({ message: 'Direct scheduled text messages require end-to-end encryption.' });
     const [[cnt]] = await pool.query('SELECT COUNT(*) AS c FROM scheduled_messages WHERE user_id = ?', [req.user.id]);
     if (cnt.c >= 50) return res.status(400).json({ message: 'Too many scheduled messages' });
     const [r] = await pool.query('INSERT INTO scheduled_messages (user_id, conversation_id, content, send_at) VALUES (?, ?, ?, ?)', [req.user.id, conversationId, content, when]);
@@ -564,6 +573,7 @@ async function processScheduled() {
     if (!del.affectedRows) continue; // another instance took it
     try {
       if (!(await isParticipant(s.conversation_id, s.user_id)) || (await blockedInDirect(s.conversation_id, s.user_id))) continue;
+      if (await requiresEncryptedDirect(s.conversation_id, s.content)) { console.warn('scheduled send: dropped plaintext direct message', s.id); continue; }
       const [r] = await pool.query("INSERT INTO messages (conversation_id, sender_id, content, type, status) VALUES (?, ?, ?, 'text', 'sent')", [s.conversation_id, s.user_id, s.content]);
       await applyExpiry(r.insertId, s.conversation_id);
       const sender = await loadSender(s.user_id);
@@ -609,22 +619,29 @@ router.post('/:id/forward', async (req, res) => {
     const src = rows[0];
     const targets = (Array.isArray(req.body.targets) ? req.body.targets : []).slice(0, 10);
     if (!targets.length) return res.status(400).json({ message: 'No target conversations' });
-    const sender = await loadSender(req.user.id);
-    const sent = [];
+    const prepared = [];
     for (const t of targets) {
       const convId = Number(t.conversation_id);
       if (!convId || !(await isParticipant(convId, req.user.id))) continue;
       let content = src.content;
       if (src.type === 'text') {
         content = String(t.content || '').trim() || (isEncrypted(src.content) ? '' : src.content);
-        if (!content) continue; // encrypted text needs a client-supplied re-encryption
+        if (!content) continue; // encrypted text needs client-side re-encryption
+        if (await requiresEncryptedDirect(convId, content)) {
+          return res.status(409).json({ message: 'Text forwarded to a direct conversation must be encrypted for that recipient.' });
+        }
       }
+      prepared.push({ conversationId: convId, content });
+    }
+    const sender = await loadSender(req.user.id);
+    const sent = [];
+    for (const target of prepared) {
       const [r] = await pool.query(
         `INSERT INTO messages (conversation_id, sender_id, content, type, file_url, file_name, file_size, voice_duration, voice_waveform, status, forwarded)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'sent', 1)`,
-        [convId, req.user.id, content, src.type, src.file_url, src.file_name, src.file_size, src.voice_duration, src.voice_waveform]
+        [target.conversationId, req.user.id, target.content, src.type, src.file_url, src.file_name, src.file_size, src.voice_duration, src.voice_waveform]
       );
-      await applyExpiry(r.insertId, convId);
+      await applyExpiry(r.insertId, target.conversationId);
       const m = await getMessage(r.insertId, req.user.id);
       deliver(m, sender).catch((e) => console.warn('deliver:', e.message));
       sent.push(m);

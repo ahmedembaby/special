@@ -14,6 +14,7 @@ Module._load = function (request, ...rest) {
 const { extractMentions, extractHashtags } = require('../utils/mentions');
 const { notBlocked } = require('../utils/blocks');
 const { toInt } = require('../utils/format');
+const { isEncrypted, requiresEncryption } = require('../utils/e2ee');
 
 test('mentions: finds unique @usernames, ignores emails', () => {
   assert.deepStrictEqual(extractMentions('hi @Ahmed_1 and @sara, mail me a@b.com @Ahmed_1'), ['ahmed_1', 'sara']);
@@ -61,4 +62,16 @@ test('link preview refuses private / loopback addresses', () => {
   const { isPrivateIp } = require('../services/linkpreview');
   for (const ip of ['127.0.0.1', '10.0.0.5', '192.168.1.18', '172.16.3.4', '169.254.1.1', '::1', 'fd00::1', '::ffff:10.0.0.1']) assert.equal(isPrivateIp(ip), true, ip);
   for (const ip of ['8.8.8.8', '93.184.216.34', '2606:4700:4700::1111']) assert.equal(isPrivateIp(ip), false, ip);
+});
+
+
+test('direct text messages require a valid E2EE envelope', () => {
+  const ciphertext = 'e2ee:v1:' + 'A'.repeat(56);
+  assert.strictEqual(isEncrypted(ciphertext), true);
+  assert.strictEqual(isEncrypted('plain text'), false);
+  assert.strictEqual(isEncrypted('e2ee:v1:short'), false);
+  assert.strictEqual(isEncrypted('e2ee:v1:' + '!'.repeat(60)), false);
+  assert.strictEqual(requiresEncryption('direct', 'plain text'), true);
+  assert.strictEqual(requiresEncryption('direct', ciphertext), false);
+  assert.strictEqual(requiresEncryption('group', 'plain text'), false);
 });

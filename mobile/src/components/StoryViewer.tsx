@@ -141,7 +141,7 @@ export const StoryViewer = ({ groups: initial, startGroup, meId, onClose }: Prop
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
-  touch: { ...StyleSheet.absoluteFillObject, flexDirection: 'row', top: 120, bottom: 90 },
+  touch: { ...StyleSheet.absoluteFill, flexDirection: 'row', top: 120, bottom: 90 },
   top: { position: 'absolute', top: Platform.OS === 'ios' ? 54 : 34, left: 10, right: 10 },
   bars: { flexDirection: 'row', gap: 4 },
   barBg: { flex: 1, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.35)', overflow: 'hidden' },

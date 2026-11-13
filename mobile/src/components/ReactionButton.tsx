@@ -29,12 +29,12 @@ const HEART = REACTIONS[0];
  * Tap: heart on/off (a reaction you already gave is removed). Long press: pick a reaction.
  */
 export const ReactionButton = ({ state, onReact, color, likedColor, size = 18, textStyle, hideCount, onCountPress }: Props) => {
-  const ref = useRef<View>(null);
+  const ref = useRef<any>(null);
   const { width } = useWindowDimensions();
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
 
   const open = () => {
-    ref.current?.measureInWindow((x, y) => setPos({ x, y }));
+    ref.current?.measureInWindow((x: number, y: number) => setPos({ x, y }));
   };
   const pick = (emoji: string) => { setPos(null); onReact(emoji); };
 

@@ -15,7 +15,7 @@ export default function ProfileEditScreen() {
   const { user, updateUser } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [bio, setBio] = useState((user as any)?.bio || '');
-  const [avatar, setAvatar] = useState<string | undefined>(user?.avatar);
+  const [avatar, setAvatar] = useState<string | undefined>(user?.avatar ?? undefined);
   const [uploading, setUploading] = useState(false);
 
   const pick = async () => {
