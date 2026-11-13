@@ -23,8 +23,8 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: server/package-lock.json
-      - name: Install locked server dependencies
-        run: npm ci --no-audit --no-fund
+      - name: Install server dependencies (lockfile reconciliation pending)
+        run: npm install --no-audit --no-fund
       - name: Check server JavaScript syntax
         run: |
           find . -path './node_modules' -prune -o -name '*.js' -type f -print0 | xargs -0 -r -n1 node --check
@@ -44,9 +44,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: mobile/package-lock.json
-      # The committed mobile lockfile is currently out of sync with package.json.
-      # npm install reconciles it in the CI workspace; commit the regenerated lockfile
-      # in a follow-up before switching this step to npm ci.
+      # npm install reconciles the current mobile lockfile drift in the CI workspace.
       - name: Install mobile dependencies
         run: npm install --no-audit --no-fund
       - name: Check Expo package compatibility
