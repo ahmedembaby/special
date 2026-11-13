@@ -35,3 +35,10 @@ The integration guide says calls require a native development build and WebRTC, 
 ## Scope and limitations
 
 This review did not change the database schema, production secrets, or live deployment configuration. CI tests and static checks do not replace a security assessment, dependency audit, penetration test, or device testing.
+
+## Follow-up hardening and automated MySQL coverage
+
+- Chat and story media downloads require a valid session plus resource-level authorization. Chat media is limited to conversation participants and respects expiry and per-user deletion; story media follows public/private visibility, follower, ban and block rules.
+- Private media responses use `Cache-Control: private, no-store`; unknown resources return 404 to avoid disclosing file existence.
+- CI provisions a disposable MySQL 8.4 service and runs integration checks against `special_test_ci`. The integration test refuses to run unless `DB_NAME` uses the `special_test_*` prefix and `NODE_ENV` is not production.
+- The checks cover database initialization, participant-scoped media access, story visibility, and block enforcement. They do not replace production penetration testing or a migration rehearsal against a production copy.
