@@ -109,7 +109,7 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
     <TouchableOpacity
       activeOpacity={onPress ? 0.7 : 1}
       onPress={() => onPress?.(post)}
-      style={[styles.card, { backgroundColor: c.card, shadowColor: c.shadow }]}
+      style={[styles.card, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]}
     >
       <Avatar source={post.user.avatar} name={post.user.name} size={44} userId={post.user.id} />
       <View style={styles.body}>
@@ -125,7 +125,7 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
             <View style={{ flexDirection: 'row', gap: 14 }}>
               {!post.repost_of ? (
                 <TouchableOpacity onPress={() => { setDraft(content); setEditing(true); }} hitSlop={10}>
-                  <Text style={{ color: c.textSecondary, fontSize: 15 }}>✎</Text>
+                  <Icon name="edit" size={17} color={c.textSecondary} />
                 </TouchableOpacity>
               ) : null}
               <TouchableOpacity onPress={confirmDelete} hitSlop={10}>
@@ -134,7 +134,7 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
             </View>
           ) : (
             <TouchableOpacity onPress={() => setReport({ type: 'post', id: post.id })} hitSlop={10}>
-              <Text style={{ color: c.textSecondary, fontSize: 16 }}>⚑</Text>
+              <Icon name="flag" size={17} color={c.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -233,7 +233,7 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
 };
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', marginHorizontal: 14, marginTop: 12, paddingHorizontal: 14, paddingVertical: 14, borderRadius: 22, gap: 12, shadowOpacity: 1, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  card: { flexDirection: 'row', marginHorizontal: 14, marginTop: 10, paddingHorizontal: 14, paddingVertical: 14, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, gap: 12, shadowOpacity: 0.3, shadowRadius: 9, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
   body: { flex: 1 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   nameRow: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 3 },

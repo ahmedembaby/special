@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, BorderRadius, Spacing, Typography } from '../theme/index';
+import { Spacing, Typography } from '../theme';
 import { useAppColors } from '../theme/useAppColors';
+import { useI18n } from '../i18n';
 import { Icon, IconName } from './Icon';
 
 interface HeaderProps {
@@ -14,35 +15,28 @@ interface HeaderProps {
 }
 
 export const Header = ({ title, subtitle, onBack, onRightPress, rightIcon = 'search', rightText }: HeaderProps) => {
-  const { c, isDark } = useAppColors();
+  const { c } = useAppColors();
+  const { lang } = useI18n();
   const insets = useSafeAreaInsets();
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + 12, backgroundColor: c.background, borderBottomColor: c.border },
-      ]}
-    >
+    <View style={[
+      styles.container,
+      { paddingTop: insets.top + 8, backgroundColor: c.headerBg, borderBottomColor: c.border },
+    ]}>
       {onBack ? (
-        <TouchableOpacity style={styles.back} onPress={onBack} activeOpacity={0.7}>
-          <Icon name="arrowLeft" size={24} color={c.primary} />
+        <TouchableOpacity style={styles.iconButton} onPress={onBack} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={lang === "ar" ? "رجوع" : "Go back"}>
+          <Icon name={lang === 'ar' ? 'arrowRight' : 'arrowLeft'} size={21} color={c.text} />
         </TouchableOpacity>
       ) : null}
       <View style={styles.titleWrap}>
-        <Text style={[styles.title, { color: c.text }]} numberOfLines={1}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={[styles.subtitle, { color: c.textSecondary }]} numberOfLines={1}>
-            {subtitle}
-          </Text>
-        ) : null}
+        <Text style={[styles.title, { color: c.text }]} numberOfLines={1}>{title}</Text>
+        {subtitle ? <Text style={[styles.subtitle, { color: c.textSecondary }]} numberOfLines={1}>{subtitle}</Text> : null}
       </View>
       {onRightPress ? (
-        <TouchableOpacity style={styles.right} onPress={onRightPress} activeOpacity={0.7}>
-          {rightIcon ? <Icon name={rightIcon} size={22} color={c.primary} /> : null}
-          {rightText ? <Text style={[styles.rightText, { color: c.textSecondary }]}>{rightText}</Text> : null}
+        <TouchableOpacity style={styles.iconButton} onPress={onRightPress} activeOpacity={0.7} accessibilityRole="button">
+          {rightIcon ? <Icon name={rightIcon} size={21} color={c.text} /> : null}
+          {rightText ? <Text style={[styles.rightText, { color: c.primary }]}>{rightText}</Text> : null}
         </TouchableOpacity>
       ) : null}
     </View>
@@ -53,21 +47,17 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: 14,
-    height: 56,
-    borderBottomWidth: 1,
-    elevation: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: 12,
+    minHeight: 64,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  back: { padding: 8, marginRight: 4 },
-  backText: { fontSize: 24, color: Colors.light.text },
-  titleWrap: { flex: 1 },
-  title: { ...Typography.screenTitle, color: '#1B1730' },
-  subtitle: { ...Typography.bodySmall, color: '#5E5A78', marginTop: 2 },
-  right: { padding: 8 },
-  rightText: { fontSize: 12, fontWeight: '600' },
+  iconButton: {
+    minWidth: 40, minHeight: 40, padding: 8, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  titleWrap: { flex: 1, paddingHorizontal: 8 },
+  title: { ...Typography.screenTitle, fontSize: 20 },
+  subtitle: { ...Typography.bodySmall, marginTop: 2 },
+  rightText: { fontSize: 13, fontWeight: '700' },
 });

@@ -4,7 +4,7 @@ import { NavigationContainer, DefaultTheme, DarkTheme, getFocusedRouteNameFromRo
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet, Alert, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Alert, Platform } from 'react-native';
 import * as ScreenCapture from 'expo-screen-capture';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -48,7 +48,7 @@ import KeyBackupScreen from './src/screens/KeyBackupScreen';
 import PrivacySettingsScreen from './src/screens/PrivacySettingsScreen';
 import StarredScreen from './src/screens/StarredScreen';
 import GlobalSearchScreen from './src/screens/GlobalSearchScreen';
-import { I18nProvider } from './src/i18n';
+import { I18nProvider, useI18n } from './src/i18n';
 import BlockedUsersScreen from './src/screens/BlockedUsersScreen';
 import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
 import HashtagScreen from './src/screens/HashtagScreen';
@@ -117,6 +117,7 @@ const HIDE_TABBAR = ['Chat', 'GroupChat', 'ContactScreen', 'PostDetail', 'Profil
 
 const MainTabs = () => {
   const { darkMode } = useThemeSettings();
+  const { t } = useI18n();
   const c = darkMode ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
   return (
@@ -129,14 +130,17 @@ const MainTabs = () => {
           tabBarShowLabel: false,
           tabBarActiveTintColor: c.primary,
           tabBarInactiveTintColor: c.textMuted,
+          tabBarIconStyle: { width: 68, height: 50 },
           tabBarStyle: {
             display: hide ? 'none' : 'flex',
             backgroundColor: c.card,
-            borderTopWidth: 0,
-            borderTopLeftRadius: 26,
-            borderTopRightRadius: 26,
-            height: 58 + insets.bottom,
-            paddingTop: 8,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: c.border,
+            borderTopLeftRadius: 22,
+            borderTopRightRadius: 22,
+            height: 68 + insets.bottom,
+            paddingTop: 6,
+            paddingBottom: Math.max(insets.bottom, 6),
             shadowColor: '#000',
             shadowOpacity: darkMode ? 0.5 : 0.1,
             shadowRadius: 14,
@@ -145,7 +149,15 @@ const MainTabs = () => {
           },
           tabBarIcon: ({ focused: f, color }: { focused: boolean; color: string }) => {
             const [off, on] = TAB_ICONS[route.name];
-            return <Icon name={f ? on : off} size={26} color={color} strokeWidth={f ? 2.3 : 1.8} />;
+            const label = t(route.name === 'Messages' ? 'Messages' : route.name);
+            return (
+              <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 48, gap: 3 }}>
+                <View style={{ width: 38, height: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? c.primaryLight : 'transparent' }}>
+                  <Icon name={f ? on : off} size={21} color={color} strokeWidth={f ? 2.2 : 1.75} />
+                </View>
+                <Text numberOfLines={1} style={{ fontSize: 10, lineHeight: 13, fontWeight: f ? '700' : '500', color }}>{label}</Text>
+              </View>
+            );
           },
         };
       }}

@@ -41,11 +41,11 @@ export const ChatItem = ({ item, onPress, draft }: ChatItemProps) => {
   const handle = item.type === 'group' ? null : participant.username ? `@${participant.username}` : null;
 
   return (
-    <TouchableOpacity style={[styles.item, { backgroundColor: c.card, shadowColor: c.shadow }]} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity style={[styles.item, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]} onPress={onPress} activeOpacity={0.7}>
       <Avatar
         source={item.type === 'group' ? item.avatar : participant.avatar}
         name={name}
-        size={48}
+        size={52}
         status={item.type === 'group' ? undefined : participant.status}
         userId={item.type === 'group' ? undefined : participant.id}
       />
@@ -74,11 +74,11 @@ export const ChatItem = ({ item, onPress, draft }: ChatItemProps) => {
 };
 
 const styles = StyleSheet.create({
-  item: { flexDirection: 'row', marginHorizontal: 14, marginTop: 10, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 20, alignItems: 'center', gap: 12, shadowOpacity: 1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
+  item: { flexDirection: 'row', marginHorizontal: 14, marginTop: 8, paddingHorizontal: 14, paddingVertical: 13, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', gap: 13, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   body: { flex: 1 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
-  name: { fontSize: 15, fontWeight: '800', flexShrink: 1 },
+  name: { fontSize: 15, fontWeight: '700', flexShrink: 1 },
   handle: { fontSize: 14, flexShrink: 2 },
   bottom: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   badge: { minWidth: 22, height: 22, borderRadius: 8, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' },

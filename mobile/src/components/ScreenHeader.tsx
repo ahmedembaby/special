@@ -1,6 +1,8 @@
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '../theme/useAppColors';
+import { useI18n } from '../i18n';
 import { Icon, IconName } from './Icon';
 import { Avatar } from './Avatar';
 
@@ -8,11 +10,9 @@ interface Props {
   title?: string;
   subtitle?: string;
   onBack?: () => void;
-  /** show the user's avatar on the left (opens profile) */
   avatarUri?: string | null;
   avatarName?: string;
   onAvatarPress?: () => void;
-  /** show app logo in the center instead of a title */
   logo?: boolean;
   rightIcon?: IconName;
   onRightPress?: () => void;
@@ -20,26 +20,27 @@ interface Props {
   children?: React.ReactNode;
 }
 
-/** X-style top bar: avatar / back on the left, title or logo in the middle, action on the right. */
+/** Shared top bar for social and messaging screens. */
 export const ScreenHeader = (p: Props) => {
   const { c } = useAppColors();
+  const { lang, t } = useI18n();
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ backgroundColor: c.background, paddingTop: insets.top }}>
+    <View style={{ backgroundColor: c.headerBg, paddingTop: insets.top, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }}>
       <View style={styles.row}>
         <View style={styles.side}>
           {p.onBack ? (
-            <TouchableOpacity onPress={p.onBack} hitSlop={10} style={styles.iconBtn}>
-              <Icon name="arrowLeft" size={22} color={c.text} />
+            <TouchableOpacity onPress={p.onBack} hitSlop={10} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t("Go back")}>
+              <Icon name={lang === 'ar' ? 'arrowRight' : 'arrowLeft'} size={21} color={c.text} />
             </TouchableOpacity>
           ) : p.onAvatarPress ? (
-            <Avatar source={p.avatarUri} name={p.avatarName} size={32} onPress={p.onAvatarPress} />
+            <Avatar source={p.avatarUri} name={p.avatarName} size={34} onPress={p.onAvatarPress} />
           ) : null}
         </View>
-        <View style={[styles.center, p.logo ? { flexDirection: 'row', justifyContent: 'flex-start', gap: 8 } : null]}>
+        <View style={[styles.center, p.logo ? styles.logoCenter : null]}>
           {p.logo ? (
             <>
-              <View style={[styles.logoDot, { backgroundColor: c.primary }]}><Icon name="bubble" size={18} color="#FFFFFF" strokeWidth={2.2} /></View>
+              <View style={[styles.logoDot, { backgroundColor: c.primary }]}><Icon name="bubble" size={18} color="#FFFFFF" strokeWidth={2.1} /></View>
               <Text style={[styles.title, { color: c.text }]}>Special</Text>
             </>
           ) : (
@@ -51,12 +52,12 @@ export const ScreenHeader = (p: Props) => {
         </View>
         <View style={[styles.side, { alignItems: 'flex-end' }]}>
           {p.rightIcon ? (
-            <TouchableOpacity onPress={p.onRightPress} hitSlop={10} style={styles.iconBtn}>
-              <Icon name={p.rightIcon} size={22} color={c.text} />
+            <TouchableOpacity onPress={p.onRightPress} hitSlop={10} style={styles.iconBtn} accessibilityRole="button">
+              <Icon name={p.rightIcon} size={21} color={c.text} />
             </TouchableOpacity>
           ) : p.rightText ? (
             <TouchableOpacity onPress={p.onRightPress} hitSlop={10}>
-              <Text style={{ color: c.primary, fontWeight: '700', fontSize: 15 }}>{p.rightText}</Text>
+              <Text style={{ color: c.primary, fontWeight: '700', fontSize: 14 }}>{p.rightText}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -67,11 +68,12 @@ export const ScreenHeader = (p: Props) => {
 };
 
 const styles = StyleSheet.create({
-  row: { height: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
-  side: { minWidth: 44, justifyContent: 'center' },
+  row: { minHeight: 54, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
+  side: { width: 42, justifyContent: 'center' },
   center: { flex: 1, alignItems: 'flex-start', justifyContent: 'center', paddingHorizontal: 8 },
-  logoDot: { width: 30, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
-  sub: { fontSize: 12, marginTop: 1 },
-  iconBtn: { padding: 8, borderRadius: 14 },
+  logoCenter: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: 9 },
+  logoDot: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 19, fontWeight: '700', letterSpacing: -0.35 },
+  sub: { fontSize: 12, marginTop: 2 },
+  iconBtn: { width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
 });
