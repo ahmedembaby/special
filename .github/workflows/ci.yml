@@ -12,6 +12,9 @@ permissions:
 jobs:
   lockfiles:
     name: Refresh npm lockfiles
+    concurrency:
+      group: lockfiles-${{ github.event.pull_request.head.ref || github.ref_name }}
+      cancel-in-progress: false
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -49,7 +52,16 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add server/package-lock.json mobile/package-lock.json
           git commit -m "chore: regenerate npm lockfiles"
-          git push origin "HEAD:$TARGET_BRANCH"
+          for attempt in 1 2 3; do
+            git fetch origin "$TARGET_BRANCH"
+            git rebase "origin/$TARGET_BRANCH"
+            if git push origin "HEAD:$TARGET_BRANCH"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Could not push regenerated lockfiles after three attempts."
+          exit 1
 
   server:
     needs: lockfiles
