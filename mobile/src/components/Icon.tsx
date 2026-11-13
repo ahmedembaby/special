@@ -2,8 +2,8 @@ import React from 'react';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 /**
- * Line-icon set (24x24 grid, 1.5 stroke) matching the "Solar" outline style
- * used by the E-Chat design. Add new icons to ICONS below.
+ * Flat vector interface icon set on a consistent 24x24 grid. Keep silhouettes
+ * simple, crisp, and consistent; use filled variants for selected navigation states.
  */
 export type IconName =
   | 'arrowLeft' | 'arrowRight' | 'chevronDown' | 'chevronRight' | 'close' | 'check' | 'checkRead'
