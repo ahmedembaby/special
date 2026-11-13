@@ -9,6 +9,7 @@ import { resolveUrl } from '../config';
 import { useAppColors } from '../theme/useAppColors';
 import { Icon } from '../components/Icon';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../i18n';
 
 type Tab = 'overview' | 'users' | 'content' | 'reports' | 'audit';
 type ContentKind = 'posts' | 'groups' | 'chats';
@@ -22,6 +23,7 @@ export default function AdminDashboard() {
   const navigation = useNavigation() as any;
   const { c, isDark } = useAppColors();
   const { user } = useAuth();
+  const { t, lang } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [tab, setTab] = useState<Tab>('overview');
 
@@ -35,17 +37,17 @@ export default function AdminDashboard() {
   return (
     <SafeAreaView style={[s.container, { backgroundColor: c.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <View style={[s.header, { borderBottomColor: c.border }]}>
+      <View style={[s.header, { borderBottomColor: c.border, flexDirection: lang === 'ar' ? 'row-reverse' : 'row' }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8} style={{ padding: 6 }}>
           <Icon name="arrowLeft" size={24} color={c.text} />
         </TouchableOpacity>
-        <Text style={[s.headerTitle, { color: c.text }]}>Admin dashboard</Text>
+        <Text style={[s.headerTitle, { color: c.text }]}>{t('Admin dashboard')}</Text>
       </View>
       <View style={[s.tabs, { borderBottomColor: c.border }]}>
-        {(['overview', 'users', 'content', 'reports', 'audit'] as Tab[]).map((t) => (
-          <TouchableOpacity key={t} style={s.tab} onPress={() => setTab(t)} activeOpacity={0.7}>
-            <Text style={{ color: tab === t ? c.primary : c.textSecondary, fontWeight: '800', textTransform: 'capitalize' }}>{t}</Text>
-            {tab === t ? <View style={[s.tabLine, { backgroundColor: c.primary }]} /> : null}
+        {(['overview', 'users', 'content', 'reports', 'audit'] as Tab[]).map((key) => (
+          <TouchableOpacity key={key} style={s.tab} onPress={() => setTab(key)} activeOpacity={0.7}>
+            <Text style={{ color: tab === key ? c.primary : c.textSecondary, fontWeight: '800', textTransform: 'capitalize' }}>{t(key.charAt(0).toUpperCase() + key.slice(1))}</Text>
+            {tab === key ? <View style={[s.tabLine, { backgroundColor: c.primary }]} /> : null}
           </TouchableOpacity>
         ))}
       </View>
@@ -139,7 +141,7 @@ function Overview({ c, s }: { c: any; s: any }) {
 
   const tiles: [string, any][] = [
     ['Users', stats?.totalUsers], ['Online', stats?.onlineUsers], ['New today', stats?.newUsersToday], ['Banned', stats?.bannedUsers],
-    ['Messages', stats?.totalMessages], ['Msgs today', stats?.messagesToday], ['Posts', stats?.totalPosts], ['Groups', stats?.totalGroups],
+    ['Messages', stats?.totalMessages], ['Messages today', stats?.messagesToday], ['Posts', stats?.totalPosts], ['Groups', stats?.totalGroups], ['Conversations', stats?.totalConversations], ['Open reports', stats?.openReports],
   ];
 
   return (
@@ -148,7 +150,7 @@ function Overview({ c, s }: { c: any; s: any }) {
         {tiles.map(([label, v]) => (
           <View key={label} style={[s.tile, { backgroundColor: c.surface }]}>
             <Text style={[s.tileValue, { color: c.text }]}>{v ?? 0}</Text>
-            <Text style={{ color: c.textSecondary, fontSize: 12 }}>{label}</Text>
+            <Text style={{ color: c.textSecondary, fontSize: 12 }}>{t(label)}</Text>
           </View>
         ))}
       </View>
