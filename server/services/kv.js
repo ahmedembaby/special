@@ -31,8 +31,10 @@ async function incr(key, ttlSec) {
   const ttl = Math.max(1, Number(ttlSec) || 1);
   if (redis.isReady()) {
     try {
-      const count = await redis.client.incr(key);
-      if (count === 1) await redis.client.expire(key, ttl);
+      const count = await redis.client.eval(
+        "local n = redis.call('INCR', KEYS[1]); if n == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]); end; return n",
+        1, key, ttl
+      );
       mem.delete(key);
       return count;
     } catch { /* fallback */ }

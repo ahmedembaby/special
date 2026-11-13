@@ -162,7 +162,13 @@ router.post('/upload', async (req, res, next) => {
     const type = messageTypeFor(req.file.mimetype, req.file.originalname);
     const url = `/uploads/chat/${req.file.filename}`;
     const clientId = cleanClientId(req.body.client_id);
-    if (clientId) { const dup = await existingByClient(req.user.id, clientId); if (dup) return res.status(200).json(dup); }
+    if (clientId) {
+      const dup = await existingByClient(req.user.id, clientId);
+      if (dup) {
+        await fs.unlink(req.file.path).catch(() => {});
+        return res.status(200).json(dup);
+      }
+    }
     let r;
     try {
       [r] = await pool.query(
@@ -172,7 +178,10 @@ router.post('/upload', async (req, res, next) => {
           type === 'voice' && /^[0-9]{10,64}$/.test(String(req.body.voice_waveform || '')) ? String(req.body.voice_waveform) : null, clientId]
       );
     } catch (e) {
-      if (e.code === 'ER_DUP_ENTRY' && clientId) return res.status(200).json(await existingByClient(req.user.id, clientId));
+      if (e.code === 'ER_DUP_ENTRY' && clientId) {
+        await fs.unlink(req.file.path).catch(() => {});
+        return res.status(200).json(await existingByClient(req.user.id, clientId));
+      }
       throw e;
     }
     if (type === 'image' && String(req.body.view_once) === '1') await pool.query('UPDATE messages SET view_once = 1 WHERE id = ?', [r.insertId]);
