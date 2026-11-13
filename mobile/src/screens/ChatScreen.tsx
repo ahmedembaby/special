@@ -160,7 +160,7 @@ export default function ChatScreen() {
   const [, setTick] = useState(0);
   const call = useCall();
 
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const currentUserId: string | number = user?.id ?? 'me';
   const isMine = (senderId: string | number | undefined) => String(senderId) === String(currentUserId);
 
@@ -281,6 +281,7 @@ export default function ChatScreen() {
     if (isGroup) return { isGroup: true, peerKey: null };
     if (!user?.id) throw new Error('Your account is not ready for encryption.');
     const ownKey = await e2ee.ensureKeys(user.id, user.public_key);
+    updateUser({ public_key: ownKey });
     const peer = freshConversation.data.participants?.find((p) => String(p.id) !== String(currentUserId));
     const publicKey = peer?.public_key || null;
     if (!publicKey) throw new Error('The other participant has not configured encryption on their account yet. Ask them to open Special and try again.');
