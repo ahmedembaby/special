@@ -9,6 +9,7 @@ const safeTestDatabase = /^special_test_[a-z0-9_]+$/i.test(dbName) && dbName.toL
 
 test('MySQL schema, foreign keys and private-media authorization', { skip: !enabled }, async () => {
   assert.ok(safeTestDatabase, 'DB_NAME must use the isolated special_test_* prefix');
+  assert.ok(['127.0.0.1', 'localhost', '::1'].includes(process.env.DB_HOST || 'localhost'), 'MySQL integration tests must use a local database host');
   assert.notEqual(process.env.NODE_ENV, 'production', 'integration tests must never run in production');
 
   const db = require('../db');
