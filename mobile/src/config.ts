@@ -1,16 +1,15 @@
-// The server address is fixed here on purpose (single place to change it).
-export const SERVER_IP = '192.168.1.18';
-export const SERVER_PORT = 5000;
-export const API_BASE = `http://${SERVER_IP}:${SERVER_PORT}`;
+const configuredBaseUrl = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
+if (process.env.NODE_ENV === 'production' && !configuredBaseUrl.startsWith('https://')) {
+  throw new Error('EXPO_PUBLIC_API_BASE_URL must use HTTPS in production');
+}
+export const API_BASE = configuredBaseUrl;
 export const API_URL = `${API_BASE}/api`;
 
-// chat media and stories are private on the server: they are served only with a valid session token
 let mediaToken: string | null = null;
-export const setMediaToken = (t: string | null) => { mediaToken = t; };
-
-export const resolveUrl = (u: string | null | undefined): string | null => {
-  if (!u) return null;
-  const full = /^(https?:|file:|data:)/.test(u) ? u : `${API_BASE}${u.startsWith('/') ? '' : '/'}${u}`;
+export const setMediaToken = (token: string | null) => { mediaToken = token; };
+export const resolveUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  const full = /^(https?:|file:|data:)/.test(url) ? url : `${API_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
   if (mediaToken && /\/uploads\/(chat|stories)\//.test(full) && !full.includes('?t=')) return `${full}?t=${encodeURIComponent(mediaToken)}`;
   return full;
 };

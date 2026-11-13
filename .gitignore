@@ -2,3 +2,13 @@ node_modules/
 .expo/
 .wwebjs_auth/
 .wwebjs_cache/
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.zip
+mobile/metro-log.txt
+server/uploads/*
+!server/uploads/.gitkeep

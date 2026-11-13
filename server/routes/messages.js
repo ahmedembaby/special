@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs/promises');
 const pool = require('../db');
 const upload = require('../middleware/upload');
 const rt = require('../services/realtime');
@@ -117,7 +118,10 @@ router.post('/', async (req, res) => {
 
     // retried sends (offline queue) carry a client_id: the same message is never stored twice
     const clientId = cleanClientId(req.body.client_id);
-    if (clientId) { const dup = await existingByClient(req.user.id, clientId); if (dup) return res.status(200).json(dup); }
+    if (clientId) {
+      const dup = await existingByClient(req.user.id, clientId);
+      if (dup) { await fs.unlink(req.file.path).catch(() => {}); return res.status(200).json(dup); }
+    }
     let r;
     try {
       [r] = await pool.query(
@@ -139,11 +143,21 @@ router.post('/', async (req, res) => {
 });
 
 // POST /api/messages/upload  multipart: conversation_id, file
-router.post('/upload', upload.chat.single('file'), async (req, res) => {
+router.post('/upload', async (req, res, next) => {
+  try {
+    const conversationId = Number(req.get('x-conversation-id'));
+    if (!Number.isSafeInteger(conversationId) || conversationId <= 0) return res.status(400).json({ message: 'x-conversation-id header is required' });
+    if (!(await isParticipant(conversationId, req.user.id))) return res.status(403).json({ message: 'Not a participant of this conversation' });
+    req.authorizedConversationId = conversationId;
+    upload.chat.single('file')(req, res, (err) => err ? next(err) : next());
+  } catch (err) { next(err); }
+}, async (req, res) => {
   try {
     const conversationId = Number(req.body.conversation_id);
-    if (!conversationId || !req.file) return res.status(400).json({ message: 'conversation_id and file are required' });
-    if (!(await isParticipant(conversationId, req.user.id))) return res.status(403).json({ message: 'Not a participant of this conversation' });
+    if (!conversationId || conversationId !== req.authorizedConversationId || !req.file) {
+      if (req.file?.path) await fs.unlink(req.file.path).catch(() => {});
+      return res.status(400).json({ message: 'conversation_id and file are required and must match the authorized conversation' });
+    }
 
     const type = messageTypeFor(req.file.mimetype, req.file.originalname);
     const url = `/uploads/chat/${req.file.filename}`;
@@ -169,6 +183,7 @@ router.post('/upload', upload.chat.single('file'), async (req, res) => {
     deliver(message, await loadSender(req.user.id)).catch((e) => console.warn('deliver:', e.message));
     res.status(201).json(message);
   } catch (err) {
+    if (req.file?.path) await fs.unlink(req.file.path).catch(() => {});
     console.error('upload message:', err.message);
     res.status(500).json({ message: 'Could not send file' });
   }

@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Check server JavaScript syntax
+        run: |
+          while IFS= read -r file; do
+            node --check "$file"
+          done < <(git ls-files 'server/*.js' 'server/**/*.js')
+      - name: Run isolated server tests
+        run: npm test --prefix server

@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../config';
 
 const api: AxiosInstance = axios.create({ baseURL: API_URL, timeout: 15000 });
@@ -10,7 +10,7 @@ export const setUnauthorizedHandler = (fn: () => void) => {
 };
 
 api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('echat_token');
+  const token = await SecureStore.getItemAsync('echat_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -191,7 +191,7 @@ export const users = {
   lookupPhones: (phones: string[]) => api.post<Array<User & { phone_tail: string }>>('/users/lookup-phones', { phones }),
   updateAvatar: (formData: FormData) =>
     api.put('/users/avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': 'multipart/form-data', 'X-Conversation-Id': String(data.conversation_id) },
       transformRequest: (data) => data,
     }),
 };

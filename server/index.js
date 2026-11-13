@@ -5,7 +5,6 @@ const path = require('path');
 const fs = require('fs');
 const { Server } = require('socket.io');
 const rateLimit = require('express-rate-limit');
-const { ipKeyGenerator } = require('express-rate-limit');
 
 const config = require('./config');
 const db = require('./db');
@@ -28,9 +27,11 @@ process.on('unhandledRejection', (e) => { console.error('unhandledRejection:', e
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: config.CLIENT_URL, methods: ['GET', 'POST'] },
-});
+const corsOrigin = (origin, callback) => {
+  if (!origin || config.CLIENT_ORIGINS.includes('*') || config.CLIENT_ORIGINS.includes(origin)) return callback(null, true);
+  return callback(new Error('Origin not allowed by CORS'));
+};
+const io = new Server(server, { cors: { origin: corsOrigin, methods: ['GET', 'POST'] } });
 rt.setIO(io);
 app.set('io', io);
 
@@ -47,7 +48,7 @@ if (redis.client) {
 }
 
 app.set('trust proxy', 1);
-app.use(cors());
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: '1mb' }));
 
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -70,7 +71,7 @@ app.use(['/uploads/chat', '/uploads/stories'], async (req, res, next) => {
 app.use('/uploads', express.static(uploadsDir, { fallthrough: true, index: false }));
 
 const limiter = (windowMs, max, extra = {}) => rateLimit({
-  windowMs, max, standardHeaders: true, legacyHeaders: false, keyGenerator: ipKeyGenerator,
+  windowMs, max, standardHeaders: true, legacyHeaders: false,
   message: { message: 'Too many requests, please try again later' }, ...extra,
 });
 const authLimiter = limiter(15 * 60 * 1000, 60);
