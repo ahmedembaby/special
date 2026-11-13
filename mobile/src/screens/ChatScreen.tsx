@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ScreenCapture from 'expo-screen-capture';
 import { Icon } from '../components/Icon';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
@@ -25,6 +26,8 @@ import { OptionSheet, SheetOption } from '../components/OptionSheet';
 import { ReportSheet, ReportTarget } from '../components/ReportSheet';
 import { Linking } from 'react-native';
 import { useCall } from '../context/CallContext';
+import { authenticateBiometric, biometricAvailable } from '../services/appLock';
+import * as chatSecurity from '../services/chatSecurity';
 
 const PAGE_SIZE = 50;
 
@@ -50,6 +53,7 @@ const removeReaction = (list: api.MessageReaction[] | undefined, userId: string 
     .filter((x) => x.count > 0);
 
 export default function ChatScreen() {
+  const isFocused = useIsFocused();
   const navigation = useNavigation() as any;
   const route = useRoute() as any;
   const { c, isDark } = useAppColors();
@@ -200,9 +204,7 @@ export default function ChatScreen() {
     if (!conversationId) { setChatLocked(false); setChatAccessReady(true); return; }
     chatSecurity.isConversationLocked(conversationId).then((enabled) => {
       if (!active) return;
-      setChatLocked(enabled);
-      setChatUnlocked(!enabled);
-      setChatAccessReady(true);
+      setChatLocked(enabled); setChatUnlocked(!enabled); setChatAccessReady(true);
     });
     return () => { active = false; };
   }, [conversationId]);
@@ -216,6 +218,10 @@ export default function ChatScreen() {
       if (Platform.OS === 'ios') ScreenCapture.disableAppSwitcherProtectionAsync().catch(() => {});
     };
   }, [isFocused]);
+
+  useEffect(() => {
+    if (!isFocused && chatLocked) setChatUnlocked(false);
+  }, [isFocused, chatLocked]);
 
   const unlockChat = async () => {
     if (await authenticateBiometric('Unlock this conversation')) setChatUnlocked(true);

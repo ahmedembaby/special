@@ -433,7 +433,7 @@ const TABLES = [
     FOREIGN KEY (option_id) REFERENCES chat_poll_options(id) ON DELETE CASCADE,
     FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
   `CREATE TABLE IF NOT EXISTS device_sessions (id CHAR(36) PRIMARY KEY, token_hash CHAR(64) DEFAULT NULL UNIQUE, user_id INT NOT NULL, device_name VARCHAR(120) NOT NULL DEFAULT 'Unknown device', platform VARCHAR(20) NOT NULL DEFAULT 'unknown', created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, last_active_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, expires_at DATETIME NOT NULL, revoked_at DATETIME DEFAULT NULL, INDEX idx_device_sessions_user (user_id, revoked_at, last_active_at), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
