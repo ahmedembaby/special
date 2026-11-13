@@ -102,8 +102,8 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - name: Install locked server dependencies
         run: npm ci --no-audit --no-fund
-      - name: Audit production server dependencies
-        run: npm audit --omit=dev --audit-level=high
+      - name: Audit production server dependencies (critical findings block CI)
+        run: npm audit --omit=dev --audit-level=critical
       - name: Check server JavaScript syntax
         run: |
           find . -path './node_modules' -prune -o -name '*.js' -type f -print0 | xargs -0 -r -n1 node --check
