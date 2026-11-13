@@ -191,7 +191,7 @@ export const users = {
   lookupPhones: (phones: string[]) => api.post<Array<User & { phone_tail: string }>>('/users/lookup-phones', { phones }),
   updateAvatar: (formData: FormData) =>
     api.put('/users/avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data', 'X-Conversation-Id': String(data.conversation_id) },
+      headers: { 'Content-Type': 'multipart/form-data' },
       transformRequest: (data) => data,
     }),
 };
@@ -229,7 +229,7 @@ export const messages = {
       name: data.file.name || 'image.jpg',
     } as any);
     return api.post<Message>('/messages/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': 'multipart/form-data', 'X-Conversation-Id': String(data.conversation_id) },
       transformRequest: (data) => data,
     });
   },
