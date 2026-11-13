@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "fix/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: JavaScript syntax
+        run: |
+          while IFS= read -r file; do node --check "$file"; done < <(find . -path './node_modules' -prune -o -name '*.js' -type f -print)
+      - run: npm test
