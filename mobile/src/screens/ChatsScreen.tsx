@@ -11,11 +11,13 @@ import { ChatItem, getChatName } from '../components/ChatItem';
 import { Icon } from '../components/Icon';
 import { onSocket } from '../services/socket';
 import { getDrafts } from '../services/chatPrefs';
+import { useI18n } from '../i18n';
 
 /** "Messages" tab — same data as before (your chat backend), restyled like X DMs. */
 export default function ChatsScreen() {
   const navigation = useNavigation() as any;
   const { c, isDark } = useAppColors();
+  const { t, lang } = useI18n();
   const me = useMe();
   const [conversations, setConversations] = useState<api.Conversation[]>([]);
   const [search, setSearch] = useState('');
@@ -84,12 +86,14 @@ export default function ChatsScreen() {
           data={filtered}
           ListHeaderComponent={
             search.trim().length >= 2 ? (
-              <TouchableOpacity onPress={() => navigation.navigate('GlobalSearch', { q: search.trim() })} style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
-                <Text style={{ color: c.primary, fontWeight: '700' }}>🔎 Search “{search.trim()}” in all messages</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('GlobalSearch', { q: search.trim() })} style={{ paddingHorizontal: 20, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+                <Icon name="search" size={17} color={c.primary} />
+                <Text style={{ color: c.primary, fontWeight: '700' }}>{t('Search')} “{search.trim()}” in all messages</Text>
               </TouchableOpacity>
             ) : archivedCount > 0 || showArchived ? (
-              <TouchableOpacity onPress={() => setShowArchived((v) => !v)} style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
-                <Text style={{ color: c.primary, fontWeight: '700' }}>{showArchived ? '← Back to chats' : `🗂 Archived (${archivedCount})`}</Text>
+              <TouchableOpacity onPress={() => setShowArchived((v) => !v)} style={{ paddingHorizontal: 20, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+                <Icon name={showArchived ? (lang === 'ar' ? 'arrowRight' : 'arrowLeft') : 'archive'} size={17} color={c.primary} />
+                <Text style={{ color: c.primary, fontWeight: '700' }}>{showArchived ? 'Back to chats' : `Archived (${archivedCount})`}</Text>
               </TouchableOpacity>
             ) : undefined
           }
