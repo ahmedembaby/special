@@ -14,7 +14,9 @@ export const SearchBar = ({ value, onChangeText, placeholder = 'Search', autoFoc
   const { c } = useAppColors();
   return (
     <View style={[styles.wrap, { backgroundColor: c.inputBg, borderColor: c.inputBorder }]}>
-      <Icon name="search" size={18} color={c.textMuted} />
+      <View style={[styles.iconWrap, { backgroundColor: c.primaryLight }]}>
+        <Icon name="search" size={16} color={c.primary} strokeWidth={2.1} />
+      </View>
       <TextInput
         style={[styles.input, { color: c.text }]}
         value={value}
@@ -28,10 +30,8 @@ export const SearchBar = ({ value, onChangeText, placeholder = 'Search', autoFoc
         autoCorrect={false}
       />
       {value ? (
-        <TouchableOpacity onPress={() => onChangeText('')} hitSlop={8}>
-          <View style={[styles.clear, { backgroundColor: c.primary }]}>
-            <Icon name="x" size={11} color="#FFFFFF" strokeWidth={2.5} />
-          </View>
+        <TouchableOpacity onPress={() => onChangeText('')} hitSlop={8} style={[styles.clear, { backgroundColor: c.primary }]}>
+          <Icon name="x" size={11} color="#FFFFFF" strokeWidth={2.5} />
         </TouchableOpacity>
       ) : null}
     </View>
@@ -39,7 +39,8 @@ export const SearchBar = ({ value, onChangeText, placeholder = 'Search', autoFoc
 };
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, height: 48, gap: 10 },
-  input: { flex: 1, fontSize: 16, paddingVertical: 0 },
-  clear: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  wrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 10, height: 48, gap: 10 },
+  iconWrap: { width: 30, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  input: { flex: 1, fontSize: 15, paddingVertical: 0, fontWeight: '500' },
+  clear: { width: 22, height: 22, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
 });
