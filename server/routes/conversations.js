@@ -176,6 +176,24 @@ router.put('/:id/archive', async (req, res) => {
   }
 });
 
+// DELETE /api/conversations/:id - remove this conversation from the current user's inbox only
+router.delete('/:id', async (req, res) => {
+  try {
+    if (!(await isParticipant(req.params.id, req.user.id))) return res.status(404).json({ message: 'Conversation not found' });
+    // Remove only the requesting user's membership; messages and other participants remain intact.
+    const [result] = await pool.query(
+      'DELETE FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
+    if (!result.affectedRows) return res.status(404).json({ message: 'Conversation not found' });
+    rt.emitToUser(req.user.id, 'conversation_removed', { conversation_id: Number(req.params.id) });
+    res.json({ removed: true });
+  } catch (err) {
+    console.error('delete conversation:', err.message);
+    res.status(500).json({ message: 'Could not delete conversation' });
+  }
+});
+
 // PUT /api/conversations/:id/pin-message { message_id | null }  - one pinned message per conversation, visible to everyone
 router.put('/:id/pin-message', async (req, res) => {
   try {
