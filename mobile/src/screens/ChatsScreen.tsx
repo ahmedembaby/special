@@ -12,7 +12,7 @@ import { Icon } from '../components/Icon';
 import { onSocket } from '../services/socket';
 import { getDrafts } from '../services/chatPrefs';
 import { useI18n } from '../i18n';
-import { Swipeable } from 'react-native-gesture-handler';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 /** "Messages" tab — same data as before (your chat backend), restyled like X DMs. */
 export default function ChatsScreen() {
@@ -174,9 +174,9 @@ export default function ChatsScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <Swipeable renderRightActions={() => renderSwipeActions(item)} overshootRight={false} friction={2} rightThreshold={36}>
+            <ReanimatedSwipeable renderRightActions={() => renderSwipeActions(item)} overshootRight={false} friction={2} rightThreshold={36}>
               <ChatItem item={item} draft={drafts[String(item.id)]} onPress={() => navigation.navigate('Chat', { conversationId: item.id, unread: Number(item.unread_count) || 0 })} />
-            </Swipeable>
+            </ReanimatedSwipeable>
           )}
         />
       )}
