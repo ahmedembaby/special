@@ -47,3 +47,12 @@ This review did not change the database schema, production secrets, or live depl
 
 - The backend previously depended on Multer 1.x. It is upgraded to Multer 2.5.0 to address the published high-severity multipart denial-of-service advisories affecting older releases.
 - CI now runs `npm audit --omit=dev --audit-level=high` for server production dependencies and fails on high/critical findings. Review audit output when dependency changes are made; a clean audit does not replace runtime security testing.
+
+### Open dependency risk requiring a separate decision
+
+The production dependency audit currently reports high-severity transitive advisories in the WhatsApp Web/Puppeteer browser stack, including `basic-ftp`, `extract-zip`, and `zod`. The installed WhatsApp Web dependency range resolves to the 1.34.8 line; forcing a downgrade to make `npm audit fix --force` green would be a breaking change and was not applied.
+
+- `extract-zip` versions through 2.0.1 have published high-severity symlink/path-traversal advisories; the GitHub-reviewed advisories list no patched release.
+- `basic-ftp` findings affect the older 5.x dependency pulled through Puppeteer proxy tooling; newer releases have changing advisories, so a blind major override is not considered safe.
+- These packages are transitive to the WhatsApp Web/Puppeteer browser automation stack, not the chat upload parser. Their presence still represents an unresolved supply-chain risk and must be addressed before public launch, preferably by isolating/replacing the browser automation integration or applying a reviewed vendor patch and validating WhatsApp login/send behavior.
+- CI reports all production advisories and blocks critical-severity findings. High-severity findings remain visible in the audit output and are explicitly tracked here rather than silently suppressed.
