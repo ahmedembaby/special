@@ -24,7 +24,9 @@ router.get('/posts', async (req, res) => {
     const order = ranked
       ? `((SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) + 2 * (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = p.id) + 3 * (SELECT COUNT(*) FROM posts rp WHERE rp.repost_of = p.id) + 1 + IF(p.user_id IN (SELECT following_id FROM follows WHERE follower_id = ${Number(req.user.id)}), 3, 0)) / POW(TIMESTAMPDIFF(HOUR, p.created_at, NOW()) + 2, 1.4) DESC, p.id DESC`
       : 'p.created_at DESC, p.id DESC';
-    const [rows] = await pool.query(`${POST_SELECT} WHERE ${POST_VISIBLE}${before && !ranked ? ' AND p.id < ?' : ''} ORDER BY ${order} LIMIT ? OFFSET ?`, [req.user.id, req.user.id, req.user.id, ...(before && !ranked ? [before] : []), limit, offset]);
+    // Home feed: only posts from accounts I follow plus my own posts.
+    const feedScope = ' AND (p.user_id = ? OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = ?))';
+    const [rows] = await pool.query(`${POST_SELECT} WHERE ${POST_VISIBLE}${feedScope}${before && !ranked ? ' AND p.id < ?' : ''} ORDER BY ${order} LIMIT ? OFFSET ?`, [req.user.id, req.user.id, req.user.id, req.user.id, req.user.id, ...(before && !ranked ? [before] : []), limit, offset]);
     res.json(await formatPosts(rows, req.user.id, { withComments: true }));
   } catch (err) {
     console.error('posts:', err.message);
