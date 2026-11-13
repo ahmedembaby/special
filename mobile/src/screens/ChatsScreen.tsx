@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { cacheGet, cacheSet } from '../services/cache';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Modal, Pressable, StyleSheet, StatusBar } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Modal, Pressable, StyleSheet, StatusBar, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as api from '../services/api';
 import { useAppColors } from '../theme/useAppColors';
@@ -12,6 +12,7 @@ import { Icon } from '../components/Icon';
 import { onSocket } from '../services/socket';
 import { getDrafts } from '../services/chatPrefs';
 import { useI18n } from '../i18n';
+import { Swipeable } from 'react-native-gesture-handler';
 
 /** "Messages" tab — same data as before (your chat backend), restyled like X DMs. */
 export default function ChatsScreen() {
@@ -62,6 +63,63 @@ export default function ChatsScreen() {
   const filtered = conversations.filter((cv) => !!cv.archived === showArchived && getChatName(cv).toLowerCase().includes(search.toLowerCase()));
 
   const go = (name: string) => { setMenu(false); navigation.navigate(name); };
+
+  const updateConversation = (id: string | number, patch: Partial<api.Conversation>) => {
+    setConversations((current) => current.map((cv) => String(cv.id) === String(id) ? { ...cv, ...patch } : cv));
+  };
+
+  const archiveConversation = async (item: api.Conversation) => {
+    try {
+      const { data } = await api.conversations.archive(item.id);
+      updateConversation(item.id, { archived: !!data.archived });
+    } catch {
+      Alert.alert('Error', 'Could not update the conversation. Please try again.');
+    }
+  };
+
+  const togglePinConversation = async (item: api.Conversation) => {
+    try {
+      const { data } = await api.conversations.pin(item.id);
+      updateConversation(item.id, { pinned: !!data.pinned });
+    } catch {
+      Alert.alert('Error', 'Could not pin the conversation. Please try again.');
+    }
+  };
+
+  const deleteConversation = (item: api.Conversation) => {
+    Alert.alert(
+      'Delete conversation?',
+      'This removes the conversation from your account only. Other participants keep their messages.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await api.conversations.remove(item.id);
+            setConversations((current) => current.filter((cv) => String(cv.id) !== String(item.id)));
+          } catch {
+            Alert.alert('Error', 'Could not delete the conversation. Please try again.');
+          }
+        } },
+      ]
+    );
+  };
+
+  const renderSwipeActions = (item: api.Conversation) => (
+    <View style={styles.swipeActions}>
+      <TouchableOpacity style={[styles.swipeAction, { backgroundColor: c.primary }]} onPress={() => archiveConversation(item)}>
+        <Icon name="archive" size={19} color="#FFFFFF" />
+        <Text style={styles.swipeActionText}>{item.archived ? 'Restore' : 'Archive'}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.swipeAction, { backgroundColor: '#64748B' }]} onPress={() => togglePinConversation(item)}>
+        <Icon name="pin" size={19} color="#FFFFFF" />
+        <Text style={styles.swipeActionText}>{item.pinned ? 'Unpin' : 'Pin'}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.swipeAction, { backgroundColor: c.danger }]} onPress={() => deleteConversation(item)}>
+        <Icon name="trash" size={19} color="#FFFFFF" />
+        <Text style={styles.swipeActionText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
@@ -115,7 +173,11 @@ export default function ChatsScreen() {
               ) : null}
             </View>
           }
-          renderItem={({ item }) => <ChatItem item={item} draft={drafts[String(item.id)]} onPress={() => navigation.navigate('Chat', { conversationId: item.id, unread: Number(item.unread_count) || 0 })} />}
+          renderItem={({ item }) => (
+            <Swipeable renderRightActions={() => renderSwipeActions(item)} overshootRight={false} friction={2} rightThreshold={36}>
+              <ChatItem item={item} draft={drafts[String(item.id)]} onPress={() => navigation.navigate('Chat', { conversationId: item.id, unread: Number(item.unread_count) || 0 })} />
+            </Swipeable>
+          )}
         />
       )}
 
@@ -144,6 +206,9 @@ export default function ChatsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  swipeActions: { flexDirection: 'row', alignItems: 'stretch', marginTop: 8, marginRight: 14, borderRadius: 16, overflow: 'hidden' },
+  swipeAction: { minWidth: 68, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 9, gap: 5 },
+  swipeActionText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
   empty: { alignItems: 'center', paddingTop: 70, paddingHorizontal: 40, gap: 10 },
   emptyTitle: { fontSize: 22, fontWeight: '700' },
   cta: { marginTop: 10, paddingHorizontal: 24, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
