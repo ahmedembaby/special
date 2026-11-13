@@ -74,11 +74,11 @@ export const ChatItem = ({ item, onPress, draft }: ChatItemProps) => {
 };
 
 const styles = StyleSheet.create({
-  item: { flexDirection: 'row', marginHorizontal: 14, marginTop: 8, paddingHorizontal: 14, paddingVertical: 13, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', gap: 13, shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  item: { flexDirection: 'row', marginHorizontal: 16, marginTop: 6, paddingHorizontal: 14, paddingVertical: 14, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', gap: 13, shadowOpacity: 0, elevation: 0 },
   body: { flex: 1 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
-  name: { fontSize: 15, fontWeight: '700', flexShrink: 1 },
+  name: { fontSize: 15, fontWeight: '800', flexShrink: 1 },
   handle: { fontSize: 14, flexShrink: 2 },
   bottom: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   badge: { minWidth: 22, height: 22, borderRadius: 8, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
