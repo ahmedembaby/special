@@ -16,9 +16,11 @@ const emitToUsers = (userIds, event, payload) => {
 };
 const isOnline = (userId) => (online.get(Number(userId)) || 0) > 0;
 
+const disconnectSession = (sessionId) => { if (io && sessionId) io.in(`session_${sessionId}`).disconnectSockets(true); };
+
 const disconnectUser = (userId) => {
   if (!io) return;
   io.in(`user_${userId}`).disconnectSockets(true);
 };
 
-module.exports = { setIO, getIO, online, emitToConversation, emitToUser, emitToUsers, isOnline, disconnectUser };
+module.exports = { setIO, getIO, online, emitToConversation, emitToUser, emitToUsers, isOnline, disconnectUser, disconnectSession };

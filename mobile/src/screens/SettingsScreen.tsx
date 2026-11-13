@@ -56,6 +56,7 @@ export default function SettingsScreen() {
         <Row icon="bookmark" title={t('Saved posts')} onPress={() => nav.navigate('Hashtag', { bookmarks: true })} />
         <Row icon="user" title={t('Blocked accounts')} onPress={() => nav.navigate('BlockedUsers')} />
         <Row icon="lock" title={t('Security')} sub="PIN, Face ID and fingerprint" onPress={() => nav.navigate('Security')} />
+        <Row icon="user" title="Devices and sessions" sub="Review and sign out devices connected to your account" onPress={() => nav.navigate('Sessions')} />
 
         {user?.is_admin ? (
           <>

@@ -5,6 +5,8 @@ const { toUser, publicUser, toInt } = require('../utils/format');
 const { isAdminUser } = require('../middleware/auth');
 
 const { notBlocked } = require('../utils/blocks');
+const realtime = require('../services/realtime');
+const { pushToUsers } = require('../services/push');
 const router = express.Router();
 
 // GET /api/users?q=&limit=  (everyone except me)
@@ -100,8 +102,19 @@ router.put('/me/key', async (req, res) => {
   try {
     const key = String(req.body.public_key || '').trim();
     if (!/^[A-Za-z0-9+/]{43}=$/.test(key)) return res.status(400).json({ message: 'Invalid public key' });
+    const [current] = await pool.query('SELECT public_key, name FROM users WHERE id = ?', [req.user.id]);
+    if (!current.length) return res.status(404).json({ message: 'User not found' });
+    const previousKey = current[0].public_key;
     await pool.query('UPDATE users SET public_key = ? WHERE id = ?', [key, req.user.id]);
-    res.json({ public_key: key });
+    const changed = !!previousKey && previousKey !== key;
+    if (changed) {
+      const [peers] = await pool.query("SELECT DISTINCT cp.user_id AS id FROM conversations c JOIN conversation_participants me ON me.conversation_id = c.id AND me.user_id = ? JOIN conversation_participants cp ON cp.conversation_id = c.id AND cp.user_id <> ? WHERE c.type = 'direct'", [req.user.id, req.user.id]);
+      const peerIds = peers.map((p) => Number(p.id)).filter((id) => id > 0);
+      const payload = { userId: req.user.id, userName: current[0].name, changedAt: new Date().toISOString() };
+      realtime.emitToUsers(peerIds, 'security_key_changed', payload);
+      if (peerIds.length) pushToUsers(peerIds, { title: 'Special security alert', body: current[0].name + ' changed their encryption key. Open the chat and verify the updated safety number before trusting it.', data: { type: 'security_key_changed', userId: req.user.id } }).catch(() => {});
+    }
+    res.json({ public_key: key, changed });
   } catch (err) {
     res.status(500).json({ message: 'Could not save key' });
   }
