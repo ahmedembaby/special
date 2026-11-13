@@ -215,6 +215,7 @@ export const conversations = {
   search: (id: string | number, q: string) => api.get<{ messages: Message[] }>(`/conversations/${id}/search`, { params: { q } }),
   /** hours: -1 = until turned off, 0 = unmute */
   archive: (id: string | number) => api.put<Conversation>(`/conversations/${id}/archive`),
+  remove: (id: string | number) => api.delete<{ removed: boolean }>(`/conversations/${id}`),
   pinMessage: (id: string | number, messageId: string | number | null) => api.put(`/conversations/${id}/pin-message`, { message_id: messageId }),
   mute: (id: string | number, hours: number) => api.put<Conversation>(`/conversations/${id}/mute`, { hours }),
   disappearing: (id: string | number, seconds: number) => api.put<Conversation>(`/conversations/${id}/disappearing`, { seconds }),
