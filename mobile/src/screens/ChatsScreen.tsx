@@ -128,9 +128,9 @@ export default function ChatsScreen() {
         title="Messages"
         avatarUri={me.avatar}
         avatarName={me.name}
-        onAvatarPress={() => navigation.navigate('Profile')}
+        onAvatarPress={() => navigation.navigate('Main', { screen: 'Profile' })}
         rightIcon="settings"
-        onRightPress={() => navigation.navigate('Profile', { screen: 'Settings' })}
+        onRightPress={() => navigation.navigate('Main', { screen: 'Profile', params: { screen: 'Settings' } })}
       >
         <View style={{ paddingHorizontal: 16, paddingBottom: 10 }}>
           <SearchBar value={search} onChangeText={setSearch} placeholder="Search chats" />
