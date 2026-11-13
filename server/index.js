@@ -29,7 +29,7 @@ process.on('unhandledRejection', (e) => { console.error('unhandledRejection:', e
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: config.CLIENT_URL, methods: ['GET', 'POST'] },
+  cors: { origin: (origin, callback) => callback(null, !origin || config.CLIENT_URL.includes(origin)), methods: ['GET', 'POST'] },
 });
 rt.setIO(io);
 app.set('io', io);
@@ -47,7 +47,7 @@ if (redis.client) {
 }
 
 app.set('trust proxy', 1);
-app.use(cors());
+app.use(cors({ origin: (origin, callback) => callback(null, !origin || config.CLIENT_URL.includes(origin)) }));
 app.use(express.json({ limit: '1mb' }));
 
 const uploadsDir = path.join(__dirname, 'uploads');
