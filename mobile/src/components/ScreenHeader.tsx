@@ -23,14 +23,14 @@ interface Props {
 /** Shared top bar for social and messaging screens. */
 export const ScreenHeader = (p: Props) => {
   const { c } = useAppColors();
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const insets = useSafeAreaInsets();
   return (
     <View style={{ backgroundColor: c.headerBg, paddingTop: insets.top, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }}>
       <View style={styles.row}>
         <View style={styles.side}>
           {p.onBack ? (
-            <TouchableOpacity onPress={p.onBack} hitSlop={10} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel="Go back">
+            <TouchableOpacity onPress={p.onBack} hitSlop={10} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t("Go back")}>
               <Icon name={lang === 'ar' ? 'arrowRight' : 'arrowLeft'} size={21} color={c.text} />
             </TouchableOpacity>
           ) : p.onAvatarPress ? (
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'flex-start', justifyContent: 'center', paddingHorizontal: 8 },
   logoCenter: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: 9 },
   logoDot: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 19, fontWeight: '750', letterSpacing: -0.35 },
+  title: { fontSize: 19, fontWeight: '700', letterSpacing: -0.35 },
   sub: { fontSize: 12, marginTop: 2 },
   iconBtn: { width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
 });
