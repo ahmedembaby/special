@@ -42,6 +42,10 @@ test('MySQL schema, foreign keys and private-media authorization', { skip: !enab
       'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?), (?, ?)',
       [conversation.insertId, ownerId, conversation.insertId, memberId]
     );
+    await assert.rejects(
+      db.query('INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)', [conversation.insertId, outsiderId]),
+      (error) => error.code === 'ER_NO_REFERENCED_ROW_2'
+    );
 
     const chatFilename = `integration-${suffix}.jpg`;
     await db.query(
@@ -53,6 +57,17 @@ test('MySQL schema, foreign keys and private-media authorization', { skip: !enab
     assert.equal(await canAccessChatMedia(chatFilename, outsiderId), false, 'non-participant is denied');
     assert.equal(await canAccessChatMedia('../' + chatFilename, memberId), false, 'path traversal is denied');
     assert.equal(await canAccessChatMedia('missing-' + chatFilename, memberId), false, 'unknown media is denied');
+
+    const onceFilename = `once-${suffix}.jpg`;
+    const [onceMessage] = await db.query(
+      "INSERT INTO messages (conversation_id, sender_id, content, type, file_url, view_once) VALUES (?, ?, '', 'image', ?, 1)",
+      [conversation.insertId, ownerId, `/uploads/chat/${onceFilename}`]
+    );
+    assert.equal(await canAccessChatMedia(onceFilename, memberId), false, 'view-once media is unavailable before opening');
+    await db.query('UPDATE messages SET opened_at = NOW() WHERE id = ?', [onceMessage.insertId]);
+    assert.equal(await canAccessChatMedia(onceFilename, memberId), true, 'opened view-once media can be fetched');
+    await db.query('INSERT INTO message_deletions (message_id, user_id) VALUES (?, ?)', [onceMessage.insertId, memberId]);
+    assert.equal(await canAccessChatMedia(onceFilename, memberId), false, 'per-user deletion revokes media access');
 
     const storyFilename = `integration-${suffix}.jpg`;
     await db.query(
