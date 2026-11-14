@@ -69,7 +69,7 @@ export const ScreenHeader = (p: Props) => {
             </TouchableOpacity>
           ) : !p.onSearchPress && !p.onMessagesPress && p.rightText ? (
             <TouchableOpacity onPress={p.onRightPress} hitSlop={10}>
-              <Text style={{ color: c.primary, fontWeight: '750', fontSize: 14 }}>{p.rightText}</Text>
+              <Text style={{ color: c.primary, fontWeight: '700', fontSize: 14 }}>{p.rightText}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
