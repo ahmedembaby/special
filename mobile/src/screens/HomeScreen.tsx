@@ -73,6 +73,6 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 20, fontWeight: '700' },
   fab: {
     position: 'absolute', right: 18, width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
-    elevation: 4, shadowColor: '#10152B', shadowOpacity: 0.14, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.18)',
   },
 });
