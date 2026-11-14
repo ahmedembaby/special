@@ -317,6 +317,25 @@ router.post('/users/:id/ban', async (req, res) => {
 });
 
 
+ // Runtime health without exposing environment values or secrets.
+router.get('/system', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    const memory = process.memoryUsage();
+    res.json({
+      status: 'ok',
+      database: 'connected',
+      redis: require('../services/redis').client ? (require('../services/redis').isReady() ? 'connected' : 'connecting') : 'not_configured',
+      uptimeSeconds: Math.floor(process.uptime()),
+      nodeVersion: process.version,
+      memory: { rss: Math.round(memory.rss / 1024 / 1024), heapUsed: Math.round(memory.heapUsed / 1024 / 1024), heapTotal: Math.round(memory.heapTotal / 1024 / 1024) },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(503).json({ status: 'degraded', database: 'unavailable' });
+  }
+});
+
  // Active device sessions across the service. Tokens and token hashes are never exposed.
 router.get('/sessions', async (req, res) => {
   try {
