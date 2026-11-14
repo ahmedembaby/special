@@ -12,6 +12,7 @@ const parse = (txt) => {
   return {
     notif: { ...DEFAULT_NOTIF, ...(s.notif || {}) },
     quiet: { enabled: false, start: 22, end: 7, tz: 0, ...(s.quiet || {}) },
+    digest: { enabled: false, hour: 20, ...(s.digest || {}) },
   };
 };
 

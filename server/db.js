@@ -213,6 +213,15 @@ const TABLES = [
     FOREIGN KEY (comment_id) REFERENCES post_comments(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
+  `CREATE TABLE IF NOT EXISTS notification_digests (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    digest_date DATE NOT NULL,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_digest_date (user_id, digest_date),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
   // BANNED WORDS
   `CREATE TABLE IF NOT EXISTS banned_words (
     word VARCHAR(60) CHARACTER SET utf8mb4 NOT NULL PRIMARY KEY,

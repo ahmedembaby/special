@@ -186,6 +186,7 @@ export interface UserSettings {
   who_can_message: 'everyone' | 'followed' | 'nobody';
   notif: { like: boolean; comment: boolean; follow: boolean; mention: boolean; message: boolean; group: boolean };
   quiet: { enabled: boolean; start: number; end: number; tz?: number };
+  digest: { enabled: boolean; hour: number };
 }
 
 export const users = {

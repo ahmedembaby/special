@@ -12,6 +12,7 @@ const DEFAULTS: S = {
   hide_presence: false, read_receipts: true, who_can_message: 'everyone',
   notif: { like: true, comment: true, follow: true, mention: true, message: true, group: true },
   quiet: { enabled: false, start: 22, end: 7 },
+  digest: { enabled: false, hour: 20 },
 };
 const hourLabel = (h: number) => `${String(h).padStart(2, '0')}:00`;
 
@@ -20,10 +21,10 @@ export default function PrivacySettingsScreen() {
   const { c } = useAppColors();
   const { t } = useI18n();
   const [s, setS] = useState<S>(DEFAULTS);
-  const [sheet, setSheet] = useState<null | 'who' | 'start' | 'end'>(null);
+  const [sheet, setSheet] = useState<null | 'who' | 'start' | 'end' | 'digestHour'>(null);
 
   useEffect(() => {
-    api.users.getSettings().then((r) => setS({ ...DEFAULTS, ...r.data, notif: { ...DEFAULTS.notif, ...(r.data?.notif || {}) }, quiet: { ...DEFAULTS.quiet, ...(r.data?.quiet || {}) } })).catch(() => {});
+    api.users.getSettings().then((r) => setS({ ...DEFAULTS, ...r.data, notif: { ...DEFAULTS.notif, ...(r.data?.notif || {}) }, quiet: { ...DEFAULTS.quiet, ...(r.data?.quiet || {}) }, digest: { ...DEFAULTS.digest, ...(r.data?.digest || {}) } })).catch(() => {});
   }, []);
 
   const save = async (next: S, prev: S) => {
@@ -34,6 +35,7 @@ export default function PrivacySettingsScreen() {
   const patch = (p: Partial<S>) => save({ ...s, ...p }, s);
   const setNotif = (k: keyof S['notif'], v: boolean) => save({ ...s, notif: { ...s.notif, [k]: v } }, s);
   const setQuiet = (p: Partial<S['quiet']>) => save({ ...s, quiet: { ...s.quiet, ...p } }, s);
+  const setDigest = (p: Partial<S['digest']>) => save({ ...s, digest: { ...s.digest, ...p } }, s);
 
   const sw = (v: boolean, f: (v: boolean) => void) => (
     <Switch value={v} onValueChange={f} accessibilityRole="switch" accessibilityLabel="Privacy or notification preference" trackColor={{ false: c.inputBorder, true: c.primary }} thumbColor="#FFFFFF" />
@@ -68,6 +70,10 @@ export default function PrivacySettingsScreen() {
         <Row title={t('Mentions')} right={sw(s.notif.mention, (v) => setNotif('mention', v))} />
         <Row title={t('Groups')} right={sw(s.notif.group, (v) => setNotif('group', v))} />
 
+        <Section title="Daily digest" />
+        <Row title="Daily notification summary" sub="Receive one daily push with your unread notification count" right={sw(s.digest.enabled, (v) => setDigest({ enabled: v }))} />
+        {s.digest.enabled ? <Row title="Send at" sub={hourLabel(s.digest.hour)} onPress={() => setSheet('digestHour')} /> : null}
+
         <Section title={t('Quiet hours')} />
         <Row title={t('Quiet hours')} sub={t('No push notifications during these hours')} right={sw(s.quiet.enabled, (v) => setQuiet({ enabled: v }))} />
         {s.quiet.enabled ? (
@@ -85,6 +91,7 @@ export default function PrivacySettingsScreen() {
       ]} />
       <OptionSheet visible={sheet === 'start'} title={t('From')} onClose={() => setSheet(null)} options={hours('start')} />
       <OptionSheet visible={sheet === 'end'} title={t('To')} onClose={() => setSheet(null)} options={hours('end')} />
+      <OptionSheet visible={sheet === 'digestHour'} title="Daily digest time" onClose={() => setSheet(null)} options={Array.from({ length: 24 }, (_, h) => ({ label: hourLabel(h), selected: s.digest.hour === h, onPress: () => setDigest({ hour: h }) }))} />
     </View>
   );
 }
