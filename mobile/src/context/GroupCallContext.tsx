@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import api from '../services/api';
 import { getSocket, onSocket } from '../services/socket';
 import { useAuth } from './AuthContext';
@@ -238,6 +239,18 @@ export const GroupCallProvider = ({ children }: { children: React.ReactNode }) =
       ]
     );
   }), [join]);
+
+  useEffect(() => {
+    const handleResponse = (response: Notifications.NotificationResponse | null) => {
+      const data: any = response?.notification?.request?.content?.data;
+      if (data?.type === 'group_call' && data.roomId && data.conversationId && !activeRef.current) {
+        join(Number(data.conversationId), String(data.roomId), data.type === 'video' ? 'video' : 'audio');
+      }
+    };
+    const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
+    Notifications.getLastNotificationResponseAsync().then(handleResponse).catch(() => {});
+    return () => subscription.remove();
+  }, [join]);
 
   useEffect(() => onSocket('call:group:participant_joined', ({ roomId, participant }: any) => {
     if (roomRef.current !== String(roomId) || !participant) return;
