@@ -177,7 +177,7 @@ export const StoryViewer = ({ groups: initial, startGroup, meId, onClose }: Prop
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
-  textStory: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 34, backgroundColor: '#6C4DF6' },
+  textStory: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 34, backgroundColor: '#6C4DF6' },
   textStoryContent: { color: '#FFFFFF', fontSize: 28, lineHeight: 39, fontWeight: '800', textAlign: 'center' },
   touch: { ...StyleSheet.absoluteFill, flexDirection: 'row', top: 120, bottom: 90 },
   top: { position: 'absolute', top: Platform.OS === 'ios' ? 54 : 34, left: 10, right: 10 },
