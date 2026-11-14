@@ -97,7 +97,7 @@ export default function ContactScreen() {
             !search.trim() ? (
               <TouchableOpacity accessibilityRole="button" accessibilityLabel={fromContacts ? 'Show all users' : 'Find friends from your phone contacts'} accessibilityState={{ disabled: syncing, busy: syncing }} style={{ marginHorizontal: 16, marginTop: 10, marginBottom: 6, padding: 15, borderRadius: 18, backgroundColor: c.card, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border, flexDirection: 'row', gap: 8, alignItems: 'center' }} onPress={fromContacts ? () => setFromContacts(null) : findFromContacts} disabled={syncing}>
                 <Text style={{ color: c.primary, fontWeight: '700' }}>
-                  {syncing ? 'Searching your contacts…' : fromContacts ? `${fromContacts.length} of your contacts are on the app — tap to show everyone` : '📇 Find friends from your contacts'}
+                  {syncing ? 'Searching your contacts…' : fromContacts ? `${fromContacts.length} of your contacts are on the app — tap to show everyone` : 'Find friends from your contacts'}
                 </Text>
               </TouchableOpacity>
             ) : undefined
