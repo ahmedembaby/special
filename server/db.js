@@ -197,10 +197,12 @@ const TABLES = [
     type ENUM(
       'like','comment','follow','group_invite',
       'group_request','group_approved','mention',
-      'follow_request','follow_accepted'
+      'follow_request','follow_accepted','broadcast'
     ) NOT NULL,
     group_id INT DEFAULT NULL,
-    from_user_id INT NOT NULL,
+    title VARCHAR(120) DEFAULT NULL,
+    body TEXT DEFAULT NULL,
+    from_user_id INT DEFAULT NULL,
     post_id INT DEFAULT NULL,
     comment_id INT DEFAULT NULL,
     read_at TIMESTAMP NULL DEFAULT NULL,
@@ -456,6 +458,8 @@ const COLUMNS = [
   ['post_likes', 'emoji', "VARCHAR(16) CHARACTER SET utf8mb4 NOT NULL DEFAULT '❤️'"],
 
   ['notifications', 'group_id', 'INT DEFAULT NULL'],
+  ['notifications', 'title', 'VARCHAR(120) DEFAULT NULL'],
+  ['notifications', 'body', 'TEXT DEFAULT NULL'],
 
   ['users', 'hide_presence', 'TINYINT(1) NOT NULL DEFAULT 0'],
   ['users', 'read_receipts', 'TINYINT(1) NOT NULL DEFAULT 1'],
@@ -515,7 +519,8 @@ const COLUMNS = [
 
 // Modifications for older database schemas
 const MODIFY = [
-  "ALTER TABLE notifications MODIFY type ENUM('like','comment','follow','group_invite','group_request','group_approved','mention','follow_request','follow_accepted') NOT NULL",
+  "ALTER TABLE notifications MODIFY type ENUM('like','comment','follow','group_invite','group_request','group_approved','mention','follow_request','follow_accepted','broadcast') NOT NULL",
+  'ALTER TABLE notifications MODIFY from_user_id INT NULL',
 
   'ALTER TABLE users MODIFY email VARCHAR(150) NULL',
   'ALTER TABLE users MODIFY password VARCHAR(255) NULL',
