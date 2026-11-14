@@ -237,14 +237,48 @@ router.put('/:id/pin', async (req, res) => {
 router.get('/:id/search', async (req, res) => {
   try {
     if (!(await isParticipant(req.params.id, req.user.id))) return res.status(404).json({ message: 'Conversation not found' });
-    const q = String(req.query.q || '').trim().slice(0, 100);
+    const q = String(req.query.q || '').trim().slice(0, 160);
     if (q.length < 2) return res.json({ messages: [] });
-    const like = '%' + q.replace(/[\\%_]/g, '\\$&') + '%';
+
+    const fileIntent = /\b(file|document|attachment)\b|ملف|مستند|مرفق/iu.test(q);
+    const dateText = q.toLowerCase();
+    const now = new Date();
+    let from = null, to = null;
+    if (/الأسبوع الماضي|الاسبوع الماضي|الأسبوع الفائت|الاسبوع الفائت|last week/i.test(dateText)) {
+      const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
+      to = monday;
+      from = new Date(monday); from.setUTCDate(from.getUTCDate() - 7);
+    } else if (/أمس|امس|yesterday/i.test(dateText)) {
+      to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      from = new Date(to); from.setUTCDate(from.getUTCDate() - 1);
+    } else if (/اليوم|today/i.test(dateText)) {
+      from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    }
+
+    const searchText = q
+      .replace(/الأسبوع الماضي|الاسبوع الماضي|الأسبوع الفائت|الاسبوع الفائت|last week|أمس|امس|yesterday|اليوم|today/gi, ' ')
+      .replace(/\b(file|document|attachment)\b|ملف|مستند|مرفق/giu, ' ')
+      .replace(/[،,]/g, ' ').replace(/\s+/g, ' ').trim();
+    const conditions = [];
+    const params = [req.params.id];
+    if (fileIntent) conditions.push("m.type = 'file'");
+    if (from) { conditions.push('m.created_at >= ?'); params.push(from.toISOString().slice(0, 19).replace('T', ' ')); }
+    if (to) { conditions.push('m.created_at < ?'); params.push(to.toISOString().slice(0, 19).replace('T', ' ')); }
+    if (searchText) {
+      const like = '%' + searchText.replace(/[\\%_]/g, '\\$&') + '%';
+      conditions.push("(m.content LIKE ? OR COALESCE(m.file_name, '') LIKE ? OR u.name LIKE ?)");
+      params.push(like, like, like);
+    }
+    if (!conditions.length) return res.json({ messages: [] });
+    params.push(req.user.id);
     const [rows] = await pool.query(
-      `${MESSAGE_SELECT} WHERE m.conversation_id = ? AND m.type = 'text' AND m.content LIKE ? AND m.content NOT LIKE 'e2ee:%'
-         AND ${visible('m')} ORDER BY m.id DESC LIMIT 50`,
-      [req.params.id, like, req.user.id]
+      MESSAGE_SELECT + ' WHERE m.conversation_id = ? AND ' + conditions.join(' AND ') +
+        ' AND (m.content NOT LIKE \'e2ee:%\' OR m.type <> \'text\') AND ' + visible('m') +
+        ' ORDER BY m.created_at DESC, m.id DESC LIMIT 50',
+      params
     );
+
     res.json({ messages: await attachReactions(rows, req.user.id) });
   } catch (err) {
     res.status(500).json({ message: 'Search failed' });
