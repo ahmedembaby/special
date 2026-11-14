@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { Image as ImageCompressor, Video as VideoCompressor } from 'react-native-compressor';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import { Icon } from '../components/Icon';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
@@ -71,6 +72,8 @@ const removeReaction = (list: api.MessageReaction[] | undefined, userId: string 
     .filter((x) => x.count > 0);
 
 export default function ChatScreen() {
+  // Prevent screenshots/screen recording on platforms that support secure chat capture.
+  usePreventScreenCapture('special-chat');
   const isFocused = useIsFocused();
   const navigation = useNavigation() as any;
   const route = useRoute() as any;
