@@ -5,6 +5,9 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import { VideoView, useVideoPlayer } from 'expo-video';
+import { Image as ImageCompressor, Video as VideoCompressor } from 'react-native-compressor';
 import { Icon } from '../components/Icon';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
@@ -31,6 +34,13 @@ import { authenticateBiometric, biometricAvailable } from '../services/appLock';
 import * as chatSecurity from '../services/chatSecurity';
 
 const PAGE_SIZE = 50;
+
+const ChatVideo = ({ uri }: { uri: string }) => {
+  const player = useVideoPlayer({ uri }, (instance) => { instance.loop = false; });
+  return (
+    <VideoView player={player} style={{ width: 230, height: 230, borderRadius: 20, overflow: 'hidden', backgroundColor: '#000' }} contentFit="contain" nativeControls />
+  );
+};
 
 const appendUnique = (list: api.Message[], msg: api.Message): api.Message[] =>
   msg.id != null && list.some((m) => String(m.id) === String(msg.id)) ? list : [...list, msg];
@@ -443,40 +453,73 @@ export default function ChatScreen() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert('Permission needed', 'Please allow photo access to send images.');
+        Alert.alert('Permission needed', 'Please allow photo access to send media.');
         return;
       }
-      // Android opens the picker as another activity. Do not re-lock this chat while
-      // the picker we launched is in the foreground.
       suppressLockRef.current = true;
       let res;
-      try { res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 }); }
-      finally { suppressLockRef.current = false; }
+      try {
+        res = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: viewOnce ? ['images'] : ['images', 'videos'],
+          quality: 0.85,
+          videoMaxDuration: 180,
+        });
+      } finally {
+        suppressLockRef.current = false;
+      }
       if (res.canceled || !res.assets?.[0]) return;
 
+      const asset = res.assets[0];
+      const isVideoAsset = !viewOnce && asset.type === 'video';
+      const uploadFile: { uri: string; type: string; name: string } = {
+        uri: asset.uri,
+        type: asset.mimeType || (isVideoAsset ? 'video/mp4' : 'image/jpeg'),
+        name: asset.fileName || (isVideoAsset ? 'video.mp4' : 'photo.jpg'),
+      };
       setUploading(true);
       try {
-        const resUpload = await api.messages.upload({
+        try {
+          if (isVideoAsset) {
+            uploadFile.uri = await VideoCompressor.compress(asset.uri, {
+              compressionMethod: 'auto',
+              maxSize: 1280,
+              minimumFileSizeForCompress: 2,
+              preserveMetadata: false,
+            });
+          } else {
+            uploadFile.uri = await ImageCompressor.compress(asset.uri, {
+              compressionMethod: 'auto',
+              maxWidth: 1600,
+              maxHeight: 1600,
+              quality: 0.8,
+            });
+            uploadFile.type = 'image/jpeg';
+            if (!/\.jpe?g$/i.test(uploadFile.name)) uploadFile.name = uploadFile.name.replace(/\.[^.]+$/, '') + '.jpg';
+          }
+        } catch {
+          Alert.alert('Compression skipped', 'The original file will be sent because compression was unavailable on this device.');
+        }
+        const response = await api.messages.upload({
           conversation_id: conversationId!,
           reply_to: replyTo?.id,
           view_once: viewOnce,
-          file: { uri: res.assets[0].uri, type: res.assets[0].mimeType || 'image/jpeg', name: res.assets[0].fileName || 'image.jpg' },
+          file: uploadFile,
         });
-        // The server broadcasts the message to the room; appendUnique prevents the duplicate
-        setMessages((prev) => appendUnique(prev, resUpload.data));
+        setMessages((prev) => appendUnique(prev, response.data));
         setReplyTo(null);
-      } catch (e) {
-        if (isRetryable(e)) await queueUpload({ uri: res.assets[0].uri, type: res.assets[0].mimeType || 'image/jpeg', name: res.assets[0].fileName || 'image.jpg' }, { view_once: viewOnce });
-        else Alert.alert('Error', (e as any)?.response?.data?.message || 'Image could not be sent');
+      } catch (error: any) {
+        if (isRetryable(error)) await queueUpload(uploadFile, { view_once: viewOnce });
+        else Alert.alert('Error', error?.response?.data?.message || 'Media could not be sent');
       } finally {
         setUploading(false);
       }
     } catch {
-      Alert.alert('Error', 'Failed to pick image');
+      Alert.alert('Error', 'Failed to pick media');
     } finally {
       suppressLockRef.current = false;
     }
   };
+
 
   const sendMessage = async () => {
     const content = input.trim();
@@ -1277,10 +1320,11 @@ export default function ChatScreen() {
               const isFile = item.type === 'file';
               const isVoice = item.type === 'voice';
               const isImage = item.type === 'image';
+              const isVideo = item.type === 'video';
               const isPoll = item.type === 'poll';
               const isTemp = String(item.id).startsWith('temp_');
               const isSel = selected.includes(String(item.id));
-              const url = !isPoll && !isVoice && !isImage && !isFile && !item.view_once && !String(item.content || '').startsWith('e2ee:') && !textOf(item).startsWith('sticker:') && !textOf(item).startsWith('📍') ? firstUrl(textOf(item)) : null;
+              const url = !isPoll && !isVoice && !isImage && !isVideo && !isFile && !item.view_once && !String(item.content || '').startsWith('e2ee:') && !textOf(item).startsWith('sticker:') && !textOf(item).startsWith('📍') ? firstUrl(textOf(item)) : null;
               const showStatus = isOwn && ['sent', 'delivered', 'read'].includes(item.status || '');
 
               return (
@@ -1343,6 +1387,11 @@ export default function ChatScreen() {
                       <TouchableOpacity
                         style={[styles.fileBubble, isOwn ? styles.ownFileBubble : styles.otherFileBubble, isOwn ? ownBubbleStyle : null]}
                         activeOpacity={0.8}
+                        onPress={() => {
+                          const fileUrl = resolveUrl(item.file_url);
+                          if (fileUrl) Linking.openURL(fileUrl).catch(() => Alert.alert('File unavailable', 'Could not open this document on your device.'));
+                        }}
+                        onLongPress={() => onLongPressMessage(item)}
                       >
                         <View style={styles.fileContent}>
                           <Icon name="file" size={24} color={isOwn ? '#FFFFFF' : TEXT_GRAY_500} />
@@ -1359,6 +1408,10 @@ export default function ChatScreen() {
                     ) : isImage && item.file_url ? (
                       <TouchableOpacity activeOpacity={0.9} onPress={() => setViewerUri(resolveUrl(item.file_url))} onLongPress={() => onLongPressMessage(item)}>
                         <CachedImage source={{ uri: resolveUrl(item.file_url) || undefined }} style={{ width: 230, height: 230, borderRadius: 20, backgroundColor: c.inputBg }} resizeMode="cover" />
+                      </TouchableOpacity>
+                    ) : isVideo && item.file_url ? (
+                      <TouchableOpacity activeOpacity={0.95} onLongPress={() => onLongPressMessage(item)}>
+                        <ChatVideo uri={resolveUrl(item.file_url) || ''} />
                       </TouchableOpacity>
                     ) : item.view_once ? (
                       <TouchableOpacity
@@ -1589,7 +1642,7 @@ export default function ChatScreen() {
 
           <View style={[styles.inputContainer, { backgroundColor: c.background }]}>
             <View style={styles.inputRow}>
-              <TouchableOpacity style={styles.attachBtn} onPress={() => pickImage(false)} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.attachBtn} onPress={openAttachmentMenu} activeOpacity={0.8}>
                 <Icon name="imageFeather" size={20} color={X_BLUE} />
               </TouchableOpacity>
               {recording ? (
