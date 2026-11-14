@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs><linearGradient id="violet" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#D946EF"/><stop offset=".45" stop-color="#8B24F4"/><stop offset="1" stop-color="#4F20D8"/></linearGradient><linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#24E5F4"/><stop offset=".5" stop-color="#0D9FF2"/><stop offset="1" stop-color="#174CEB"/></linearGradient></defs>
+<g transform="translate(125 80) scale(.76)">
+<path d="M180 215C180 112 265 60 380 60h258c124 0 205 71 205 184v115c0 115-83 181-205 181H504c-60 0-93 17-130 57l-120 128c-25 27-65 2-56-33l35-143c-34-35-53-82-53-139V215Z" fill="url(#violet)"/>
+<path d="M844 809c0 101-82 160-191 160H404c-116 0-190-64-190-166V690c0-105 75-166 190-166h132c62 0 99-19 137-60l111-119c26-28 68-4 59 32l-31 135c29 33 32 71 32 113v184Z" fill="url(#blue)"/>
+</g>
+<text x="512" y="835" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="82" font-weight="800" letter-spacing="12" fill="#FFFFFF">SPECIAL</text>
+</svg>
