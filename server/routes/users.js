@@ -126,7 +126,7 @@ const settingsOut = async (id) => {
   const [r] = await pool.query('SELECT hide_presence, read_receipts, who_can_message, settings, is_private FROM users WHERE id = ?', [id]);
   const u = r[0] || {};
   const p = prefs.parse(u.settings);
-  return { hide_presence: !!u.hide_presence, read_receipts: u.read_receipts !== 0, who_can_message: u.who_can_message || 'everyone', is_private: !!u.is_private, notif: p.notif, quiet: p.quiet };
+  return { hide_presence: !!u.hide_presence, read_receipts: u.read_receipts !== 0, who_can_message: u.who_can_message || 'everyone', is_private: !!u.is_private, notif: p.notif, quiet: p.quiet, digest: p.digest };
 };
 router.get('/me/settings', async (req, res) => {
   try { res.json(await settingsOut(req.user.id)); } catch { res.status(500).json({ message: 'Could not load settings' }); }
@@ -141,7 +141,7 @@ router.put('/me/settings', async (req, res) => {
       if (!['everyone', 'followed', 'nobody'].includes(b.who_can_message)) return res.status(400).json({ message: 'Invalid value' });
       sets.push('who_can_message = ?'); params.push(b.who_can_message);
     }
-    if (b.notif || b.quiet) {
+    if (b.notif || b.quiet || b.digest) {
       const cur = prefs.parse((await pool.query('SELECT settings FROM users WHERE id = ?', [req.user.id]))[0][0].settings);
       const notif = { ...cur.notif };
       for (const k of Object.keys(prefs.DEFAULT_NOTIF)) if (b.notif && typeof b.notif[k] === 'boolean') notif[k] = b.notif[k];
@@ -151,7 +151,12 @@ router.put('/me/settings', async (req, res) => {
         for (const k of ['start', 'end']) if (Number.isInteger(b.quiet[k]) && b.quiet[k] >= 0 && b.quiet[k] < 24) q[k] = b.quiet[k];
         if (Number.isInteger(b.quiet.tz) && Math.abs(b.quiet.tz) <= 840) q.tz = b.quiet.tz;
       }
-      sets.push('settings = ?'); params.push(JSON.stringify({ notif, quiet: q }));
+      const d = { ...cur.digest };
+      if (b.digest) {
+        if (typeof b.digest.enabled === 'boolean') d.enabled = b.digest.enabled;
+        if (Number.isInteger(b.digest.hour) && b.digest.hour >= 0 && b.digest.hour < 24) d.hour = b.digest.hour;
+      }
+      sets.push('settings = ?'); params.push(JSON.stringify({ notif, quiet: q, digest: d }));
     }
     if (sets.length) await pool.query(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, [...params, req.user.id]);
     res.json(await settingsOut(req.user.id));
