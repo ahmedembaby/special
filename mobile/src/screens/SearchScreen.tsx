@@ -118,9 +118,9 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  h: { fontSize: 20, fontWeight: '800', paddingHorizontal: 16, paddingVertical: 12 },
-  trend: { paddingHorizontal: 16, paddingVertical: 10 },
-  person: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
-  followBtn: { paddingHorizontal: 16, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  h: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5, paddingHorizontal: 20, paddingVertical: 15 },
+  trend: { paddingHorizontal: 20, paddingVertical: 12 },
+  person: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 20, paddingVertical: 15, borderBottomWidth: StyleSheet.hairlineWidth },
+  followBtn: { paddingHorizontal: 18, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   none: { textAlign: 'center', marginTop: 40, fontSize: 15 },
 });
