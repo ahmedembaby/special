@@ -21,6 +21,7 @@ export const NotificationItem = ({ item, onDelete, onPress }: { item: AppNotific
     mention: { icon: 'messageCircle' as const, color: c.primary, text: item.comment ? 'mentioned you in a comment' : 'mentioned you in a post' },
     follow_request: { icon: 'userFill' as const, color: c.primary, text: 'requested to follow you' },
     follow_accepted: { icon: 'userFill' as const, color: c.primary, text: 'accepted your follow request' },
+    broadcast: { icon: 'bell' as const, color: c.primary, text: 'published an announcement' },
   }[item.type] || { icon: 'bell' as const, color: c.primary, text: 'sent you a notification' };
 
   // "Follow back" for follow notifications
@@ -90,6 +91,14 @@ export const NotificationItem = ({ item, onDelete, onPress }: { item: AppNotific
               </TouchableOpacity>
             </View>
           )
+        ) : null}
+        {item.type === 'broadcast' && item.title ? (
+          <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', marginTop: 7 }}>{item.title}</Text>
+        ) : null}
+        {item.type === 'broadcast' && item.body ? (
+          <View style={[styles.reply, { borderColor: c.border }]}>
+            <Text style={{ color: c.text, fontSize: 14, lineHeight: 21 }}>{item.body}</Text>
+          </View>
         ) : null}
         {item.post ? <Text style={[styles.quote, { color: c.textSecondary }]} numberOfLines={3}>{item.post.content}</Text> : null}
         {img ? <Image source={{ uri: img }} style={styles.img} /> : null}
