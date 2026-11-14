@@ -42,3 +42,10 @@ The host must provide `mysqldump` and `mysql` client binaries. Backups use AES-2
 ## Advertising campaigns
 
 The admin dashboard manages campaign settings and statuses. This does not yet render ads in mobile feeds or record real impressions/clicks; mobile ad placements and event tracking are a separate rollout before activating campaigns for users.
+
+
+## Calls and encrypted backups
+
+For reliable WebRTC calls across mobile networks, configure `TURN_URL`, `TURN_USERNAME`, and `TURN_PASSWORD` with a TURN service. STUN alone is not sufficient for every carrier or restrictive NAT. Group calls currently use a peer-to-peer mesh capped at five participants; production rooms with more participants should use an SFU.
+
+The admin backup screen requires `BACKUP_DIR` on a persistent mounted volume, `BACKUP_ENCRYPTION_KEY` containing 64 hexadecimal characters (32 random bytes), and the MySQL client utilities (`mysqldump` and `mysql`) installed in the server image. Generate the key with `openssl rand -hex 32`, store it in the hosting provider's secret manager, and keep a secure copy separately. Restoring a backup replaces the active database; test restore procedures against a staging database before production use. Do not commit the key or backup files to Git.
