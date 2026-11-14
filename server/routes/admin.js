@@ -11,7 +11,7 @@ const router = express.Router();
 router.use(adminMiddleware); // mounted behind authMiddleware in index.js
 
 const permissionRoles = (req) => {
-  const p = req.path;
+  const p = String(req.path || '/').toLowerCase();
   const write = req.method !== 'GET';
   if (p.startsWith('/admins') || p.startsWith('/backups')) return ['owner'];
   if (p.startsWith('/reports') || p.startsWith('/posts') || p.startsWith('/groups') || p.startsWith('/stories') || p.startsWith('/banned-words')) return ['owner', 'admin', 'moderator'];
