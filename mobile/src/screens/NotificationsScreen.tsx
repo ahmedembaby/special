@@ -52,7 +52,7 @@ export default function NotificationsScreen() {
             <View style={styles.empty}>
               <Icon name="bell" size={56} color={c.textMuted} />
               <Text style={[styles.title, { color: c.text }]}>No notifications yet</Text>
-              <Text style={{ color: c.textSecondary, textAlign: 'center' }}>Reactions, replies, new followers and group invitations will show up here.</Text>
+              <Text style={{ color: c.textSecondary, textAlign: 'center' }}>App updates, announcements, reactions, replies and group invitations will show up here.</Text>
             </View>
           }
           renderItem={({ item }) => (
