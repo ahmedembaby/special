@@ -74,6 +74,6 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  empty: { alignItems: 'center', paddingTop: 80, paddingHorizontal: 40, gap: 10 },
-  title: { fontSize: 22, fontWeight: '800' },
+  empty: { alignItems: 'center', paddingTop: 92, paddingHorizontal: 42, gap: 13 },
+  title: { fontSize: 23, fontWeight: '800', letterSpacing: -0.5 },
 });
