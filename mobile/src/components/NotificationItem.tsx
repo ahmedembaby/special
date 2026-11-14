@@ -22,6 +22,9 @@ export const NotificationItem = ({ item, onDelete, onPress }: { item: AppNotific
     follow_request: { icon: 'userFill' as const, color: c.primary, text: 'requested to follow you' },
     follow_accepted: { icon: 'userFill' as const, color: c.primary, text: 'accepted your follow request' },
     broadcast: { icon: 'bell' as const, color: c.primary, text: 'published an announcement' },
+    digest: { icon: 'bell' as const, color: c.primary, text: 'sent your daily notification summary' },
+    message: { icon: 'messageCircle' as const, color: c.primary, text: 'sent you a message' },
+    reply: { icon: 'messageCircle' as const, color: c.primary, text: 'replied to your message' },
   }[item.type] || { icon: 'bell' as const, color: c.primary, text: 'sent you a notification' };
 
   // "Follow back" for follow notifications
