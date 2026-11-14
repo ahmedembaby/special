@@ -56,7 +56,7 @@ export default function PhoneAuthScreen() {
       <View style={styles.body}>
         <Text style={[styles.info, { color: c.textSecondary }]}>You will get a code via sms.</Text>
 
-        <View style={[styles.phoneRow, { borderBottomColor: c.text }]}>
+        <View style={[styles.phoneRow, { backgroundColor: c.surface, borderColor: c.border }]}>
           <TouchableOpacity style={styles.flagBtn} onPress={() => setPicker(true)} activeOpacity={0.7}>
             <Text style={styles.flag}>{country.flag}</Text>
             <Icon name="chevronDown" size={18} color={c.text} />
@@ -110,9 +110,9 @@ export default function PhoneAuthScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  body: { paddingHorizontal: 24, marginTop: 38 },
-  info: { fontSize: 16, textAlign: 'center', marginBottom: 28 },
-  phoneRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 2, paddingBottom: 8 },
+  body: { paddingHorizontal: 26, marginTop: 42 },
+  info: { fontSize: 15, lineHeight: 23, textAlign: 'center', marginBottom: 30 },
+  phoneRow: { flexDirection: 'row', alignItems: 'center', borderWidth: StyleSheet.hairlineWidth, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 15 },
   flagBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 14 },
   flag: { fontSize: 26 },
   code: { fontSize: 20, marginRight: 10 },
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   checkbox: { width: 22, height: 22, borderRadius: 5, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   rememberText: { fontSize: 14, fontWeight: '700' },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 32 },
-  sheet: { borderRadius: 16, maxHeight: 420, paddingVertical: 8 },
+  sheet: { borderRadius: 22, maxHeight: 420, paddingVertical: 10 },
   countryRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 20 },
   countryName: { flex: 1, fontSize: 16 },
 });
