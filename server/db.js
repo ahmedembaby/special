@@ -197,7 +197,7 @@ const TABLES = [
     type ENUM(
       'like','comment','follow','group_invite',
       'group_request','group_approved','mention',
-      'follow_request','follow_accepted','broadcast'
+      'follow_request','follow_accepted','broadcast','digest'
     ) NOT NULL,
     group_id INT DEFAULT NULL,
     title VARCHAR(120) DEFAULT NULL,
@@ -211,6 +211,15 @@ const TABLES = [
     FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
     FOREIGN KEY (comment_id) REFERENCES post_comments(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS notification_digests (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    digest_date DATE NOT NULL,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_digest_date (user_id, digest_date),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
   // BANNED WORDS
@@ -534,7 +543,7 @@ const COLUMNS = [
 
 // Modifications for older database schemas
 const MODIFY = [
-  "ALTER TABLE notifications MODIFY type ENUM('like','comment','follow','group_invite','group_request','group_approved','mention','follow_request','follow_accepted','broadcast') NOT NULL",
+  "ALTER TABLE notifications MODIFY type ENUM('like','comment','follow','group_invite','group_request','group_approved','mention','follow_request','follow_accepted','broadcast','digest') NOT NULL",
   'ALTER TABLE notifications MODIFY from_user_id INT NULL',
 
   'ALTER TABLE users MODIFY email VARCHAR(150) NULL',

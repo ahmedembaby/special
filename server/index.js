@@ -234,6 +234,7 @@ async function start() {
     process.exit(1);
   }
   require('./services/cleanup').start();
+  require('./services/digest').start();
   if (config.WHATSAPP_ENABLED) require('./services/whatsapp').start();
   server.listen(config.PORT, '0.0.0.0', () => {
     console.log(`🚀 E-Chat server running on port ${config.PORT}`);
