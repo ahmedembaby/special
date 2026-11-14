@@ -70,7 +70,7 @@ export const ChatItem = ({ item, onPress, draft }: ChatItemProps) => {
         <View style={styles.bottom}>
           <View style={styles.previewWrap}>
             {draft ? <Text style={[styles.preview, { color: c.textSecondary }]} numberOfLines={1}><Text style={{ color: c.danger, fontWeight: '800' }}>Draft: </Text>{draft}</Text> : (
-              <Text style={[styles.preview, { color: unread ? c.text : c.textSecondary, fontWeight: unread ? '650' : '400' }]} numberOfLines={1}>{lastMessage}</Text>
+              <Text style={[styles.preview, { color: unread ? c.text : c.textSecondary, fontWeight: unread ? '600' : '400' }]} numberOfLines={1}>{lastMessage}</Text>
             )}
             {handle ? <Text style={[styles.handle, { color: c.textMuted }]} numberOfLines={1}>{handle}</Text> : null}
           </View>
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1, minWidth: 0 },
   name: { fontSize: 15.5, fontWeight: '750', letterSpacing: -0.2, flexShrink: 1 },
-  time: { fontSize: 11, fontWeight: '650' },
+  time: { fontSize: 11, fontWeight: '600' },
   bottom: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   previewWrap: { flex: 1, minWidth: 0, gap: 2 },
   preview: { fontSize: 13, lineHeight: 19 },
