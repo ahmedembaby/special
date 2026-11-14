@@ -57,3 +57,8 @@ The existing MySQL database name and schema are intentionally not renamed by thi
 The chat client supports photo, video, and document attachments. Photos and videos are compressed on-device before upload when the native codec is available; if compression fails for a particular file, the app asks to continue with the original. Videos play inside the conversation and documents open with the device's registered viewer.
 
 The media picker/compressor adds native modules. After merging these changes, install the updated mobile dependencies and create a fresh EAS development/production build; Expo Go cannot load the native compressor. The current app binary will not gain these features until it is rebuilt.
+
+
+## Native calling requirements
+
+One-to-one WebRTC calls and group calls require a fresh EAS development/production build with the native `react-native-webrtc` module and config plugin. Expo Go cannot provide the native media engine. Group calls currently use a peer-to-peer mesh capped at five participants; a larger deployment should migrate group rooms to an SFU such as LiveKit. Screen sharing is exposed only where the native WebRTC build and operating system support display capture; iOS may require additional ReplayKit broadcast-extension configuration.
