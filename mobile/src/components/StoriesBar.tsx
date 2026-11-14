@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Image as ImageCompressor, Video as VideoCompressor } from 'react-native-compressor';
 import { useAppColors } from '../theme/useAppColors';
 import { resolveUrl } from '../config';
 import * as social from '../services/social';
@@ -38,17 +37,7 @@ export const StoriesBar = ({ meId, meAvatar, meName }: { meId: string; meAvatar?
     };
     setUploading(true);
     try {
-      try {
-        if (isVideo) {
-          file.uri = await VideoCompressor.compress(a.uri, { compressionMethod: 'auto', maxSize: 1280, minimumFileSizeForCompress: 2, preserveMetadata: false });
-        } else {
-          file.uri = await ImageCompressor.compress(a.uri, { compressionMethod: 'auto', maxWidth: 1600, maxHeight: 1600, quality: 0.8 });
-          file.type = 'image/jpeg';
-          if (!/\\.jpe?g$/i.test(file.name)) file.name = file.name.replace(/\\.[^.]+$/, '') + '.jpg';
-        }
-      } catch {
-        Alert.alert('Compression skipped', 'The original story media will be uploaded because compression was unavailable on this device.');
-      }
+      // Expo Go uploads the original selected media; no Nitro/native compressor is loaded.
       await social.publishStory(file, undefined, audience);
       setComposerOpen(false);
       load();
