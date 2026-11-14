@@ -1396,6 +1396,11 @@ export default function ChatScreen() {
                       <TouchableOpacity
                         style={[styles.fileBubble, isOwn ? styles.ownFileBubble : styles.otherFileBubble, isOwn ? ownBubbleStyle : null]}
                         activeOpacity={0.8}
+                        onPress={() => {
+                          const fileUrl = resolveUrl(item.file_url);
+                          if (fileUrl) Linking.openURL(fileUrl).catch(() => Alert.alert('File unavailable', 'Could not open this document on your device.'));
+                        }}
+                        onLongPress={() => onLongPressMessage(item)}
                       >
                         <View style={styles.fileContent}>
                           <Icon name="file" size={24} color={isOwn ? '#FFFFFF' : TEXT_GRAY_500} />
