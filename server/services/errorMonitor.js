@@ -3,8 +3,8 @@
 const entries = [];
 let sequence = 0;
 const redact = (value) => String(value || '')
-  .replace(/\\bBearer\\s+[A-Za-z0-9._~+\\/-]+=*/gi, 'Bearer [REDACTED]')
-  .replace(/(password|token|secret|authorization)\\s*[:=]\\s*[^,\\s]+/gi, '$1=[REDACTED]');
+  .replace(/\bBearer\s+[A-Za-z0-9._~+\/-]+=*/gi, 'Bearer [REDACTED]')
+  .replace(/(password|token|secret|authorization)\s*[:=]\s*[^,\s]+/gi, '$1=[REDACTED]');
 
 function record(error, source = 'server') {
   const message = redact(error && error.message ? error.message : error).slice(0, 700);
