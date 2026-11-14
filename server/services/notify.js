@@ -41,7 +41,7 @@ async function loadNotifications(userId, onlyId = null) {
     type: r.type,
     from: r.from_id
       ? { ...shapeUser(r.from_id, r.from_name, r.from_username, r.from_avatar), is_following: !!r.i_follow }
-      : { id: 'system', name: 'E-Chat', username: 'echat', avatar: null },
+      : { id: 'system', name: 'Special', username: 'special', avatar: null },
     title: r.title || undefined,
     body: r.body || undefined,
     createdAt: r.created_at,
@@ -67,7 +67,7 @@ async function notify(userId, type, fromUser, { postId = null, commentId = null,
     pushAllowed([userId], type).then((ids) => ids.length && pushToUsers(ids, {
       title: fromUser.name,
       body: text || DEFAULT_TEXT[type] || 'sent you a notification',
-      data: { type: 'notification', notificationType: type, postId, groupId },
+      data: { type: 'notification', notificationType: type, notificationId: String(r.insertId), fromUserId: String(fromUser.id), postId: postId ? String(postId) : null, commentId: commentId ? String(commentId) : null, groupId: groupId ? String(groupId) : null },
     })).catch(() => {});
   } catch (err) {
     console.error('notify:', err.message); // a notification must never break the action itself

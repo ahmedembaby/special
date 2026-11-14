@@ -9,7 +9,7 @@ async function sendPush(tokens, { title, body, data }) {
   const isCall = data && (data.type === 'call' || data.type === 'group_call');
   const messages = valid.map((to) => ({
     to, sound: 'default', title, body, data: data || {}, priority: 'high',
-    ...(isCall ? { channelId: 'calls', ttl: 45 } : {}),
+    ...(isCall ? { channelId: 'calls', ttl: 45 } : { channelId: 'default' }),
   }));
   for (let i = 0; i < messages.length; i += 100) {
     try {

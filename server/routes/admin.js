@@ -406,13 +406,54 @@ router.post('/broadcast', async (req, res) => {
       await pushToUsers(ids, {
         title,
         body,
-        data: { type: 'broadcast', broadcastId },
+        data: { type: 'notification', notificationType: 'broadcast', broadcastId },
       });
     }
     res.json({ success: true, message: `Broadcast sent to ${ids.length} users`, count: ids.length });
   } catch (err) {
     console.error('admin broadcast:', err.message);
     res.status(500).json({ message: 'Broadcast failed' });
+  }
+});
+
+// Past announcements (one row per broadcast), newest first
+router.get('/broadcasts', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT broadcast_id, MAX(title) AS title, MAX(body) AS body, COUNT(*) AS recipients,
+              SUM(read_at IS NOT NULL) AS read_count, MIN(created_at) AS created_at
+       FROM notifications WHERE broadcast_id IS NOT NULL
+       GROUP BY broadcast_id ORDER BY created_at DESC LIMIT 30`
+    );
+    res.json(rows.map((r) => ({ ...r, recipients: Number(r.recipients), read_count: Number(r.read_count || 0) })));
+  } catch (err) {
+    console.error('admin broadcasts:', err.message);
+    res.status(500).json({ message: 'Could not load announcements' });
+  }
+});
+
+// How many accounts can actually receive a mobile push
+router.get('/push/stats', async (req, res) => {
+  try {
+    const [[row]] = await pool.query(
+      'SELECT COUNT(*) AS total, SUM(push_token IS NOT NULL) AS with_token FROM users WHERE banned = 0'
+    );
+    const [[me]] = await pool.query('SELECT push_token IS NOT NULL AS has_token FROM users WHERE id = ?', [req.user.id]);
+    res.json({ total: Number(row.total || 0), withToken: Number(row.with_token || 0), adminHasToken: !!(me && me.has_token) });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load push stats' });
+  }
+});
+
+// Sends a test push to the signed-in admin's own device
+router.post('/push/test', async (req, res) => {
+  try {
+    const [[me]] = await pool.query('SELECT push_token FROM users WHERE id = ?', [req.user.id]);
+    if (!me || !me.push_token) return res.status(409).json({ message: 'لا يوجد جهاز مسجّل لحسابك. افتح التطبيق على هاتفك وسجّل الدخول أولاً.' });
+    await pushToUsers([req.user.id], { title: 'Special', body: 'اختبار الإشعارات يعمل بنجاح ✅', data: { type: 'notification', notificationType: 'broadcast', test: true } });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not send test push' });
   }
 });
 
@@ -463,12 +504,12 @@ router.post('/users/:id/warn', async (req, res) => {
     if (!users.length) return res.status(404).json({ message: 'Active user not found' });
     const title = 'تنبيه إداري من Special';
     const [created] = await pool.query(
-      "INSERT INTO notifications (user_id, type, title, body, from_user_id) VALUES (?, 'broadcast', ?, ?, ?)",
-      [id, title, message, req.user.id]
+      "INSERT INTO notifications (user_id, type, title, body, from_user_id) VALUES (?, 'broadcast', ?, ?, NULL)",
+      [id, title, message]
     );
-    const notification = { id: String(created.insertId), type: 'broadcast', title, body: message, from: { id: req.user.id, name: req.user.name }, createdAt: new Date().toISOString() };
+    const notification = { id: String(created.insertId), type: 'broadcast', title, body: message, from: { id: 'system', name: 'Special', username: 'special', avatar: null }, createdAt: new Date().toISOString(), read: false };
     rt.emitToUser(id, 'notification', notification);
-    pushToUsers([id], { title, body: message, data: { type: 'broadcast', adminWarning: true } }).catch(() => {});
+    pushToUsers([id], { title, body: message, data: { type: 'notification', notificationType: 'broadcast', notificationId: notification.id, adminWarning: true } }).catch(() => {});
     res.status(201).json({ success: true });
   } catch { res.status(500).json({ message: 'Could not send user warning' }); }
 });
