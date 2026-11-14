@@ -254,9 +254,35 @@ router.post('/broadcast', async (req, res) => {
   if (!title || !body) return res.status(400).json({ message: 'Title and body are required' });
   try {
     const [users] = await pool.query('SELECT id FROM users WHERE banned = 0');
-    const ids = users.map((u) => u.id);
-    rt.emitToUsers(ids, 'broadcast', { title, body });
-    await pushToUsers(ids, { title, body, data: { type: 'broadcast' } });
+    const ids = users.map((u) => Number(u.id));
+    if (ids.length) {
+      // Persist one inbox item per recipient so announcements remain visible after reconnects.
+      const values = ids.map((userId) => [userId, 'broadcast', title, body, null]);
+      const [insert] = await pool.query(
+        'INSERT INTO notifications (user_id, type, title, body, from_user_id) VALUES ?',
+        [values]
+      );
+      const firstId = Number(insert.insertId);
+      const createdAt = new Date().toISOString();
+      ids.forEach((userId, index) => {
+        const notification = {
+          id: String(firstId + index),
+          type: 'broadcast',
+          title,
+          body,
+          from: { id: 'system', name: 'E-Chat', username: 'echat', avatar: null },
+          createdAt,
+          read: false,
+        };
+        rt.emitToUser(userId, 'notification', notification);
+        rt.emitToUser(userId, 'broadcast', { title, body, notificationId: notification.id });
+      });
+      await pushToUsers(ids, {
+        title,
+        body,
+        data: { type: 'broadcast', notificationId: String(firstId) },
+      });
+    }
     res.json({ success: true, message: `Broadcast sent to ${ids.length} users`, count: ids.length });
   } catch (err) {
     res.status(500).json({ message: 'Broadcast failed' });
