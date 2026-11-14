@@ -22,9 +22,9 @@ const MESSAGE_SELECT = `
   LEFT JOIN messages rm ON rm.id = m.reply_to
   LEFT JOIN users ru ON ru.id = rm.sender_id`;
 
-// SQL fragment (needs the viewer id as one parameter): not expired and not deleted "for me"
+// SQL fragment (needs the viewer id as one parameter): not expired and not deleted "for me" and not recalled for everyone
 const visible = (alias = 'm') =>
-  `(${alias}.expires_at IS NULL OR ${alias}.expires_at > NOW()) AND NOT EXISTS (SELECT 1 FROM message_deletions d WHERE d.message_id = ${alias}.id AND d.user_id = ?)`;
+  `(${alias}.expires_at IS NULL OR ${alias}.expires_at > NOW()) AND ${alias}.deleted_for_all_at IS NULL AND NOT EXISTS (SELECT 1 FROM message_deletions d WHERE d.message_id = ${alias}.id AND d.user_id = ?)`;
 
 // Raw join columns -> { reply: {...} | null, forwarded }
 const shapeMessage = (m) => {
