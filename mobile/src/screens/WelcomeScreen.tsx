@@ -15,7 +15,7 @@ export default function WelcomeScreen() {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0D1222' : '#F7F8FF'} />
       <View style={styles.topRow}>
         <View style={styles.brand}>
-          <Image source={require('../../assets/logo.png')} style={styles.miniLogo} resizeMode="contain" />
+          <Image source={require('../../assets/adaptive-icon.png')} style={styles.miniLogo} resizeMode="contain" />
           <Text style={[styles.brandName, { color: c.text }]}>special</Text>
         </View>
         <View style={[styles.onlinePill, { backgroundColor: isDark ? '#18253A' : '#EAF8F7' }]}>
@@ -28,7 +28,7 @@ export default function WelcomeScreen() {
         <View style={styles.glowOne} />
         <View style={styles.glowTwo} />
         <LinearGradient colors={['#F0E9FF', '#E7F5FF']} style={styles.logoHalo}>
-          <Image source={require('../../assets/logo.png')} style={styles.heroLogo} resizeMode="contain" />
+          <Image source={require('../../assets/adaptive-icon.png')} style={styles.heroLogo} resizeMode="contain" />
         </LinearGradient>
         <View style={styles.sparkleTop}><Text style={styles.sparkle}>✦</Text></View>
         <View style={styles.sparkleSide}><Text style={styles.sparkle}>✧</Text></View>
