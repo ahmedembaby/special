@@ -316,4 +316,39 @@ router.post('/users/:id/ban', async (req, res) => {
   }
 });
 
+
+ // Active device sessions across the service. Tokens and token hashes are never exposed.
+router.get('/sessions', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT ds.id, ds.user_id, ds.device_name, ds.platform, ds.created_at,
+              ds.last_active_at, ds.expires_at, u.name AS user_name, u.username,
+              u.phone, u.banned
+       FROM device_sessions ds JOIN users u ON u.id = ds.user_id
+       WHERE ds.revoked_at IS NULL AND ds.expires_at > NOW()
+       ORDER BY ds.last_active_at DESC LIMIT 300`
+    );
+    res.json(rows.map((row) => ({ ...row, banned: !!row.banned, is_current: row.id === req.user.sessionId })));
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load sessions' });
+  }
+});
+
+router.delete('/sessions/:id', async (req, res) => {
+  try {
+    const sessionId = String(req.params.id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(sessionId)) return res.status(400).json({ message: 'Invalid session id' });
+    if (sessionId === req.user.sessionId) return res.status(400).json({ message: 'You cannot revoke the session currently used by this dashboard' });
+    const [result] = await pool.query(
+      'UPDATE device_sessions SET revoked_at = NOW() WHERE id = ? AND revoked_at IS NULL',
+      [sessionId]
+    );
+    if (!result.affectedRows) return res.status(404).json({ message: 'Session not found or already revoked' });
+    rt.disconnectSession(sessionId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not revoke session' });
+  }
+});
+
 module.exports = router;
