@@ -184,8 +184,8 @@ function CommentReactions({ comment, color, likedColor }: { comment: social.Post
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  reply: { paddingLeft: 56 },
-  cActions: { flexDirection: 'row', gap: 20, marginTop: 8 },
-  replyBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
-  comment: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  reply: { paddingLeft: 58 },
+  cActions: { flexDirection: 'row', gap: 22, marginTop: 10 },
+  replyBar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingVertical: 11, borderTopWidth: StyleSheet.hairlineWidth },
+  comment: { flexDirection: 'row', gap: 13, paddingHorizontal: 18, paddingVertical: 15, borderBottomWidth: StyleSheet.hairlineWidth },
 });
