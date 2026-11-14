@@ -53,7 +53,7 @@ export default function StarredScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { marginHorizontal: 14, marginTop: 10, padding: 14, borderRadius: 18, shadowOpacity: 1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
+  card: { marginHorizontal: 18, marginTop: 12, padding: 17, borderRadius: 21, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(110,120,150,0.18)' },
   head: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  empty: { textAlign: 'center', marginTop: 60, fontSize: 15, lineHeight: 22, paddingHorizontal: 30 },
+  empty: { textAlign: 'center', marginTop: 76, fontSize: 15, lineHeight: 24, paddingHorizontal: 34 },
 });
