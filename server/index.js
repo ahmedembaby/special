@@ -10,9 +10,10 @@ const config = require('./config');
 const db = require('./db');
 const redis = require('./services/redis');
 const rt = require('./services/realtime');
+const errorMonitor = require('./services/errorMonitor');
 
-process.on('unhandledRejection', (reason) => console.error('🔴 Unhandled Rejection:', reason));
-process.on('uncaughtException', (err) => console.error('🔴 Uncaught Exception:', err));
+process.on('unhandledRejection', (reason) => { errorMonitor.record(reason, 'unhandledRejection'); console.error('🔴 Unhandled Rejection:', reason); });
+process.on('uncaughtException', (err) => { errorMonitor.record(err, 'uncaughtException'); console.error('🔴 Uncaught Exception:', err); });
 
 const { authMiddleware, authenticateToken, getToken } = require('./middleware/auth');
 const { isParticipant } = require('./services/chat');
@@ -23,7 +24,7 @@ if (process.env.SENTRY_DSN) {
   try { Sentry = require('@sentry/node'); Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.05 }); }
   catch { console.warn('SENTRY_DSN is set but @sentry/node is not installed'); }
 }
-process.on('unhandledRejection', (e) => { console.error('unhandledRejection:', e); if (Sentry) Sentry.captureException(e); });
+process.on('unhandledRejection', (e) => { errorMonitor.record(e, 'unhandledRejection'); console.error('unhandledRejection:', e); if (Sentry) Sentry.captureException(e); });
 
 const app = express();
 const server = http.createServer(app);
@@ -155,7 +156,7 @@ app.use((err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: 'File is too large' });
   if (err.type === 'entity.parse.failed') return res.status(400).json({ message: 'Invalid JSON' });
   const status = err.status || (err.name === 'MulterError' ? 400 : 500);
-  if (status >= 500) console.error('Unhandled error:', err);
+  if (status >= 500) { errorMonitor.record(err, req.method + ' ' + req.originalUrl); console.error('Unhandled error:', err); }
   res.status(status).json({ message: status >= 500 ? 'Internal server error' : err.message });
 });
 
