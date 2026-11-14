@@ -59,6 +59,9 @@ export interface AuthUser {
   phone?: string | null;
   avatar?: string | null;
   bio?: string | null;
+  gender?: string | null;
+  birthday?: string | null;
+  location?: string | null;
   is_admin?: boolean;
   is_private?: boolean;
   public_key?: string | null;
@@ -161,7 +164,20 @@ export interface User {
   username?: string | null;
   avatar?: string | null;
   bio?: string | null;
+  gender?: string | null;
+  birthday?: string | null;
+  location?: string | null;
   status?: string;
+}
+
+export interface UserSettings {
+  hide_presence: boolean;
+  read_receipts: boolean;
+  who_can_message: 'everyone' | 'followed' | 'nobody';
+  data_saver: boolean;
+  notif: { like: boolean; comment: boolean; follow: boolean; mention: boolean; message: boolean; reply: boolean; group: boolean };
+  quiet: { enabled: boolean; start: number; end: number; tz?: number };
+  digest: { enabled: boolean; hour: number };
 }
 
 export const auth = {
@@ -180,20 +196,11 @@ export const auth = {
 
 export interface DeviceSession { id: string; device_name: string; platform: string; created_at: string; last_active_at: string; expires_at: string; is_current: boolean; }
 
-export interface UserSettings {
-  hide_presence: boolean;
-  read_receipts: boolean;
-  who_can_message: 'everyone' | 'followed' | 'nobody';
-  notif: { like: boolean; comment: boolean; follow: boolean; mention: boolean; message: boolean; reply: boolean; group: boolean };
-  quiet: { enabled: boolean; start: number; end: number; tz?: number };
-  digest: { enabled: boolean; hour: number };
-}
-
 export const users = {
   list: () => api.get<User[]>('/users'),
   get: (id: string | number) => api.get<User>(`/users/${id}`),
   me: () => api.get<AuthUser>('/users/me'),
-  updateMe: (data: { name?: string; bio?: string; username?: string; is_private?: boolean }) => api.put<AuthUser>('/users/me', data),
+  updateMe: (data: { name?: string; bio?: string; username?: string; is_private?: boolean; location?: string; birthday?: string; gender?: string }) => api.put<AuthUser>('/users/me', data),
   getSettings: () => api.get<UserSettings>('/users/me/settings'),
   putSettings: (data: Partial<UserSettings>) => api.put<UserSettings>('/users/me/settings', data),
   getKeyBackup: () => api.get<{ backup: string }>('/users/me/key-backup'),
@@ -234,7 +241,7 @@ export const ai = {
 export const messages = {
   send: (data: { conversation_id: string | number; content: string; reply_to?: string | number; client_id?: string }) =>
     api.post<Message>('/messages', data),
-  upload: (data: { conversation_id: string | number; file: any; reply_to?: string | number; voice_duration?: string; voice_waveform?: string; view_once?: boolean; client_id?: string }) => {
+  upload: async (data: { conversation_id: string | number; file: any; reply_to?: string | number; voice_duration?: string; voice_waveform?: string; view_once?: boolean; client_id?: string }) => {
     const formData = new FormData();
     if (data.client_id) formData.append('client_id', data.client_id);
     if (data.view_once) formData.append('view_once', '1');
@@ -242,9 +249,27 @@ export const messages = {
     if (data.reply_to) formData.append('reply_to', String(data.reply_to));
     if (data.voice_duration) formData.append('voice_duration', data.voice_duration);
     if (data.voice_waveform) formData.append('voice_waveform', data.voice_waveform);
+
+    // Compress images before upload when Data Saver is relevant (client decides based on settings)
+    let uploadUri = data.file.uri;
+    let uploadType = data.file.type || 'image/jpeg';
+    if (data.file.uri && uploadType.startsWith('image/')) {
+      try {
+        const { ImageManipulator } = await import('expo-image-manipulator');
+        const compressed = await ImageManipulator.manipulateAsync(
+          data.file.uri,
+          [{ resize: { width: 1200 } }],
+          { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        uploadUri = compressed.uri;
+      } catch {
+        // fall back to original if compression fails
+      }
+    }
+
     formData.append('file', {
-      uri: data.file.uri,
-      type: data.file.type || 'image/jpeg',
+      uri: uploadUri,
+      type: uploadType,
       name: data.file.name || 'image.jpg',
     } as any);
     return api.post<Message>('/messages/upload', formData, {
