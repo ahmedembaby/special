@@ -108,8 +108,8 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  section: { fontSize: 13, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', opacity: 0.6, paddingHorizontal: 20, paddingTop: 22, paddingBottom: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, marginHorizontal: 14, marginTop: 8, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 18 },
-  iconBox: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  section: { fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', opacity: 0.62, paddingHorizontal: 22, paddingTop: 26, paddingBottom: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 15, marginHorizontal: 16, marginTop: 8, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 20 },
+  iconBox: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   sep: { height: StyleSheet.hairlineWidth, marginVertical: 12 },
 });

@@ -33,12 +33,12 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 28, justifyContent: 'space-between' },
-  logo: { alignItems: 'center' },
+  container: { flex: 1, paddingHorizontal: 30, justifyContent: 'space-between' },
+  logo: { alignItems: 'center', justifyContent: 'center', width: 84, height: 84, borderRadius: 28, alignSelf: 'center', backgroundColor: 'rgba(91,92,226,0.09)' },
   middle: { gap: 12 },
-  headline: { fontSize: 34, fontWeight: '800', lineHeight: 40 },
+  headline: { fontSize: 36, fontWeight: '800', lineHeight: 43, letterSpacing: -0.9 },
   tagline: { fontSize: 17, lineHeight: 24 },
-  btn: { height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  btn: { height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   btnText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
   legal: { fontSize: 13, lineHeight: 18, marginTop: 14 },
 });

@@ -15,7 +15,7 @@ export const SearchBar = ({ value, onChangeText, placeholder = 'Search', autoFoc
   return (
     <View style={[styles.wrap, { backgroundColor: c.inputBg, borderColor: c.inputBorder }]}>
       <View style={[styles.iconWrap, { backgroundColor: c.primaryLight }]}>
-        <Icon name="search" size={16} color={c.primary} strokeWidth={2.1} />
+        <Icon name="search" size={17} color={c.primary} strokeWidth={2.1} />
       </View>
       <TextInput
         style={[styles.input, { color: c.text }]}
@@ -28,10 +28,11 @@ export const SearchBar = ({ value, onChangeText, placeholder = 'Search', autoFoc
         onSubmitEditing={onSubmit}
         autoCapitalize="none"
         autoCorrect={false}
+        accessibilityLabel={placeholder}
       />
       {value ? (
-        <TouchableOpacity onPress={() => onChangeText('')} hitSlop={8} style={[styles.clear, { backgroundColor: c.primary }]}>
-          <Icon name="x" size={11} color="#FFFFFF" strokeWidth={2.5} />
+        <TouchableOpacity onPress={() => onChangeText('')} hitSlop={8} style={[styles.clear, { backgroundColor: c.primary }]} accessibilityRole="button" accessibilityLabel="Clear search">
+          <Icon name="x" size={12} color="#FFFFFF" strokeWidth={2.5} />
         </TouchableOpacity>
       ) : null}
     </View>
@@ -39,8 +40,8 @@ export const SearchBar = ({ value, onChangeText, placeholder = 'Search', autoFoc
 };
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 10, height: 48, gap: 10 },
-  iconWrap: { width: 30, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  wrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 11, height: 50, gap: 11 },
+  iconWrap: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   input: { flex: 1, fontSize: 15, paddingVertical: 0, fontWeight: '500' },
-  clear: { width: 22, height: 22, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  clear: { width: 24, height: 24, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
 });
