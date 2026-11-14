@@ -8,11 +8,13 @@ import { NotificationItem } from '../components/NotificationItem';
 import { Icon } from '../components/Icon';
 import { useMe } from '../hooks/useMe';
 import { onSocket } from '../services/socket';
+import { useUnreadCounts } from '../context/UnreadCountsContext';
 
 export default function NotificationsScreen() {
   const nav = useNavigation() as any;
   const { c } = useAppColors();
   const me = useMe();
+  const { refresh: refreshUnreadCounts } = useUnreadCounts();
   const [items, setItems] = useState<social.AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -20,11 +22,12 @@ export default function NotificationsScreen() {
   const load = useCallback(async () => {
     try {
       setItems(await social.listNotifications());
-      social.markNotificationsRead().catch(() => {});
+      await social.markNotificationsRead().catch(() => {});
+      refreshUnreadCounts();
     } catch {
       // keep the current list
     } finally { setLoading(false); setRefreshing(false); }
-  }, []);
+  }, [refreshUnreadCounts]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   // New notification pushed by the server while the screen is open
