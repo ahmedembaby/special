@@ -30,6 +30,7 @@ import { OptionSheet, SheetOption } from '../components/OptionSheet';
 import { ReportSheet, ReportTarget } from '../components/ReportSheet';
 import { Linking } from 'react-native';
 import { useCall } from '../context/CallContext';
+import { useGroupCall } from '../context/GroupCallContext';
 import { authenticateBiometric, biometricAvailable } from '../services/appLock';
 import * as chatSecurity from '../services/chatSecurity';
 
@@ -180,6 +181,7 @@ export default function ChatScreen() {
   const [forwardList, setForwardList] = useState<api.Conversation[]>([]);
   const [, setTick] = useState(0);
   const call = useCall();
+  const groupCall = useGroupCall();
 
   const { user, updateUser } = useAuth();
   const currentUserId: string | number = user?.id ?? 'me';
@@ -1002,6 +1004,10 @@ export default function ChatScreen() {
     { label: meta.muted ? 'Unmute notifications' : 'Mute notifications', onPress: () => (meta.muted ? setMute(0) : setMenu('mute')) },
     { label: `Disappearing messages${meta.disappear ? ' (on)' : ''}`, onPress: () => setMenu('disappear') },
     { label: 'Special AI assistant', onPress: () => setAiOpen(true) },
+    ...(inGroup ? [
+      { label: 'Start group voice call', onPress: () => groupCall.start(conversationId!, 'audio') },
+      { label: 'Start group video call', onPress: () => groupCall.start(conversationId!, 'video') },
+    ] : []),
     { label: 'Create a poll', onPress: () => setPollOpen(true) },
     { label: 'Chat theme (wallpaper & colors)', onPress: () => { setThemeDraft(theme); setThemeOpen(true); } },
     { label: 'Starred messages', onPress: () => navigation.navigate('Starred') },
