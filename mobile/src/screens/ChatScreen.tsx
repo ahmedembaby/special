@@ -151,6 +151,7 @@ export default function ChatScreen() {
   const [selectedMessageForReaction, setSelectedMessageForReaction] = useState<api.Message | null>(null);
   const [reactionEmojis] = useState<string[]>(['❤️', '😂', '👍', '😮', '😢', '🔥', '👏', '🎉']);
   const [msgSearch, setMsgSearch] = useState('');
+  const [aiSearchTerms, setAiSearchTerms] = useState<string[]>([]);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [typingKind, setTypingKind] = useState<'typing' | 'recording'>('typing');
@@ -885,23 +886,29 @@ export default function ChatScreen() {
 
   // search: the loaded messages (decrypted) + server results for older plain-text messages
   useEffect(() => {
-    const q = msgSearch.trim();
-    if (q.length < 2 || !conversationId) { setServerHits([]); return undefined; }
+    const queries = aiSearchTerms.length ? aiSearchTerms : [msgSearch.trim()];
+    const validQueries = queries.map((value) => value.trim()).filter((value) => value.length >= 2);
+    if (!validQueries.length || !conversationId) { setServerHits([]); return undefined; }
     const t = setTimeout(() => {
-      api.conversations.search(conversationId, q).then((r) => setServerHits(r.data.messages || [])).catch(() => {});
+      Promise.all(validQueries.map((query) => api.conversations.search(conversationId, query).then((r) => r.data.messages || []).catch(() => [])))
+        .then((groups) => {
+          const unique = new Map<string, api.Message>();
+          groups.flat().forEach((message) => unique.set(String(message.id), message));
+          setServerHits([...unique.values()]);
+        });
     }, 350);
     return () => clearTimeout(t);
-  }, [msgSearch, conversationId]);
+  }, [msgSearch, aiSearchTerms, conversationId]);
 
   const visibleMessages = useMemo(() => {
-    const q = msgSearch.trim().toLowerCase();
+    const queries = (aiSearchTerms.length ? aiSearchTerms : [msgSearch.trim()]).map((value) => value.trim().toLowerCase()).filter(Boolean);
     const live = messages.filter(alive);
-    if (!q) return live;
-    const local = live.filter((m) => m.type !== 'image' && textOf(m).toLowerCase().includes(q));
+    if (!queries.length) return live;
+    const local = live.filter((m) => m.type !== 'image' && queries.some((query) => textOf(m).toLowerCase().includes(query)));
     const extra = serverHits.filter((h) => !local.some((m) => String(m.id) === String(h.id)));
     return [...extra, ...local].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, msgSearch, serverHits, textOf]);
+  }, [messages, msgSearch, aiSearchTerms, serverHits, textOf]);
 
   const scrollToMessage = (id: string | number) => {
     setMsgSearch('');
@@ -1006,7 +1013,7 @@ export default function ChatScreen() {
 
   const mainMenu: SheetOption[] = [
     { label: chatLocked ? 'Remove biometric conversation lock' : 'Lock conversation with biometrics', onPress: toggleChatLock },
-    { label: showSearch ? 'Hide search' : 'Search in conversation', onPress: () => { setShowSearch((v) => !v); setMsgSearch(''); } },
+    { label: showSearch ? 'Hide search' : 'Search in conversation', onPress: () => { setShowSearch((v) => !v); setMsgSearch(''); setAiSearchTerms([]); } },
     { label: meta.muted ? 'Unmute notifications' : 'Mute notifications', onPress: () => (meta.muted ? setMute(0) : setMenu('mute')) },
     { label: `Disappearing messages${meta.disappear ? ' (on)' : ''}`, onPress: () => setMenu('disappear') },
     { label: 'Special AI assistant', onPress: () => setAiOpen(true) },
@@ -1864,7 +1871,7 @@ export default function ChatScreen() {
           </View>
         </View>
       </Modal>
-      <AIAssistantSheet visible={aiOpen} onClose={() => setAiOpen(false)} context={aiContext} isGroup={inGroup} />
+      <AIAssistantSheet visible={aiOpen} onClose={() => setAiOpen(false)} context={aiContext} isGroup={inGroup} onSearchTerms={(terms) => { setAiSearchTerms(terms); setMsgSearch(''); setShowSearch(true); setAiOpen(false); }} />
       {isFocused ? <ChatCaptureGuard /> : null}
     </SafeAreaView>
   );
