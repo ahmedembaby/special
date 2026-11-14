@@ -62,8 +62,3 @@ The media picker/compressor adds native modules. After merging these changes, in
 ## Native calling requirements
 
 One-to-one WebRTC calls and group calls require a fresh EAS development/production build with the native `react-native-webrtc` module and config plugin. Expo Go cannot provide the native media engine. Group calls currently use a peer-to-peer mesh capped at five participants; a larger deployment should migrate group rooms to an SFU such as LiveKit. Screen sharing is exposed only where the native WebRTC build and operating system support display capture; iOS may require additional ReplayKit broadcast-extension configuration.
-
-
-## Native calling requirements
-
-One-to-one WebRTC calls and group calls require a fresh EAS development/production build with the native `react-native-webrtc` module and config plugin. Expo Go cannot provide the native media engine. Group calls currently use a peer-to-peer mesh capped at five participants; larger rooms should migrate to an SFU such as LiveKit. Screen sharing is exposed only where the native WebRTC build and operating system support display capture; iOS requires a ReplayKit broadcast-extension implementation.
