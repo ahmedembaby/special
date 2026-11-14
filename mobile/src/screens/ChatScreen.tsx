@@ -1882,7 +1882,7 @@ export default function ChatScreen() {
           </View>
         </View>
       </Modal>
-      <AIAssistantSheet visible={aiOpen} onClose={() => setAiOpen(false)} context={aiContext} unreadContext={unreadContext} isGroup={inGroup} onSearchTerms={(terms) => { setAiSearchTerms([terms.join(' ')]); setMsgSearch(''); setShowSearch(true); setAiOpen(false); }} />
+      <AIAssistantSheet visible={aiOpen} onClose={() => setAiOpen(false)} context={aiContext} unreadContext={unreadContext} isGroup={inGroup} onSearchTerms={(terms) => { setAiSearchTerms(terms); setMsgSearch(''); setShowSearch(true); setAiOpen(false); }} />
       {isFocused ? <ChatCaptureGuard /> : null}
     </SafeAreaView>
   );
