@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAppColors } from '../theme/useAppColors';
 import { resolveUrl } from '../config';
 import * as social from '../services/social';
 import { onSocket } from '../services/socket';
 import { StoryViewer } from './StoryViewer';
+import { CachedImage } from './CachedImage';
 
 /** Horizontal row of stories at the top of the feed (first bubble = add / view my story). */
 export const StoriesBar = ({ meId, meAvatar, meName }: { meId: string; meAvatar?: string | null; meName?: string }) => {
@@ -43,7 +44,7 @@ export const StoriesBar = ({ meId, meAvatar, meName }: { meId: string; meAvatar?
     <TouchableOpacity key={key} style={styles.item} onPress={onPress} activeOpacity={0.8}>
       <View style={[styles.ring, { borderColor: ring || 'transparent' }]}>
         {resolveUrl(uri) ? (
-          <Image source={{ uri: resolveUrl(uri) || undefined }} style={styles.avatar} />
+          <CachedImage source={{ uri: resolveUrl(uri) || undefined }} style={styles.avatar} />
         ) : (
           <View style={[styles.avatar, { backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' }]}>
             <Text style={{ color: '#fff', fontWeight: '800', fontSize: 20 }}>{(name || 'U').charAt(0).toUpperCase()}</Text>

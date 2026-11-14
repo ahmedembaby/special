@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   SafeAreaView, View, FlatList, ActivityIndicator, StatusBar, Platform, AppState, KeyboardAvoidingView, Alert, StyleSheet,
-  TextInput, TouchableOpacity, Text, Image, Modal, PanResponder, ScrollView,
+  TextInput, TouchableOpacity, Text, Modal, PanResponder, ScrollView,
 } from 'react-native';
 import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,6 +19,7 @@ import { PollBubble } from '../components/PollBubble';
 import { enqueue, newClientId, isRetryable, outboxFor, subscribeOutbox, removeFromOutbox, retryItem, flushOutbox } from '../services/outbox';
 import { getDraft, setDraft, getTheme, saveTheme, ChatTheme, NO_THEME, WALLPAPERS, BUBBLE_COLORS, isDarkColor } from '../services/chatPrefs';
 import { ImageViewer } from '../components/ImageViewer';
+import { CachedImage } from '../components/CachedImage';
 import { onSocket, joinConversation, leaveConversation, emitTyping } from '../services/socket';
 import * as e2ee from '../services/e2ee';
 import { OptionSheet, SheetOption } from '../components/OptionSheet';
@@ -1147,7 +1148,7 @@ export default function ChatScreen() {
             onPress={() => header.userId != null && navigation.navigate('UserProfile', { userId: String(header.userId) })}
           >
             {header.avatar ? (
-              <Image source={{ uri: resolveUrl(header.avatar) || undefined }} style={styles.avatar} />
+              <CachedImage source={{ uri: resolveUrl(header.avatar) || undefined }} style={styles.avatar} />
             ) : (
               <View style={[styles.avatar, { backgroundColor: c.primary }]}>
                 <Text style={[styles.avatarInitial, { color: '#FFFFFF' }]}>
@@ -1274,7 +1275,7 @@ export default function ChatScreen() {
                   {!isOwn && inGroup && !groupedWithPrev ? (
                     <View style={styles.senderRow}>
                       {item.sender_avatar ? (
-                        <Image source={{ uri: resolveUrl(item.sender_avatar) || undefined }} style={styles.msgAvatar} />
+                        <CachedImage source={{ uri: resolveUrl(item.sender_avatar) || undefined }} style={styles.msgAvatar} />
                       ) : (
                         <View style={[styles.msgAvatar, { backgroundColor: c.primary }]} />
                       )}
@@ -1327,7 +1328,7 @@ export default function ChatScreen() {
                       </TouchableOpacity>
                     ) : isImage && item.file_url ? (
                       <TouchableOpacity activeOpacity={0.9} onPress={() => setViewerUri(resolveUrl(item.file_url))} onLongPress={() => onLongPressMessage(item)}>
-                        <Image source={{ uri: resolveUrl(item.file_url) || undefined }} style={{ width: 230, height: 230, borderRadius: 20, backgroundColor: c.inputBg }} resizeMode="cover" />
+                        <CachedImage source={{ uri: resolveUrl(item.file_url) || undefined }} style={{ width: 230, height: 230, borderRadius: 20, backgroundColor: c.inputBg }} resizeMode="cover" />
                       </TouchableOpacity>
                     ) : item.view_once ? (
                       <TouchableOpacity

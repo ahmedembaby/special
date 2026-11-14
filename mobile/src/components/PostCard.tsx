@@ -4,7 +4,8 @@ import { ReportSheet, ReportTarget } from './ReportSheet';
 import { OptionSheet } from './OptionSheet';
 import { useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, Alert, StyleSheet, Share, Modal, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, StyleSheet, Share, Modal, TextInput } from 'react-native';
+import { CachedImage } from './CachedImage';
 import { Post } from '../services/social';
 import * as social from '../services/social';
 import { timeAgo, formatCount } from '../utils/format';
@@ -174,7 +175,7 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
           <View style={[styles.grid, { borderColor: c.border }]}>
             {imgs.length === 1 ? (
               <TouchableOpacity activeOpacity={0.9} onPress={() => openViewer(0)}>
-                <Image source={{ uri: imgs[0] }} style={styles.single} resizeMode="cover" />
+                <CachedImage source={{ uri: imgs[0] }} style={styles.single} resizeMode="cover" />
               </TouchableOpacity>
             ) : (
               <View style={styles.gridRow}>
@@ -183,7 +184,7 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
                     const i = imgs.indexOf(u);
                     return (
                       <TouchableOpacity key={u + i} activeOpacity={0.9} style={{ flex: 1 }} onPress={() => openViewer(i)}>
-                        <Image source={{ uri: u }} style={styles.cell} resizeMode="cover" />
+                        <CachedImage source={{ uri: u }} style={styles.cell} resizeMode="cover" />
                       </TouchableOpacity>
                     );
                   })}
@@ -193,7 +194,7 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
                     const i = imgs.indexOf(u);
                     return (
                       <TouchableOpacity key={u + i} activeOpacity={0.9} style={{ flex: 1 }} onPress={() => openViewer(i)}>
-                        <Image source={{ uri: u }} style={styles.cell} resizeMode="cover" />
+                        <CachedImage source={{ uri: u }} style={styles.cell} resizeMode="cover" />
                       </TouchableOpacity>
                     );
                   })}

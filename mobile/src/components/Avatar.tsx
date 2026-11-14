@@ -1,4 +1,5 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { CachedImage } from './CachedImage';
 import { useNavigation } from '@react-navigation/native';
 import { resolveUrl } from '../config';
 import { useAppColors } from '../theme/useAppColors';
@@ -27,7 +28,7 @@ export const Avatar = ({ source, name, size = 44, status, onPress: onPressProp, 
     <Wrapper {...wrapperProps} style={[{ width: size, height: size }, style]}>
       <View style={[styles.circle, { width: size, height: size, borderRadius: size * 0.34, backgroundColor: c.inputBg }]}>
         {uri ? (
-          <Image source={{ uri }} style={{ width: size, height: size }} />
+          <CachedImage source={{ uri }} style={{ width: size, height: size }} />
         ) : (
           <View style={[styles.circle, { width: size, height: size, backgroundColor: c.primary, justifyContent: 'center', alignItems: 'center' }]}>
             <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: size * 0.4 }}>{initial}</Text>

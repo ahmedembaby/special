@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Modal, View, Image, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, Alert, Platform } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, Alert, Platform } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { resolveUrl } from '../config';
 import * as social from '../services/social';
 import { OptionSheet } from './OptionSheet';
+import { CachedImage } from './CachedImage';
 
 const { width: W } = Dimensions.get('window');
 
@@ -96,7 +97,7 @@ export const StoryViewer = ({ groups: initial, startGroup, meId, onClose }: Prop
         {story.media_type === 'video' ? (
           <StoryVideo key={story.id} uri={uri!} onProgress={(p) => progress.setValue(p)} onEnd={next} />
         ) : (
-          <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="contain" />
+          <CachedImage source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="contain" />
         )}
 
         <View style={styles.touch}>
@@ -113,7 +114,7 @@ export const StoryViewer = ({ groups: initial, startGroup, meId, onClose }: Prop
             ))}
           </View>
           <View style={styles.userRow}>
-            {avatar ? <Image source={{ uri: avatar }} style={styles.avatar} /> : <View style={[styles.avatar, { backgroundColor: '#6C4DF6' }]} />}
+            {avatar ? <CachedImage source={{ uri: avatar }} style={styles.avatar} /> : <View style={[styles.avatar, { backgroundColor: '#6C4DF6' }]} />}
             <Text style={styles.name}>{mine ? 'Your story' : group.user.name}</Text>
             <Text style={styles.time}>{new Date(story.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
             <View style={{ flex: 1 }} />

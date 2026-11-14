@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Modal, View, Image, TouchableOpacity, ScrollView, StatusBar, StyleSheet, useWindowDimensions, ActivityIndicator, Text, Platform,
+  Modal, View, TouchableOpacity, ScrollView, StatusBar, StyleSheet, useWindowDimensions, ActivityIndicator, Text, Platform,
   TextInput, Keyboard, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from './Icon';
+import { CachedImage } from './CachedImage';
 import { ReactionButton, ReactionState } from './ReactionButton';
 
 export interface ViewerActions {
@@ -106,7 +107,7 @@ export const ImageViewer = ({ uri: single, uris, initialIndex = 0, onClose, acti
             {zoomed ? (
               <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} contentContainerStyle={{ width: w, height: h }}>
                 <TouchableOpacity activeOpacity={1} onPress={onTap}>
-                  <Image source={{ uri }} style={{ width: w, height: h }} resizeMode="contain" />
+                  <CachedImage source={{ uri }} style={{ width: w, height: h }} resizeMode="contain" />
                 </TouchableOpacity>
               </ScrollView>
             ) : null}
@@ -123,7 +124,7 @@ export const ImageViewer = ({ uri: single, uris, initialIndex = 0, onClose, acti
               >
                 {list.map((u, i) => (
                   <TouchableOpacity key={u + i} activeOpacity={1} onPress={onTap} style={{ width, height }}>
-                    <Image
+                    <CachedImage
                       source={{ uri: u }}
                       style={{ width, height }}
                       resizeMode="contain"
