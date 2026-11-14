@@ -1,9 +1,9 @@
 const pool = require('../db');
 
-const DEFAULT_NOTIF = { like: true, comment: true, follow: true, mention: true, message: true, group: true };
+const DEFAULT_NOTIF = { like: true, comment: true, follow: true, mention: true, message: true, reply: true, group: true };
 const CATEGORY = {
   like: 'like', comment: 'comment', follow: 'follow', follow_request: 'follow', follow_accepted: 'follow',
-  mention: 'mention', group_invite: 'group', group_request: 'group', group_approved: 'group', message: 'message',
+  mention: 'mention', group_invite: 'group', group_request: 'group', group_approved: 'group', message: 'message', reply: 'reply',
 };
 
 const parse = (txt) => {

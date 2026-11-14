@@ -38,7 +38,8 @@ async function deliver(message, sender) {
       rt.emitToConversation(message.conversation_id, 'message_delivered', { messageId: message.id, conversationId: message.conversation_id });
     } catch (e) { console.warn('delivered mark:', e.message); }
   }
-  let offline = await pushAllowedIds(others.filter((id) => !rt.isOnline(id)));
+  const pushKind = message.reply_to ? 'reply' : 'message';
+  let offline = await pushAllowedIds(others.filter((id) => !rt.isOnline(id)), pushKind);
   if (offline.length) {
     // people who muted this conversation get no push
     const [muted] = await pool.query(
@@ -52,14 +53,14 @@ async function deliver(message, sender) {
     pushToUsers(offline, {
       title: sender.name,
       body: preview(message),
-      data: { type: 'message', conversationId: message.conversation_id },
+      data: { type: pushKind, conversationId: message.conversation_id },
     }).catch(() => {});
   }
 }
 
 const { pushAllowed } = require('../services/prefs');
 const readReceiptsOn = async (userId) => { const [r] = await pool.query('SELECT read_receipts FROM users WHERE id = ?', [userId]); return !r[0] || r[0].read_receipts !== 0; };
-const pushAllowedIds = (ids) => pushAllowed(ids, 'message');
+const pushAllowedIds = (ids, kind = 'message') => pushAllowed(ids, kind);
 
 // direct conversations: no messages when either side blocked the other, or the receiver limited who can write to them
 async function requiresEncryptedDirect(conversationId, content) {
