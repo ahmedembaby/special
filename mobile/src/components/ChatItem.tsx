@@ -3,7 +3,9 @@ import { Avatar } from './Avatar';
 import { Icon } from './Icon';
 import { useAppColors } from '../theme/useAppColors';
 import { isEncrypted, decrypt } from '../services/e2ee';
-const previewText = (t: string) => (t.startsWith('sticker:') ? `Sticker ${t.slice(8)}` : t.startsWith('📍 http') ? '📍 Location' : t);
+
+const previewText = (t: string) =>
+  t.startsWith('sticker:') ? `Sticker ${t.slice(8)}` : t.startsWith('📍 http') ? '📍 Location' : t;
 
 export interface ChatItemProps {
   item: any;
@@ -41,27 +43,37 @@ export const ChatItem = ({ item, onPress, draft }: ChatItemProps) => {
   const handle = item.type === 'group' ? null : participant.username ? `@${participant.username}` : null;
 
   return (
-    <TouchableOpacity style={[styles.item, { backgroundColor: c.card, borderColor: c.border, shadowColor: c.shadow }]} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={[styles.item, { borderBottomColor: c.divider }]}
+      onPress={onPress}
+      activeOpacity={0.72}
+      accessibilityRole="button"
+      accessibilityLabel={`Open conversation with ${name}`}
+    >
       <Avatar
         source={item.type === 'group' ? item.avatar : participant.avatar}
         name={name}
-        size={52}
+        size={54}
         status={item.type === 'group' ? undefined : participant.status}
         userId={item.type === 'group' ? undefined : participant.id}
       />
       <View style={styles.body}>
         <View style={styles.top}>
           <View style={styles.nameRow}>
-            {item.pinned ? <Icon name="pin" size={13} color={c.textSecondary} /> : null}
+            {item.pinned ? <Icon name="pin" size={13} color={c.textMuted} /> : null}
             <Text style={[styles.name, { color: c.text }]} numberOfLines={1}>{name}</Text>
-            {isVerified ? <Icon name="verified" size={14} color={c.primary} strokeWidth={1.2} /> : null}
-            {item.muted ? <Icon name="bellOff" size={13} color={c.textSecondary} /> : null}
-            {handle ? <Text style={[styles.handle, { color: c.textSecondary }]} numberOfLines={1}>{handle}</Text> : null}
+            {isVerified ? <Icon name="verified" size={15} color={c.primary} strokeWidth={1.4} /> : null}
+            {item.muted ? <Icon name="bellOff" size={13} color={c.textMuted} /> : null}
           </View>
-          <Text style={{ color: c.textSecondary, fontSize: 13 }}>{timeLabel(item.last_message_at)}</Text>
+          <Text style={[styles.time, { color: unread ? c.primary : c.textMuted }]}>{timeLabel(item.last_message_at)}</Text>
         </View>
         <View style={styles.bottom}>
-          <Text style={{ color: unread ? c.text : c.textSecondary, fontWeight: unread ? '700' : '400', fontSize: 15, marginTop: 2, flex: 1 }} numberOfLines={1}>{draft ? <Text><Text style={{ color: c.danger, fontWeight: '700' }}>Draft: </Text>{draft}</Text> : lastMessage}</Text>
+          <View style={styles.previewWrap}>
+            {draft ? <Text style={[styles.preview, { color: c.textSecondary }]} numberOfLines={1}><Text style={{ color: c.danger, fontWeight: '800' }}>Draft: </Text>{draft}</Text> : (
+              <Text style={[styles.preview, { color: unread ? c.text : c.textSecondary, fontWeight: unread ? '650' : '400' }]} numberOfLines={1}>{lastMessage}</Text>
+            )}
+            {handle ? <Text style={[styles.handle, { color: c.textMuted }]} numberOfLines={1}>{handle}</Text> : null}
+          </View>
           {unread > 0 ? (
             <View style={[styles.badge, { backgroundColor: c.primary }]}>
               <Text style={styles.badgeText}>{unread > 99 ? '99+' : unread}</Text>
@@ -74,13 +86,23 @@ export const ChatItem = ({ item, onPress, draft }: ChatItemProps) => {
 };
 
 const styles = StyleSheet.create({
-  item: { flexDirection: 'row', marginHorizontal: 16, marginTop: 6, paddingHorizontal: 14, paddingVertical: 14, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', gap: 13, shadowOpacity: 0, elevation: 0 },
-  body: { flex: 1 },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
-  name: { fontSize: 15, fontWeight: '800', flexShrink: 1 },
-  handle: { fontSize: 14, flexShrink: 2 },
-  bottom: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  badge: { minWidth: 22, height: 22, borderRadius: 8, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  item: {
+    flexDirection: 'row',
+    marginHorizontal: 18,
+    paddingVertical: 15,
+    alignItems: 'center',
+    gap: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  body: { flex: 1, minWidth: 0, gap: 6 },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1, minWidth: 0 },
+  name: { fontSize: 15.5, fontWeight: '750', letterSpacing: -0.2, flexShrink: 1 },
+  time: { fontSize: 11, fontWeight: '650' },
+  bottom: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  previewWrap: { flex: 1, minWidth: 0, gap: 2 },
+  preview: { fontSize: 13, lineHeight: 19 },
+  handle: { fontSize: 11, lineHeight: 14 },
+  badge: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
+  badgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
 });
