@@ -180,15 +180,15 @@ export const ImageViewer = ({ uri: single, uris, initialIndex = 0, onClose, acti
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
-  close: { position: 'absolute', right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
-  bar: { position: 'absolute', left: 0, right: 0, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 6, backgroundColor: 'rgba(0,0,0,0.55)' },
-  counts: { flexDirection: 'row', gap: 26, marginBottom: 10 },
+  close: { position: 'absolute', right: 18, width: 44, height: 44, borderRadius: 16, backgroundColor: 'rgba(18,22,34,0.72)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  bar: { position: 'absolute', left: 0, right: 0, paddingHorizontal: 18, paddingTop: 14, paddingBottom: 12, backgroundColor: 'rgba(12,16,28,0.78)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.12)' },
+  counts: { flexDirection: 'row', gap: 28, marginBottom: 13 },
   count: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   countText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 14, height: 44 },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.13)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 15, height: 48 },
   input: { flex: 1, color: '#fff', fontSize: 15, padding: 0 },
   sent: { color: '#fff', fontWeight: '700', textAlign: 'center', marginBottom: 6 },
-  counter: { position: 'absolute', alignSelf: 'center', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.55)' },
+  counter: { position: 'absolute', alignSelf: 'center', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 12, backgroundColor: 'rgba(18,22,34,0.78)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.16)' },
   counterText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   error: { position: 'absolute', alignSelf: 'center', top: '50%', color: '#fff' },
 });
