@@ -42,6 +42,6 @@ export const SearchBar = ({ value, onChangeText, placeholder = 'Search', autoFoc
 const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 11, height: 50, gap: 11 },
   iconWrap: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  input: { flex: 1, fontSize: 15, paddingVertical: 0, fontWeight: '550' },
+  input: { flex: 1, fontSize: 15, paddingVertical: 0, fontWeight: '500' },
   clear: { width: 24, height: 24, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
 });
