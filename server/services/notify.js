@@ -14,6 +14,7 @@ const DEFAULT_TEXT = {
   mention: 'mentioned you',
   follow_request: 'requested to follow you',
   follow_accepted: 'accepted your follow request',
+  broadcast: 'sent an announcement',
 };
 
 /** Notifications of one user (or a single one, with onlyId). Returns [items] / [item]. */
@@ -22,11 +23,11 @@ async function loadNotifications(userId, onlyId = null) {
   let where = 'n.user_id = ?';
   if (onlyId) { where += ' AND n.id = ?'; params.push(onlyId); }
   const [rows] = await pool.query(
-    `SELECT n.id, n.type, n.created_at, n.read_at, n.post_id, n.comment_id, n.group_id,
+    `SELECT n.id, n.type, n.title, n.body, n.created_at, n.read_at, n.post_id, n.comment_id, n.group_id,
             f.id AS from_id, f.name AS from_name, f.username AS from_username, f.avatar AS from_avatar,
             p.content AS post_content, p.image_url AS post_image, c.content AS comment_content,
             g.name AS group_name, g.avatar AS group_avatar,
-            EXISTS(SELECT 1 FROM follows fo WHERE fo.follower_id = ? AND fo.following_id = f.id) AS i_follow
+            EXISTS(SELECT 1 FROM follows fo WHERE fo.follower_id = ? AND fo.following_id = f.id AND f.id IS NOT NULL) AS i_follow
      FROM notifications n
      JOIN users f ON f.id = n.from_user_id
      LEFT JOIN posts p ON p.id = n.post_id
@@ -38,7 +39,11 @@ async function loadNotifications(userId, onlyId = null) {
   const items = rows.map((r) => ({
     id: String(r.id),
     type: r.type,
-    from: { ...shapeUser(r.from_id, r.from_name, r.from_username, r.from_avatar), is_following: !!r.i_follow },
+    from: r.from_id
+      ? { ...shapeUser(r.from_id, r.from_name, r.from_username, r.from_avatar), is_following: !!r.i_follow }
+      : { id: 'system', name: 'E-Chat', username: 'echat', avatar: null },
+    title: r.title || undefined,
+    body: r.body || undefined,
     createdAt: r.created_at,
     read: !!r.read_at,
     post: r.post_id ? { id: String(r.post_id), content: r.post_content, image: r.post_image || undefined } : undefined,
