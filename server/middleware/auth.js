@@ -98,12 +98,27 @@ const authMiddleware = async (req, res, next) => {
 const isAdminUser = (u) => !!u && (ADMIN_IDS.includes(Number(u.id)) || (!!u.phone && ADMIN_PHONES.includes(u.phone)));
 const isAdminId = async (id) => {
   const [rows] = await pool.query('SELECT id, phone FROM users WHERE id = ?', [id]);
-  return rows.length ? isAdminUser(rows[0]) : false;
+  if (!rows.length) return false;
+  if (isAdminUser(rows[0])) return true;
+  const [roles] = await pool.query('SELECT role FROM admin_roles WHERE user_id = ? LIMIT 1', [id]);
+  return roles.length > 0;
 };
 
-const adminMiddleware = (req, res, next) => {
-  if (!req.user || !isAdminUser(req.user)) return res.status(403).json({ message: 'Admin access required' });
-  next();
+const adminMiddleware = async (req, res, next) => {
+  try {
+    if (!req.user) return res.status(403).json({ message: 'Admin access required' });
+    if (isAdminUser(req.user)) {
+      req.adminRole = 'owner';
+      return next();
+    }
+    const [roles] = await pool.query('SELECT role FROM admin_roles WHERE user_id = ? LIMIT 1', [req.user.id]);
+    if (!roles.length) return res.status(403).json({ message: 'Admin access required' });
+    req.adminRole = roles[0].role;
+    next();
+  } catch (error) {
+    console.error('Admin role lookup:', error.message);
+    res.status(500).json({ message: 'Could not verify admin permissions' });
+  }
 };
 
 module.exports = { authMiddleware, adminMiddleware, authenticateToken, isAdminId, isAdminUser, getToken };
