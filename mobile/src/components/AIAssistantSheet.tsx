@@ -4,17 +4,17 @@ import { useAppColors } from '../theme/useAppColors';
 import * as api from '../services/api';
 
 type Task = 'summarize' | 'suggest_replies' | 'translate' | 'answer' | 'moderate' | 'search_terms';
-interface Props { visible: boolean; onClose: () => void; context: string; isGroup: boolean; onSearchTerms?: (terms: string[]) => void }
+interface Props { visible: boolean; onClose: () => void; context: string; unreadContext?: string; isGroup: boolean; onSearchTerms?: (terms: string[]) => void }
 
-export const AIAssistantSheet = ({ visible, onClose, context, isGroup, onSearchTerms }: Props) => {
+export const AIAssistantSheet = ({ visible, onClose, context, unreadContext = '', isGroup, onSearchTerms }: Props) => {
   const { c } = useAppColors();
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const run = async (task: Task, language = 'Arabic') => {
+  const run = async (task: Task, language = 'Arabic', sourceContext = context) => {
     if (busy) return;
-    if (!context.trim() && task !== 'answer') {
+    if (!sourceContext.trim() && task !== 'answer') {
       Alert.alert('No conversation text', 'Load some text messages before using this assistant.');
       return;
     }
@@ -25,7 +25,7 @@ export const AIAssistantSheet = ({ visible, onClose, context, isGroup, onSearchT
     setBusy(true);
     setResult('');
     try {
-      const response = await api.ai.assistant({ task, context, prompt: prompt.trim(), language });
+      const response = await api.ai.assistant({ task, context: sourceContext, prompt: prompt.trim(), language });
       if (task === 'search_terms') {
         let terms: string[] = [];
         try {
@@ -63,6 +63,7 @@ export const AIAssistantSheet = ({ visible, onClose, context, isGroup, onSearchT
           <TextInput value={prompt} onChangeText={setPrompt} placeholder="Ask about this conversation…" placeholderTextColor={c.textMuted} multiline style={[styles.input, { color: c.text, backgroundColor: c.inputBg, borderColor: c.border }]} />
           <View style={styles.actions}>
             <TouchableOpacity onPress={() => run('summarize')} disabled={busy} style={[styles.action, { backgroundColor: c.primary }]}><Text style={styles.actionText}>Summarize</Text></TouchableOpacity>
+            {unreadContext.trim() ? <TouchableOpacity onPress={() => run('summarize', 'Arabic', unreadContext)} disabled={busy} style={[styles.action, { backgroundColor: c.primary }]}><Text style={styles.actionText}>Summarize unread</Text></TouchableOpacity> : null}
             <TouchableOpacity onPress={() => run('suggest_replies')} disabled={busy} style={[styles.action, { backgroundColor: c.primary }]}><Text style={styles.actionText}>Suggest replies</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => run('translate', 'Arabic')} disabled={busy} style={[styles.action, { backgroundColor: c.surface, borderColor: c.border }]}><Text style={[styles.actionText, { color: c.text }]}>Translate to Arabic</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => run('answer')} disabled={busy} style={[styles.action, { backgroundColor: c.surface, borderColor: c.border }]}><Text style={[styles.actionText, { color: c.text }]}>Ask</Text></TouchableOpacity>
