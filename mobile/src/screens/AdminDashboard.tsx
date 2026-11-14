@@ -38,14 +38,14 @@ export default function AdminDashboard() {
     <SafeAreaView style={[s.container, { backgroundColor: c.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <View style={[s.header, { borderBottomColor: c.border, flexDirection: lang === 'ar' ? 'row-reverse' : 'row' }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8} style={{ padding: 6 }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8} style={{ padding: 8 }} accessibilityRole="button" accessibilityLabel="Back">
           <Icon name="arrowLeft" size={24} color={c.text} />
         </TouchableOpacity>
         <Text style={[s.headerTitle, { color: c.text }]}>{t('Admin dashboard')}</Text>
       </View>
       <View style={[s.tabs, { borderBottomColor: c.border }]}>
         {(['overview', 'users', 'content', 'reports', 'audit'] as Tab[]).map((key) => (
-          <TouchableOpacity key={key} style={s.tab} onPress={() => setTab(key)} activeOpacity={0.7}>
+          <TouchableOpacity key={key} style={s.tab} onPress={() => setTab(key)} activeOpacity={0.7} accessibilityRole="tab" accessibilityState={{ selected: tab === key }} accessibilityLabel={t(key.charAt(0).toUpperCase() + key.slice(1))}>
             <Text style={{ color: tab === key ? c.primary : c.textSecondary, fontWeight: '800', textTransform: 'capitalize' }}>{t(key.charAt(0).toUpperCase() + key.slice(1))}</Text>
             {tab === key ? <View style={[s.tabLine, { backgroundColor: c.primary }]} /> : null}
           </TouchableOpacity>
@@ -555,24 +555,24 @@ function Content({ c, s }: { c: any; s: any }) {
 const makeStyles = (c: any) => StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 14, paddingBottom: 14 },
-  headerTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
+  headerTitle: { fontSize: 23, fontWeight: '800', letterSpacing: -0.7 },
   tabs: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8 },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, minWidth: 62 },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 15, minWidth: 62 },
   tabLine: { position: 'absolute', bottom: 0, height: 3, width: 34, borderRadius: 3 },
   scroll: { padding: 18, paddingBottom: 50, gap: 14 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tile: { width: '48%', flexGrow: 1, minWidth: 138, padding: 18, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
+  tile: { width: '48%', flexGrow: 1, minWidth: 138, padding: 18, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
   tileValue: { fontSize: 28, fontWeight: '800', letterSpacing: -0.7 },
-  card: { borderRadius: 22, padding: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
+  card: { borderRadius: 24, padding: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
   cardTitle: { fontSize: 16, fontWeight: '800' },
   section: { fontSize: 18, fontWeight: '800', marginTop: 6 },
   barsRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 10, height: 100 },
   barCol: { alignItems: 'center', justifyContent: 'flex-end', flex: 1, gap: 3 },
   bar: { width: 18, borderRadius: 5 },
-  input: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 15, paddingVertical: 13, marginBottom: 10, fontSize: 15, backgroundColor: c.background },
+  input: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 10, fontSize: 15, backgroundColor: c.background },
   primaryBtn: { height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
   primaryBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15 },
-  chip: { paddingHorizontal: 15, paddingVertical: 10, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
+  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
   row: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 18, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   kv: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7 },
   delBtn: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 },

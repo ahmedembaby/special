@@ -28,6 +28,9 @@ export const AuthHeader = ({
         <TouchableOpacity
           onPress={onBack}
           activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={backLabel}
+          hitSlop={8}
           style={[styles.pill, { backgroundColor: c.pillBg }]}
         >
           <Icon name="arrowLeft" size={20} color={c.text} />
@@ -37,7 +40,7 @@ export const AuthHeader = ({
       </View>
 
       <View style={styles.sub}>
-        <Text style={[styles.title, { color: c.text }]}>{title}</Text>
+        <Text accessibilityRole="header" style={[styles.title, { color: c.text }]}>{title}</Text>
         <Text style={[styles.subtitle, { color: c.text }]}>{subtitle}</Text>
         {detail ? <Text style={[styles.detail, { color: c.textSecondary }]}>{detail}</Text> : null}
       </View>
@@ -62,10 +65,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pillText: { fontSize: 14, fontWeight: '700' },
-  title: { fontSize: 32, fontWeight: '800' },
+  title: { fontSize: 32, fontWeight: '800', letterSpacing: -0.8 },
   sub: { paddingHorizontal: 24, marginTop: 24 },
-  subtitle: { fontSize: 18, fontWeight: '500', marginTop: 6, lineHeight: 26 },
-  detail: { fontSize: 15, fontWeight: '500', marginTop: 6 },
+  subtitle: { fontSize: 19, fontWeight: '600', marginTop: 8, lineHeight: 27, letterSpacing: -0.2 },
+  detail: { fontSize: 14, fontWeight: '500', marginTop: 8, lineHeight: 20 },
 });
 
 export default AuthHeader;

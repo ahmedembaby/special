@@ -17,11 +17,11 @@ export default function WelcomeScreen() {
         <Icon name="bubble" size={44} color={c.primary} strokeWidth={2.2} />
       </View>
       <View style={styles.middle}>
-        <Text style={[styles.headline, { color: c.text }]}>See what's happening in the world right now.</Text>
+        <Text accessibilityRole="header" style={[styles.headline, { color: c.text }]}>See what's happening in the world right now.</Text>
         <Text style={[styles.tagline, { color: c.textSecondary }]}>Post, follow and chat with friends and family.</Text>
       </View>
       <View>
-        <TouchableOpacity style={[styles.btn, { backgroundColor: c.primary }]} onPress={() => navigation.navigate('Login')} activeOpacity={0.85}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Continue with phone" style={[styles.btn, { backgroundColor: c.primary }]} onPress={() => navigation.navigate('Login')} activeOpacity={0.85}>
           <Text style={styles.btnText}>Continue with phone</Text>
         </TouchableOpacity>
         <Text style={[styles.legal, { color: c.textSecondary }]}>
@@ -36,8 +36,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 30, justifyContent: 'space-between' },
   logo: { alignItems: 'center', justifyContent: 'center', width: 84, height: 84, borderRadius: 28, alignSelf: 'center', backgroundColor: 'rgba(91,92,226,0.09)' },
   middle: { gap: 12 },
-  headline: { fontSize: 36, fontWeight: '800', lineHeight: 43, letterSpacing: -0.9 },
-  tagline: { fontSize: 17, lineHeight: 24 },
+  headline: { fontSize: 36, fontWeight: '800', lineHeight: 43, letterSpacing: -1.1 },
+  tagline: { fontSize: 16, lineHeight: 25, letterSpacing: 0.1 },
   btn: { height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   btnText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
   legal: { fontSize: 13, lineHeight: 18, marginTop: 14 },
