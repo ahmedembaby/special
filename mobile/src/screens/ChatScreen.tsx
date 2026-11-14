@@ -15,6 +15,8 @@ import * as api from '../services/api';
 import { AIAssistantSheet } from '../components/AIAssistantSheet';
 import { resolveUrl } from '../config';
 import { useAuth } from '../context/AuthContext';
+
+declare const require: any;
 import { getChatName } from '../components/ChatItem';
 import { VoiceBubble, RecordingDot } from '../components/VoiceBubble';
 import { SwipeToReply } from '../components/SwipeToReply';
