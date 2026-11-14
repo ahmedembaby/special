@@ -55,5 +55,6 @@ if(b.dataset.groupDelete){if(!confirm('حذف المجموعة ومحادثته�
 if(b.dataset.convDelete){if(!confirm('حذف المحادثة وجميع رسائلها؟'))return;await api('/admin/conversations/'+b.dataset.convDelete,{method:'DELETE'});toast('تم حذف المحادثة');conversationsPage()}
 if(b.dataset.sessionRevoke){if(!confirm('إنهاء هذه الجلسة فوراً؟'))return;await api('/admin/sessions/'+b.dataset.sessionRevoke,{method:'DELETE'});toast('تم إنهاء الجلسة');sessionsPage()}
 if(b.dataset.wordDelete){const word=decodeURIComponent(b.dataset.wordDelete);if(!confirm('حذف الكلمة من القائمة؟'))return;await api('/admin/banned-words/'+encodeURIComponent(word),{method:'DELETE'});toast('تم حذف الكلمة');wordsPage()}
+if(b.dataset.adminRemove){if(!confirm('إزالة صلاحية هذا المشرف؟'))return;await api('/admin/admins/'+b.dataset.adminRemove,{method:'DELETE'});toast('تمت إزالة الصلاحية');adminsPage()}
 }catch(err){toast(err.message,true)}});
 async function boot(){if(!state.token){showLogin();return}try{const stats=await api('/admin/stats');showApp({name:'مدير النظام'});$('#reportBadge').textContent=num(stats.openReports)}catch(e){logout(false)}}boot();
