@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import Constants from 'expo-constants';
 import {
   SafeAreaView, View, FlatList, ActivityIndicator, StatusBar, Platform, AppState, KeyboardAvoidingView, Alert, StyleSheet,
   TextInput, TouchableOpacity, Text, Modal, PanResponder, ScrollView,
@@ -7,7 +8,6 @@ import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native'
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import { Image as ImageCompressor, Video as VideoCompressor } from 'react-native-compressor';
 import { Icon } from '../components/Icon';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
@@ -488,25 +488,29 @@ export default function ChatScreen() {
       setUploading(true);
       try {
         try {
-          if (isVideoAsset) {
-            uploadFile.uri = await VideoCompressor.compress(asset.uri, {
-              compressionMethod: 'auto',
-              maxSize: 1280,
-              minimumFileSizeForCompress: 2,
-              preserveMetadata: false,
-            });
-          } else {
-            uploadFile.uri = await ImageCompressor.compress(asset.uri, {
-              compressionMethod: 'auto',
-              maxWidth: 1600,
-              maxHeight: 1600,
-              quality: 0.8,
-            });
-            uploadFile.type = 'image/jpeg';
-            if (!/\.jpe?g$/i.test(uploadFile.name)) uploadFile.name = uploadFile.name.replace(/\.[^.]+$/, '') + '.jpg';
+          // Expo Go has no native NitroModules. Load the compressor only in a custom build.
+          if (Constants.executionEnvironment !== 'storeClient') {
+            const compressors = require('react-native-compressor');
+            if (isVideoAsset) {
+              uploadFile.uri = await compressors.Video.compress(asset.uri, {
+                compressionMethod: 'auto',
+                maxSize: 1280,
+                minimumFileSizeForCompress: 2,
+                preserveMetadata: false,
+              });
+            } else {
+              uploadFile.uri = await compressors.Image.compress(asset.uri, {
+                compressionMethod: 'auto',
+                maxWidth: 1600,
+                maxHeight: 1600,
+                quality: 0.8,
+              });
+              uploadFile.type = 'image/jpeg';
+              if (!/\.jpe?g$/i.test(uploadFile.name)) uploadFile.name = uploadFile.name.replace(/\.[^.]+$/, '') + '.jpg';
+            }
           }
         } catch {
-          Alert.alert('Compression skipped', 'The original file will be sent because compression was unavailable on this device.');
+          Alert.alert('Compression skipped', 'This build cannot access the native compression module. The original file will be sent.');
         }
         const response = await api.messages.upload({
           conversation_id: conversationId!,
