@@ -6,7 +6,7 @@ const isExpoToken = (t) => typeof t === 'string' && /^(Exponent|Expo)PushToken\[
 async function sendPush(tokens, { title, body, data }) {
   const valid = [...new Set((tokens || []).filter(isExpoToken))];
   if (!valid.length) return;
-  const isCall = data && data.type === 'call';
+  const isCall = data && (data.type === 'call' || data.type === 'group_call');
   const messages = valid.map((to) => ({
     to, sound: 'default', title, body, data: data || {}, priority: 'high',
     ...(isCall ? { channelId: 'calls', ttl: 45 } : {}),
