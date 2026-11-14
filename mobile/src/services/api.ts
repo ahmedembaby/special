@@ -184,7 +184,7 @@ export interface UserSettings {
   hide_presence: boolean;
   read_receipts: boolean;
   who_can_message: 'everyone' | 'followed' | 'nobody';
-  notif: { like: boolean; comment: boolean; follow: boolean; mention: boolean; message: boolean; group: boolean };
+  notif: { like: boolean; comment: boolean; follow: boolean; mention: boolean; message: boolean; reply: boolean; group: boolean };
   quiet: { enabled: boolean; start: number; end: number; tz?: number };
   digest: { enabled: boolean; hour: number };
 }

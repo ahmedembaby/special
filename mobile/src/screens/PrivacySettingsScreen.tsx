@@ -10,7 +10,7 @@ import * as api from '../services/api';
 type S = api.UserSettings;
 const DEFAULTS: S = {
   hide_presence: false, read_receipts: true, who_can_message: 'everyone',
-  notif: { like: true, comment: true, follow: true, mention: true, message: true, group: true },
+  notif: { like: true, comment: true, follow: true, mention: true, message: true, reply: true, group: true },
   quiet: { enabled: false, start: 22, end: 7 },
   digest: { enabled: false, hour: 20 },
 };
@@ -68,6 +68,7 @@ export default function PrivacySettingsScreen() {
         <Row title={t('Comments')} right={sw(s.notif.comment, (v) => setNotif('comment', v))} />
         <Row title={t('New followers')} right={sw(s.notif.follow, (v) => setNotif('follow', v))} />
         <Row title={t('Mentions')} right={sw(s.notif.mention, (v) => setNotif('mention', v))} />
+        <Row title="Replies to my messages" sub="Receive a separate push preference for replies" right={sw(s.notif.reply, (v) => setNotif('reply', v))} />
         <Row title={t('Groups')} right={sw(s.notif.group, (v) => setNotif('group', v))} />
 
         <Section title="Daily digest" />
