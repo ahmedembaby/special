@@ -80,10 +80,11 @@ router.get('/release', async (req, res) => {
   try {
     const serverPackage = require('../package.json');
     const mobilePackage = require('../../mobile/package.json');
+    const mobileApp = require('../../mobile/app.json');
     res.json({
       serverVersion: serverPackage.version || 'unknown',
       mobileVersion: mobilePackage.version || 'unknown',
-      appVersion: mobilePackage.expo?.version || 'unknown',
+      appVersion: mobileApp.expo?.version || 'unknown',
       commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || process.env.SOURCE_VERSION || null,
       nodeVersion: process.version,
       environment: process.env.NODE_ENV || 'development',
