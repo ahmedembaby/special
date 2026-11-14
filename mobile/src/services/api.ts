@@ -13,6 +13,8 @@ export const setUnauthorizedHandler = (fn: () => void) => {
 
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync('echat_token');
+  // zrok: bypass the interstitial page so API requests reach the app server directly.
+  config.headers.set('skip_zrok_interstitial', '1');
   config.headers['X-Device-Name'] = Device.deviceName || Device.modelName || 'Mobile device';
   config.headers['X-Device-Platform'] = Platform.OS;
   if (token) {

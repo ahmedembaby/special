@@ -17,6 +17,8 @@ export const connectSocket = (token: string): Socket => {
   socket = io(API_BASE, {
     transports: ['websocket', 'polling'],
     auth: { token },
+    // React Native forwards extraHeaders on both polling and WebSocket handshakes.
+    extraHeaders: { skip_zrok_interstitial: '1' },
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 10000,
