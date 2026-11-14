@@ -6,13 +6,15 @@ import {
 import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { Image as ImageCompressor, Video as VideoCompressor } from 'react-native-compressor';
 import { Icon } from '../components/Icon';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
 import * as api from '../services/api';
-import { resolveUrl } from '../config';
+import { API_BASE, resolveUrl } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { getChatName } from '../components/ChatItem';
 import { VoiceBubble, RecordingDot } from '../components/VoiceBubble';
@@ -176,7 +178,7 @@ export default function ChatScreen() {
   const [, setTick] = useState(0);
   const call = useCall();
 
-  const { user, updateUser } = useAuth();
+  const { user, token, updateUser } = useAuth();
   const currentUserId: string | number = user?.id ?? 'me';
   const isMine = (senderId: string | number | undefined) => String(senderId) === String(currentUserId);
 
@@ -1396,9 +1398,15 @@ export default function ChatScreen() {
                       <TouchableOpacity
                         style={[styles.fileBubble, isOwn ? styles.ownFileBubble : styles.otherFileBubble, isOwn ? ownBubbleStyle : null]}
                         activeOpacity={0.8}
-                        onPress={() => {
-                          const fileUrl = resolveUrl(item.file_url);
-                          if (fileUrl) Linking.openURL(fileUrl).catch(() => Alert.alert('File unavailable', 'Could not open this document on your device.'));
+                        onPress={async () => {
+                          try {
+                            const remote = `${API_BASE}${item.file_url!.startsWith('/') ? '' : '/'}${item.file_url}`;
+                            const local = FileSystem.cacheDirectory + (item.file_name || `file-${item.id}`);
+                            const { uri } = await FileSystem.downloadAsync(remote, local, { headers: { Authorization: `Bearer ${token}` } });
+                            await Sharing.shareAsync(uri);
+                          } catch {
+                            Alert.alert('File unavailable', 'Could not open this document on your device.');
+                          }
                         }}
                         onLongPress={() => onLongPressMessage(item)}
                       >
