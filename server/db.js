@@ -351,6 +351,23 @@ const TABLES = [
     FOREIGN KEY (callee_id) REFERENCES users(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
+  // GROUP CALL SESSIONS
+  `CREATE TABLE IF NOT EXISTS group_calls (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    conversation_id INT NOT NULL,
+    room_id VARCHAR(64) NOT NULL UNIQUE,
+    started_by INT NOT NULL,
+    type ENUM('audio','video') NOT NULL DEFAULT 'audio',
+    status ENUM('active','ended') NOT NULL DEFAULT 'active',
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ended_at DATETIME NULL DEFAULT NULL,
+    duration INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    FOREIGN KEY (started_by) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_group_calls_started (started_at),
+    INDEX idx_group_calls_status (status)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
   // GROUP MEMBERS
   `CREATE TABLE IF NOT EXISTS group_members (
     id INT PRIMARY KEY AUTO_INCREMENT,
