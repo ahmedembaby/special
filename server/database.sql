@@ -12,6 +12,10 @@ CREATE TABLE IF NOT EXISTS users (
   phone VARCHAR(50) DEFAULT NULL,
   password VARCHAR(255) NOT NULL,
   avatar VARCHAR(255) DEFAULT NULL,
+  bio VARCHAR(255) DEFAULT NULL,
+  gender VARCHAR(20) DEFAULT NULL,
+  birthday DATE DEFAULT NULL,
+  location VARCHAR(255) DEFAULT NULL,
   status ENUM('online','offline','away') DEFAULT 'offline',
   last_seen TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -49,6 +53,7 @@ CREATE TABLE IF NOT EXISTS messages (
   type ENUM('text','image','file') DEFAULT 'text',
   reply_to INT DEFAULT NULL,
   read_at TIMESTAMP NULL DEFAULT NULL,
+  deleted_for_all_at TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
   FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
