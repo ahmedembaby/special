@@ -116,15 +116,15 @@ export default function GroupChatScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  inputWrap: { paddingHorizontal: 14, marginTop: 8 },
+  inputWrap: { paddingHorizontal: 18, marginTop: 12 },
   input: {
     borderWidth: 1,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: 17,
+    paddingHorizontal: 17,
+    paddingVertical: 15,
     fontSize: 16,
   },
-  listWrap: { flex: 1, paddingHorizontal: 14, marginTop: 16 },
+  listWrap: { flex: 1, paddingHorizontal: 18, marginTop: 20 },
   sectionTitle: {
     ...Typography.bodySmall,
     fontWeight: '700',
@@ -133,16 +133,16 @@ const styles = StyleSheet.create({
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginBottom: 8,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    marginBottom: 9,
     borderRadius: 18,
-    borderWidth: 1.5,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   userName: { flex: 1, fontSize: 16, marginLeft: 12 },
   check: { fontWeight: '800', fontSize: 18, paddingRight: 8 },
   createBtn: {
-    borderRadius: 18,
+    borderRadius: 17,
     paddingVertical: 16,
     alignItems: 'center',
     margin: 16,
