@@ -10,7 +10,7 @@ const { pipeline, finished } = require('stream/promises');
 const MAGIC = Buffer.from('SPBACK01');
 const HEADER_SIZE = MAGIC.length + 12;
 const TAG_SIZE = 16;
-const FILE_RE = /^special-\\d{8}T\\d{6}Z-[a-f0-9]{8}\\.sdbak$/;
+const FILE_RE = /^special-\d{8}T\d{6}Z-[a-f0-9]{8}\.sdbak$/;
 
 function config() {
   const dir = process.env.BACKUP_DIR;
@@ -51,7 +51,7 @@ async function list() {
 async function create() {
   const c = config();
   await fsp.mkdir(c.dir, { recursive: true, mode: 0o700 });
-  const name = 'special-' + new Date().toISOString().replace(/[-:]/g, '').replace(/\\.\\d{3}Z$/, 'Z') + '-' + crypto.randomBytes(4).toString('hex') + '.sdbak';
+  const name = 'special-' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z') + '-' + crypto.randomBytes(4).toString('hex') + '.sdbak';
   const target = path.join(c.dir, name);
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', c.key, iv);
