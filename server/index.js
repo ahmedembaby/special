@@ -24,7 +24,7 @@ if (process.env.SENTRY_DSN) {
   try { Sentry = require('@sentry/node'); Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.05 }); }
   catch { console.warn('SENTRY_DSN is set but @sentry/node is not installed'); }
 }
-process.on('unhandledRejection', (e) => { errorMonitor.record(e, 'unhandledRejection'); console.error('unhandledRejection:', e); if (Sentry) Sentry.captureException(e); });
+process.on('unhandledRejection', (e) => { console.error('unhandledRejection:', e); if (Sentry) Sentry.captureException(e); });
 
 const app = express();
 const server = http.createServer(app);
