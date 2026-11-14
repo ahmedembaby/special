@@ -589,7 +589,7 @@ async function processScheduled() {
 
 // DELETE /api/messages/:id?scope=me|all
 //  me  - hides the message for the caller only (any message in a conversation they belong to)
-//  all - removes it for everybody (own messages only)
+//  all - removes it for everybody (own messages only, within the recall window)
 router.delete('/:id', async (req, res) => {
   try {
     const { message, error } = await accessibleMessage(req.params.id, req.user.id);
@@ -602,9 +602,18 @@ router.delete('/:id', async (req, res) => {
       return res.json({ message: 'Message deleted for you' });
     }
     if (message.sender_id !== req.user.id) return res.status(403).json({ message: 'You can only delete your own messages for everyone' });
-    await pool.query('DELETE FROM messages WHERE id = ?', [message.id]);
-    rt.emitToConversation(message.conversation_id, 'message_deleted', payload);
-    res.json({ message: 'Message deleted' });
+    // Recall window: MESSAGE_RECALL_SECONDS (default 1 hour = 3600)
+    const recallSeconds = Number(process.env.MESSAGE_RECALL_SECONDS || 3600);
+    const ageSeconds = (Date.now() - new Date(message.created_at).getTime()) / 1000;
+    if (ageSeconds > recallSeconds) {
+      return res.status(403).json({ message: 'Recall time limit expired. You can only delete this message for yourself.' });
+    }
+    await pool.query(
+      "UPDATE messages SET deleted_for_all_at = NOW(), content = 'This message was deleted', type = 'text' WHERE id = ?",
+      [message.id]
+    );
+    rt.emitToConversation(message.conversation_id, 'message_deleted', { ...payload, recalled: true, recalled_at: new Date().toISOString() });
+    res.json({ message: 'Message deleted for everyone', recalled: true });
   } catch (err) {
     res.status(500).json({ message: 'Could not delete message' });
   }
