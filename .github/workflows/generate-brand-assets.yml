@@ -1,0 +1,41 @@
+name: Generate Special brand PNG assets
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  render-brand-assets:
+    if: "!contains(github.event.head_commit.message, '[skip brand render]')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Install SVG renderer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+      - name: Render PNG assets
+        run: |
+          rsvg-convert -w 1024 -h 1024 mobile/assets/special-logo.svg -o mobile/assets/icon.png
+          rsvg-convert -w 1024 -h 1024 mobile/assets/special-logo.svg -o mobile/assets/adaptive-icon.png
+          rsvg-convert -w 1024 -h 1024 mobile/assets/special-logo.svg -o mobile/assets/favicon.png
+          rsvg-convert -w 1024 -h 1024 mobile/assets/special-splash.svg -o mobile/assets/splash.png
+      - name: Commit generated assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add mobile/assets/icon.png mobile/assets/adaptive-icon.png mobile/assets/favicon.png mobile/assets/splash.png
+          if git diff --cached --quiet; then
+            echo "Brand PNG assets are already up to date."
+          else
+            git commit -m "chore(branding): render Special PNG assets [skip brand render]"
+            git push origin main
+          fi
