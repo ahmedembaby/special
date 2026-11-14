@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider, useThemeSettings } from './src/context/ThemeContext';
 import { AppLockProvider, useAppLock } from './src/context/AppLockContext';
 import { CallProvider } from './src/context/CallContext';
+import { GroupCallProvider } from './src/context/GroupCallContext';
 import LockScreen from './src/components/LockScreen';
 import { Colors } from './src/theme';
 import { Icon, IconName } from './src/components/Icon';
@@ -240,7 +241,9 @@ export default function App() {
           <AuthProvider>
             <AppLockProvider>
               <CallProvider>
-                <UnreadCountsProvider><RootNavigator /></UnreadCountsProvider>
+                <GroupCallProvider>
+                  <UnreadCountsProvider><RootNavigator /></UnreadCountsProvider>
+                </GroupCallProvider>
               </CallProvider>
             </AppLockProvider>
           </AuthProvider>
