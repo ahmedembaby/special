@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
 router.get('/me', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, name, email, username, phone, avatar, bio, gender, birthday, status, last_seen, is_private, public_key FROM users WHERE id = ?',
+      'SELECT id, name, email, username, phone, avatar, bio, gender, birthday, location, status, last_seen, is_private, public_key FROM users WHERE id = ?',
       [req.user.id]
     );
     if (!rows.length) return res.status(404).json({ message: 'User not found' });
@@ -45,7 +45,7 @@ router.get('/me', async (req, res) => {
   }
 });
 
-// PUT /api/users/me  { name?, bio?, username?, gender?, birthday? }
+// PUT /api/users/me  { name?, bio?, username?, gender?, birthday?, location? }
 router.put('/me', async (req, res) => {
   try {
     const fields = [];
@@ -79,6 +79,9 @@ router.put('/me', async (req, res) => {
       if (b && !/^\d{4}-\d{2}-\d{2}$/.test(b)) return res.status(400).json({ message: 'Invalid birthday' });
       fields.push('birthday = ?'); params.push(b);
     }
+    if (req.body.location !== undefined) {
+      fields.push('location = ?'); params.push(String(req.body.location).slice(0, 255) || null);
+    }
     if (!fields.length) return res.status(400).json({ message: 'Nothing to update' });
     await pool.query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, [...params, req.user.id]);
     if (becamePublic) {
@@ -87,7 +90,7 @@ router.put('/me', async (req, res) => {
       await pool.query('DELETE FROM follow_requests WHERE target_id = ?', [req.user.id]);
     }
     const [rows] = await pool.query(
-      'SELECT id, name, email, username, phone, avatar, bio, gender, birthday, status, last_seen, is_private, public_key FROM users WHERE id = ?',
+      'SELECT id, name, email, username, phone, avatar, bio, gender, birthday, location, status, last_seen, is_private, public_key FROM users WHERE id = ?',
       [req.user.id]
     );
     res.json(toUser({ ...rows[0], is_admin: isAdminUser(rows[0]) }));
@@ -126,7 +129,7 @@ const settingsOut = async (id) => {
   const [r] = await pool.query('SELECT hide_presence, read_receipts, who_can_message, settings, is_private FROM users WHERE id = ?', [id]);
   const u = r[0] || {};
   const p = prefs.parse(u.settings);
-  return { hide_presence: !!u.hide_presence, read_receipts: u.read_receipts !== 0, who_can_message: u.who_can_message || 'everyone', is_private: !!u.is_private, notif: p.notif, quiet: p.quiet, digest: p.digest };
+  return { hide_presence: !!u.hide_presence, read_receipts: u.read_receipts !== 0, who_can_message: u.who_can_message || 'everyone', is_private: !!u.is_private, notif: p.notif, quiet: p.quiet, digest: p.digest, data_saver: !!p.data_saver };
 };
 router.get('/me/settings', async (req, res) => {
   try { res.json(await settingsOut(req.user.id)); } catch { res.status(500).json({ message: 'Could not load settings' }); }
@@ -140,6 +143,11 @@ router.put('/me/settings', async (req, res) => {
     if (b.who_can_message !== undefined) {
       if (!['everyone', 'followed', 'nobody'].includes(b.who_can_message)) return res.status(400).json({ message: 'Invalid value' });
       sets.push('who_can_message = ?'); params.push(b.who_can_message);
+    }
+    if (b.data_saver !== undefined) {
+      const cur = prefs.parse((await pool.query('SELECT settings FROM users WHERE id = ?', [req.user.id]))[0][0].settings);
+      cur.data_saver = b.data_saver === true || b.data_saver === 'true' || b.data_saver === 1;
+      sets.push('settings = ?'); params.push(JSON.stringify(cur));
     }
     if (b.notif || b.quiet || b.digest) {
       const cur = prefs.parse((await pool.query('SELECT settings FROM users WHERE id = ?', [req.user.id]))[0][0].settings);
@@ -220,7 +228,7 @@ router.put('/avatar', upload.avatar.single('avatar'), async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, name, username, avatar, bio, IF(hide_presence = 1, \'offline\', status) AS status, IF(hide_presence = 1, NULL, last_seen) AS last_seen FROM users WHERE id = ? AND banned = 0',
+      'SELECT id, name, username, avatar, bio, gender, location, IF(hide_presence = 1, \'offline\', status) AS status, IF(hide_presence = 1, NULL, last_seen) AS last_seen FROM users WHERE id = ? AND banned = 0',
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ message: 'User not found' });
