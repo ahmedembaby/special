@@ -131,6 +131,19 @@ app.use('/api/groups', apiLimiter, authMiddleware, require('./routes/groups'));
 app.use('/api/whatsapp', apiLimiter, require('./routes/whatsapp'));
 app.use('/api/admin', apiLimiter, authMiddleware, require('./routes/admin'));
 
+// Browser-based administration console. The UI authenticates through the existing
+// phone OTP flow and every data request is still protected by /api/admin.
+const adminAssets = path.join(__dirname, 'admin');
+app.use('/admin', (req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'same-origin');
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
+  next();
+}, express.static(adminAssets, { index: 'index.html', fallthrough: true }));
+app.get('/admin', (req, res) => res.sendFile(path.join(adminAssets, 'index.html')));
+
+
 app.get('/api/health', (req, res) => res.json({ status: 'ok', db: db.isReady(), redis: redis.isReady(), time: new Date().toISOString() }));
 
 app.use('/api', (req, res) => res.status(404).json({ message: 'Not found' }));
