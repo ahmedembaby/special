@@ -19,12 +19,28 @@ export default function SettingsScreen() {
   const { logout, user, updateUser } = useAuth();
   const { lang, t, setLang } = useI18n();
   const [langSheet, setLangSheet] = React.useState(false);
+  const [dataSaver, setDataSaver] = React.useState<boolean | null>(null);
   const togglePrivate = async (value: boolean) => {
     updateUser({ is_private: value });
     try { await api.users.updateMe({ is_private: value }); }
     catch { updateUser({ is_private: !value }); Alert.alert('Error', 'Could not update your account privacy'); }
   };
   const { darkMode, setDarkMode } = useThemeSettings();
+
+  React.useEffect(() => {
+    api.users.getSettings().then((r) => setDataSaver(!!r.data.data_saver)).catch(() => {});
+  }, []);
+
+  const toggleDataSaver = async (v: boolean) => {
+    setDataSaver(v);
+    try {
+      await api.users.putSettings({ data_saver: v });
+      updateUser({ ...user, settings: { ...user.settings, data_saver: v } });
+    } catch {
+      setDataSaver(!v);
+      Alert.alert('Error', 'Could not save Data Saver');
+    }
+  };
 
   const Row = ({ icon, title, sub, onPress, right, danger }: { icon: IconName; title: string; sub?: string; onPress?: () => void; right?: React.ReactNode; danger?: boolean }) => (
     <TouchableOpacity style={[styles.row, { backgroundColor: c.card, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth }]} onPress={onPress} activeOpacity={onPress ? 0.7 : 1} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={title}>
@@ -72,6 +88,21 @@ export default function SettingsScreen() {
         />
         <Row icon="globe" title={t('Language')} sub={lang === 'ar' ? 'العربية' : 'English'} onPress={() => setLangSheet(true)} />
         <OptionSheet visible={langSheet} title={t('Language')} onClose={() => setLangSheet(false)} options={[{ label: 'English', selected: lang === 'en', onPress: () => setLang('en') }, { label: 'العربية', selected: lang === 'ar', onPress: () => setLang('ar') }]} />
+
+        <Row
+          icon="wifiOff"
+          title="Data Saver"
+          sub="Download photos and videos only when you tap them"
+          right={
+            <Switch
+              value={dataSaver ?? false}
+              onValueChange={toggleDataSaver}
+              accessibilityLabel="Data Saver"
+              trackColor={{ false: c.inputBorder, true: c.primary }}
+              thumbColor="#FFFFFF"
+            />
+          }
+        />
 
         <Section t="Notifications" />
         <Row icon="bellOff" title="Notification preferences" sub="Manage message, activity and quiet-hour alerts" onPress={() => nav.navigate('PrivacySettings')} />
