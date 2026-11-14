@@ -19,6 +19,7 @@ interface Props {
   rightText?: string;
   onSearchPress?: () => void;
   onMessagesPress?: () => void;
+  messageBadge?: number;
   children?: React.ReactNode;
 }
 
@@ -61,6 +62,7 @@ export const ScreenHeader = (p: Props) => {
           {p.onMessagesPress ? (
             <TouchableOpacity onPress={p.onMessagesPress} hitSlop={8} style={[styles.iconBtn, { backgroundColor: c.surface, borderColor: c.border }]} accessibilityRole="button" accessibilityLabel={t('Messages')}>
               <Icon name="mail" size={20} color={c.text} />
+              {Number(p.messageBadge) > 0 ? <View style={[styles.countBadge, { backgroundColor: c.danger }]}><Text style={styles.countBadgeText}>{Number(p.messageBadge) > 99 ? '99+' : p.messageBadge}</Text></View> : null}
             </TouchableOpacity>
           ) : null}
           {!p.onSearchPress && !p.onMessagesPress && p.rightIcon ? (
@@ -90,4 +92,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 21, fontWeight: '800', letterSpacing: -0.65 },
   sub: { fontSize: 12, marginTop: 3, fontWeight: '500' },
   iconBtn: { width: 42, height: 42, borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  countBadge: { position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#FFFFFF' },
+  countBadgeText: { color: '#FFFFFF', fontSize: 9, lineHeight: 12, fontWeight: '900' },
 });

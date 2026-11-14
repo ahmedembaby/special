@@ -55,6 +55,7 @@ import HashtagScreen from './src/screens/HashtagScreen';
 import GroupInvitesScreen from './src/screens/GroupInvitesScreen';
 import SessionsScreen from './src/screens/SessionsScreen';
 import { onSocket } from './src/services/socket';
+import { UnreadCountsProvider, useUnreadCounts } from './src/context/UnreadCountsContext';
 
 const AuthStack = createStackNavigator();
 const RootStack = createStackNavigator();
@@ -120,6 +121,7 @@ const MainTabs = () => {
   const { t } = useI18n();
   const c = darkMode ? Colors.dark : Colors.light;
   const insets = useSafeAreaInsets();
+  const { notificationCount } = useUnreadCounts();
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => {
@@ -161,7 +163,7 @@ const MainTabs = () => {
       }}
     >
       <Tabs.Screen name="Home" component={HomeStackScreen} />
-      <Tabs.Screen name="Notifications" component={NotificationsScreen} />
+      <Tabs.Screen name="Notifications" component={NotificationsScreen} options={{ tabBarBadge: notificationCount > 0 ? (notificationCount > 99 ? '99+' : notificationCount) : undefined, tabBarBadgeStyle: { backgroundColor: c.danger, color: '#FFFFFF', fontSize: 10, fontWeight: '800' } }} />
       <Tabs.Screen name="Groups" component={GroupsScreen} />
       <Tabs.Screen name="Profile" component={ProfileStackScreen} />
     </Tabs.Navigator>
@@ -238,7 +240,7 @@ export default function App() {
           <AuthProvider>
             <AppLockProvider>
               <CallProvider>
-                <RootNavigator />
+                <UnreadCountsProvider><RootNavigator /></UnreadCountsProvider>
               </CallProvider>
             </AppLockProvider>
           </AuthProvider>
