@@ -1012,9 +1012,7 @@ export default function ChatScreen() {
 
   const unreadContext = (() => {
     const firstUnread = unreadDividerId ? messages.findIndex((message) => String(message.id) === String(unreadDividerId)) : -1;
-    const unread = firstUnread >= 0
-      ? messages.slice(firstUnread)
-      : messages.filter((message) => !isMine(message.sender_id)).slice(-35);
+    const unread = firstUnread >= 0 ? messages.slice(firstUnread) : [];
     return unread
       .filter((message) => message.type === 'text' || !message.type)
       .map((message) => (isMine(message.sender_id) ? 'Me' : message.sender_name || 'Participant') + ': ' + textOf(message))
