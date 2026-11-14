@@ -912,6 +912,7 @@ export default function ChatScreen() {
 
   const scrollToMessage = (id: string | number) => {
     setMsgSearch('');
+    setAiSearchTerms([]);
     setTimeout(() => {
       const idx = messages.findIndex((m) => String(m.id) === String(id));
       if (idx >= 0) listRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.3 });
