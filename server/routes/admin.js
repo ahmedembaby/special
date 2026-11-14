@@ -47,8 +47,7 @@ router.get('/admins', async (req, res) => {
     const [rows] = await pool.query(
       'SELECT ar.user_id, ar.role, ar.created_at, ar.updated_at, u.name, u.username, u.phone FROM admin_roles ar JOIN users u ON u.id = ar.user_id ORDER BY ar.created_at DESC'
     );
-    const owners = await pool.query('SELECT id, name, username, phone FROM users WHERE id IN (?)', [isAdminId ? [0] : [0]]).catch(() => [[]]);
-    res.json({ admins: rows, owners: owners[0] || [] });
+    res.json({ admins: rows });
   } catch { res.status(500).json({ message: 'Could not load admin roles' }); }
 });
 router.post('/admins', async (req, res) => {
@@ -58,9 +57,9 @@ router.post('/admins', async (req, res) => {
     if (!Number.isInteger(userId) || userId <= 0 || !['admin', 'moderator', 'support'].includes(role)) {
       return res.status(400).json({ message: 'Choose a valid user and role' });
     }
-    const [users] = await pool.query('SELECT id FROM users WHERE id = ? AND banned = 0', [userId]);
+    const [users] = await pool.query('SELECT id, phone FROM users WHERE id = ? AND banned = 0', [userId]);
     if (!users.length) return res.status(404).json({ message: 'User not found' });
-    if (await isAdminId(userId)) return res.status(409).json({ message: 'Bootstrap owners cannot be changed here' });
+    if (isAdminUser(users[0])) return res.status(409).json({ message: 'Bootstrap owners cannot be changed here' });
     await pool.query(
       'INSERT INTO admin_roles (user_id, role, granted_by) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE role = VALUES(role), granted_by = VALUES(granted_by)',
       [userId, role, req.user.id]
