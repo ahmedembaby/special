@@ -17,11 +17,12 @@ const messageTypeFor = (mime = '', name = '') => {
   const m = mime.toLowerCase();
   const ext = path.extname(name).toLowerCase();
   if (m.startsWith('image/')) return 'image';
+  if (m.startsWith('video/')) return 'video';
   if (m.startsWith('audio/') || ['.m4a', '.aac', '.caf', '.3gp', '.mp3', '.wav', '.ogg'].includes(ext)) return 'voice';
   return 'file';
 };
 
-const preview = (msg) => (msg.type === 'text' ? (isEncrypted(msg.content) ? '🔒 New message' : msg.content) : msg.type === 'image' ? '📷 Photo' : msg.type === 'voice' ? '🎤 Voice message' : msg.type === 'poll' ? '📊 Poll' : '📎 File');
+const preview = (msg) => (msg.type === 'text' ? (isEncrypted(msg.content) ? '🔒 New message' : msg.content) : msg.type === 'image' ? '📷 Photo' : msg.type === 'video' ? '🎬 Video' : msg.type === 'voice' ? '🎤 Voice message' : msg.type === 'poll' ? '📊 Poll' : '📎 File');
 
 // Saves the message, fans it out over sockets and sends push to people who are not connected
 async function deliver(message, sender) {
