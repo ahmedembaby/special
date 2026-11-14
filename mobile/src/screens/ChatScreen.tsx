@@ -1010,6 +1010,18 @@ export default function ChatScreen() {
     .join('\\n')
     .slice(-16000);
 
+  const unreadContext = (() => {
+    const firstUnread = unreadDividerId ? messages.findIndex((message) => String(message.id) === String(unreadDividerId)) : -1;
+    const unread = firstUnread >= 0
+      ? messages.slice(firstUnread)
+      : messages.filter((message) => !isMine(message.sender_id)).slice(-35);
+    return unread
+      .filter((message) => message.type === 'text' || !message.type)
+      .map((message) => (isMine(message.sender_id) ? 'Me' : message.sender_name || 'Participant') + ': ' + textOf(message))
+      .join('\\n')
+      .slice(-16000);
+  })();
+
   const DISAPPEAR_OPTIONS: Array<[string, number]> = [['Off', 0], ['1 hour', 3600], ['24 hours', 86400], ['7 days', 604800], ['90 days', 7776000]];
 
   const mainMenu: SheetOption[] = [
@@ -1872,7 +1884,7 @@ export default function ChatScreen() {
           </View>
         </View>
       </Modal>
-      <AIAssistantSheet visible={aiOpen} onClose={() => setAiOpen(false)} context={aiContext} isGroup={inGroup} onSearchTerms={(terms) => { setAiSearchTerms(terms); setMsgSearch(''); setShowSearch(true); setAiOpen(false); }} />
+      <AIAssistantSheet visible={aiOpen} onClose={() => setAiOpen(false)} context={aiContext} unreadContext={unreadContext} isGroup={inGroup} onSearchTerms={(terms) => { setAiSearchTerms(terms); setMsgSearch(''); setShowSearch(true); setAiOpen(false); }} />
       {isFocused ? <ChatCaptureGuard /> : null}
     </SafeAreaView>
   );
