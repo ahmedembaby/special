@@ -6,6 +6,7 @@ const { pushToUsers } = require('../services/push');
 const { adminMiddleware, isAdminId, isAdminUser } = require('../middleware/auth');
 const { participantIds } = require('../services/chat');
 const adminBackups = require('../services/adminBackups');
+const errorMonitor = require('../services/errorMonitor');
 
 const router = express.Router();
 router.use(adminMiddleware); // mounted behind authMiddleware in index.js
@@ -15,7 +16,7 @@ const permissionRoles = (req) => {
   const write = req.method !== 'GET';
   if (p.startsWith('/admins') || p.startsWith('/backups')) return ['owner'];
   if (p.startsWith('/reports') || p.startsWith('/posts') || p.startsWith('/groups') || p.startsWith('/stories') || p.startsWith('/banned-words')) return ['owner', 'admin', 'moderator'];
-  if (['/stats', '/system', '/health', '/release', '/users', '/sessions', '/conversations'].some((prefix) => p === prefix || p.startsWith(prefix + '/'))) {
+  if (['/stats', '/system', '/health', '/errors', '/release', '/users', '/sessions', '/conversations'].some((prefix) => p === prefix || p.startsWith(prefix + '/'))) {
     if (!write && ['support', 'moderator', 'admin', 'owner'].includes(req.adminRole)) return ['support', 'moderator', 'admin', 'owner'];
     return ['admin', 'owner'];
   }
@@ -75,6 +76,10 @@ router.delete('/admins/:userId', async (req, res) => {
     await pool.query('DELETE FROM admin_roles WHERE user_id = ?', [userId]);
     res.json({ success: true });
   } catch { res.status(500).json({ message: 'Could not remove admin role' }); }
+});
+
+router.get('/errors', (req, res) => {
+  res.json(errorMonitor.list(req.query.limit));
 });
 
 router.get('/release', async (req, res) => {
