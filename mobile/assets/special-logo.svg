@@ -1,13 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-<defs>
- <linearGradient id="violet" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D946EF"/><stop offset=".42" stop-color="#8B24F4"/><stop offset="1" stop-color="#4F20D8"/></linearGradient>
- <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24E5F4"/><stop offset=".48" stop-color="#0D9FF2"/><stop offset="1" stop-color="#174CEB"/></linearGradient>
- <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF" stop-opacity=".42"/><stop offset=".48" stop-color="#FFF" stop-opacity=".04"/><stop offset="1" stop-color="#FFF" stop-opacity="0"/></linearGradient>
- <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur stdDeviation="22"/></filter>
-</defs>
-<g opacity=".24" filter="url(#shadow)" transform="translate(0 24)"><path d="M190 215C190 112 275 60 390 60h258c124 0 205 71 205 184v115c0 115-83 181-205 181H514c-60 0-93 17-130 57l-120 128c-25 27-65 2-56-33l35-143c-34-35-53-82-53-139V215Z" fill="#3D16C8"/><path d="M830 809c0 101-82 160-191 160H390c-116 0-190-64-190-166V690c0-105 75-166 190-166h132c62 0 99-19 137-60l111-119c26-28 68-4 59 32l-31 135c29 33 32 71 32 113v184Z" fill="#075BD8"/></g>
-<path d="M180 215C180 112 265 60 380 60h258c124 0 205 71 205 184v115c0 115-83 181-205 181H504c-60 0-93 17-130 57l-120 128c-25 27-65 2-56-33l35-143c-34-35-53-82-53-139V215Z" fill="url(#violet)"/>
-<path d="M180 215C180 112 265 60 380 60h258c124 0 205 71 205 184v115c0 115-83 181-205 181H504c-60 0-93 17-130 57l-120 128c-25 27-65 2-56-33l35-143c-34-35-53-82-53-139V215Z" fill="url(#shine)"/>
-<path d="M844 809c0 101-82 160-191 160H404c-116 0-190-64-190-166V690c0-105 75-166 190-166h132c62 0 99-19 137-60l111-119c26-28 68-4 59 32l-31 135c29 33 32 71 32 113v184Z" fill="url(#blue)"/>
-<path d="M844 809c0 101-82 160-191 160H404c-116 0-190-64-190-166V690c0-105 75-166 190-166h132c62 0 99-19 137-60l111-119c26-28 68-4 59 32l-31 135c29 33 32 71 32 113v184Z" fill="url(#shine)"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><defs>
+  <linearGradient id="violet" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E45AF2"/><stop offset=".48" stop-color="#963BEE"/><stop offset="1" stop-color="#5B35D9"/></linearGradient>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#43F0E5"/><stop offset=".48" stop-color="#159DEB"/><stop offset="1" stop-color="#2856E8"/></linearGradient>
+  <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur stdDeviation="20"/></filter>
+</defs><g>
+  <g opacity=".22" filter="url(#shadow)" transform="translate(0 20)">
+    <path d="M278 150H690C778 150 830 205 830 290V382C830 467 778 520 690 520H525C485 520 460 535 432 565L350 652C325 678 286 655 296 620L318 548C246 532 194 478 194 398V290C194 205 246 150 278 150Z" fill="#5425C8"/>
+    <path d="M746 874H334C246 874 194 819 194 734V642C194 557 246 504 334 504H499C539 504 564 489 592 459L674 372C699 346 738 369 728 404L706 476C778 492 830 546 830 626V734C830 819 778 874 746 874Z" fill="#1454D8"/>
+  </g>
+  <path d="M278 150H690C778 150 830 205 830 290V382C830 467 778 520 690 520H525C485 520 460 535 432 565L350 652C325 678 286 655 296 620L318 548C246 532 194 478 194 398V290C194 205 246 150 278 150Z" fill="url(#violet)"/>
+  <path d="M278 150H690C778 150 830 205 830 290V382C830 467 778 520 690 520H525C485 520 460 535 432 565L350 652C325 678 286 655 296 620L318 548C246 532 194 478 194 398V290C194 205 246 150 278 150Z" fill="url(#gloss)"/>
+  <path d="M746 874H334C246 874 194 819 194 734V642C194 557 246 504 334 504H499C539 504 564 489 592 459L674 372C699 346 738 369 728 404L706 476C778 492 830 546 830 626V734C830 819 778 874 746 874Z" fill="url(#blue)"/>
+  <path d="M746 874H334C246 874 194 819 194 734V642C194 557 246 504 334 504H499C539 504 564 489 592 459L674 372C699 346 738 369 728 404L706 476C778 492 830 546 830 626V734C830 819 778 874 746 874Z" fill="url(#gloss)"/>
+</g></svg>
