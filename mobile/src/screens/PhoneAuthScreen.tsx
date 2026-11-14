@@ -57,7 +57,7 @@ export default function PhoneAuthScreen() {
         <Text style={[styles.info, { color: c.textSecondary }]}>You will get a code via sms.</Text>
 
         <View style={[styles.phoneRow, { backgroundColor: c.surface, borderColor: c.border }]}>
-          <TouchableOpacity style={styles.flagBtn} onPress={() => setPicker(true)} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.flagBtn} onPress={() => setPicker(true)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`Choose country, currently ${country.name}`}>
             <Text style={styles.flag}>{country.flag}</Text>
             <Icon name="chevronDown" size={18} color={c.text} />
           </TouchableOpacity>
@@ -68,13 +68,16 @@ export default function PhoneAuthScreen() {
             placeholder="00 0000 0000"
             placeholderTextColor={c.textMuted}
             keyboardType="number-pad"
+            accessibilityLabel="Mobile phone number"
+            accessibilityHint="Enter your phone number without the country code"
+            textContentType="telephoneNumber"
             style={[styles.input, { color: c.text }]}
             maxLength={13}
           />
         </View>
 
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.remember} onPress={() => setRemember((v) => !v)} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.remember} onPress={() => setRemember((v) => !v)} activeOpacity={0.8} accessibilityRole="checkbox" accessibilityState={{ checked: remember }} accessibilityLabel="Remember me">
             <View style={[styles.checkbox, { borderColor: c.text }, remember && { backgroundColor: c.primary, borderColor: c.primary }]}>
               {remember ? <Icon name="check" size={14} color="#FFFFFF" strokeWidth={2.4} /> : null}
             </View>
@@ -93,6 +96,8 @@ export default function PhoneAuthScreen() {
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.countryRow}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.name}, ${item.code}`}
                   onPress={() => { setCountry(item); setPicker(false); }}
                 >
                   <Text style={styles.flag}>{item.flag}</Text>
@@ -112,7 +117,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   body: { paddingHorizontal: 26, marginTop: 42 },
   info: { fontSize: 15, lineHeight: 23, textAlign: 'center', marginBottom: 30 },
-  phoneRow: { flexDirection: 'row', alignItems: 'center', borderWidth: StyleSheet.hairlineWidth, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 15 },
+  phoneRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 16 },
   flagBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 14 },
   flag: { fontSize: 26 },
   code: { fontSize: 20, marginRight: 10 },
