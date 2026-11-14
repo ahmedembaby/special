@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const pool = require('../db');
 const rt = require('../services/realtime');
 const { pushToUsers } = require('../services/push');
@@ -63,6 +64,11 @@ router.get('/stats', async (req, res) => {
     const [[nt]] = await pool.query('SELECT COUNT(*) AS c FROM users WHERE created_at >= CURDATE()');
     const [[mt]] = await pool.query('SELECT COUNT(*) AS c FROM messages WHERE created_at >= CURDATE()');
     const [[or]] = await pool.query("SELECT COUNT(*) AS c FROM reports WHERE status = 'open'");
+    const [[dau]] = await pool.query('SELECT COUNT(*) AS c FROM users WHERE last_seen >= DATE_SUB(NOW(), INTERVAL 1 DAY)');
+    const [[wau]] = await pool.query('SELECT COUNT(*) AS c FROM users WHERE last_seen >= DATE_SUB(NOW(), INTERVAL 7 DAY)');
+    const [[mau]] = await pool.query('SELECT COUNT(*) AS c FROM users WHERE last_seen >= DATE_SUB(NOW(), INTERVAL 30 DAY)');
+    const [[callsToday]] = await pool.query('SELECT COUNT(*) AS c FROM calls WHERE created_at >= CURDATE()');
+    const [[media]] = await pool.query('SELECT COUNT(*) AS files, COALESCE(SUM(file_size), 0) AS bytes FROM messages WHERE file_url IS NOT NULL');
     const series = async (table) => {
       const [rows] = await pool.query(
         `SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS d, COUNT(*) AS c FROM ${table}
@@ -82,6 +88,9 @@ router.get('/stats', async (req, res) => {
       newUsersToday: nt.c,
       messagesToday: mt.c,
       openReports: or.c,
+      activeUsers: { daily: Number(dau.c), weekly: Number(wau.c), monthly: Number(mau.c) },
+      callsToday: Number(callsToday.c),
+      media: { files: Number(media.files), bytes: Number(media.bytes) },
       activity: { users: await series('users'), messages: await series('messages'), posts: await series('posts') },
       totalUsers: u.c,
       totalConversations: c.c,
@@ -252,44 +261,51 @@ router.post('/broadcast', async (req, res) => {
   const title = String(req.body.title || '').trim();
   const body = String(req.body.body || '').trim();
   if (!title || !body) return res.status(400).json({ message: 'Title and body are required' });
+  if (title.length > 120) return res.status(400).json({ message: 'Title must be 120 characters or fewer' });
+  if (body.length > 1500) return res.status(400).json({ message: 'Body must be 1500 characters or fewer' });
   try {
     const [users] = await pool.query('SELECT id FROM users WHERE banned = 0');
     const ids = users.map((u) => Number(u.id));
     if (ids.length) {
-      // Persist in batches so large user bases do not create one oversized SQL statement.
-      let firstNotificationId = null;
+      const broadcastId = crypto.randomUUID();
       for (let offset = 0; offset < ids.length; offset += 500) {
         const batch = ids.slice(offset, offset + 500);
-        const values = batch.map((userId) => [userId, 'broadcast', title, body, null]);
-        const [insert] = await pool.query(
-          'INSERT INTO notifications (user_id, type, title, body, from_user_id) VALUES ?',
+        const values = batch.map((userId) => [userId, 'broadcast', title, body, broadcastId, null]);
+        await pool.query(
+          'INSERT INTO notifications (user_id, type, title, body, broadcast_id, from_user_id) VALUES ?',
           [values]
         );
-        const firstId = Number(insert.insertId);
-        if (firstNotificationId === null) firstNotificationId = firstId;
-        const createdAt = new Date().toISOString();
-        batch.forEach((userId, index) => {
+        // Read back the actual auto-increment IDs; never assume a bulk insert is consecutive.
+        const [created] = await pool.query(
+          'SELECT id, user_id, created_at FROM notifications WHERE broadcast_id = ? AND user_id IN (?) ORDER BY id ASC',
+          [broadcastId, batch]
+        );
+        const byUser = new Map(created.map((row) => [Number(row.user_id), row]));
+        for (const userId of batch) {
+          const row = byUser.get(userId);
+          if (!row) continue;
           const notification = {
-            id: String(firstId + index),
+            id: String(row.id),
             type: 'broadcast',
             title,
             body,
-            from: { id: 'system', name: 'E-Chat', username: 'echat', avatar: null },
-            createdAt,
+            from: { id: 'system', name: 'Special', username: 'special', avatar: null },
+            createdAt: row.created_at,
             read: false,
           };
           rt.emitToUser(userId, 'notification', notification);
           rt.emitToUser(userId, 'broadcast', { title, body, notificationId: notification.id });
-        });
+        }
       }
       await pushToUsers(ids, {
         title,
         body,
-        data: { type: 'broadcast', notificationId: String(firstNotificationId) },
+        data: { type: 'broadcast', broadcastId },
       });
     }
     res.json({ success: true, message: `Broadcast sent to ${ids.length} users`, count: ids.length });
   } catch (err) {
+    console.error('admin broadcast:', err.message);
     res.status(500).json({ message: 'Broadcast failed' });
   }
 });

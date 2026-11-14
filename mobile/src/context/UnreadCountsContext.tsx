@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useAuth } from './AuthContext';
 import * as api from '../services/api';
@@ -16,8 +16,10 @@ export const UnreadCountsProvider = ({ children }: { children: React.ReactNode }
   const { token } = useAuth();
   const [messageCount, setMessageCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(0);
+  const requestSequence = useRef(0);
 
   const refresh = useCallback(async () => {
+    const requestId = ++requestSequence.current;
     if (!token) {
       setMessageCount(0);
       setNotificationCount(0);
@@ -27,6 +29,8 @@ export const UnreadCountsProvider = ({ children }: { children: React.ReactNode }
       api.conversations.list(),
       social.unreadNotificationCount(),
     ]);
+    // Ignore out-of-order responses and requests started before logout/token changes.
+    if (requestId !== requestSequence.current) return;
     if (chats.status === 'fulfilled') {
       const total = (chats.value.data || []).reduce((sum, item) => sum + Math.max(0, Number(item.unread_count) || 0), 0);
       setMessageCount(total);
@@ -36,6 +40,7 @@ export const UnreadCountsProvider = ({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     if (!token) {
+      requestSequence.current += 1;
       setMessageCount(0);
       setNotificationCount(0);
       return;
