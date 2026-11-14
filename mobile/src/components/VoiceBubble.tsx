@@ -176,12 +176,12 @@ export const RecordingDot = ({ color }: { color: string }) => {
 };
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 22, minWidth: 240, maxWidth: 300 },
-  play: { width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  bars: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 30 },
+  wrap: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11, paddingHorizontal: 13, borderRadius: 19, minWidth: 246, maxWidth: 310, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(110,120,150,0.16)' },
+  play: { width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  bars: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 32 },
   bar: { width: 3, borderRadius: 2 },
   meta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
   time: { fontSize: 11, fontWeight: '600' },
   dot: { width: 8, height: 8, borderRadius: 4, alignSelf: 'center' },
-  rate: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 10 },
+  rate: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(110,120,150,0.18)' },
 });

@@ -10,7 +10,8 @@ export const OptionSheet = ({ visible, title, options, onClose }: { visible: boo
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-      <View style={[styles.sheet, { backgroundColor: c.background }]}>
+      <View style={[styles.sheet, { backgroundColor: c.card, borderColor: c.border }]}>
+        <View style={[styles.handle, { backgroundColor: c.textMuted }]} />
         {title ? <Text style={[styles.title, { color: c.textSecondary, borderBottomColor: c.border }]}>{title}</Text> : null}
         <ScrollView style={{ maxHeight: 420 }}>
         {options.map((o) => (
@@ -30,8 +31,9 @@ export const OptionSheet = ({ visible, title, options, onClose }: { visible: boo
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingBottom: 24 },
-  title: { textAlign: 'center', paddingVertical: 14, fontSize: 13, borderBottomWidth: StyleSheet.hairlineWidth },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 22 },
-  label: { fontSize: 16 },
+  sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: StyleSheet.hairlineWidth, paddingTop: 10, paddingBottom: 28, overflow: 'hidden' },
+  handle: { width: 38, height: 4, borderRadius: 3, alignSelf: 'center', opacity: 0.42, marginBottom: 10 },
+  title: { textAlign: 'center', paddingVertical: 16, paddingHorizontal: 18, fontSize: 12, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', borderBottomWidth: StyleSheet.hairlineWidth },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, minHeight: 54 },
+  label: { fontSize: 15, fontWeight: '600', letterSpacing: -0.1 },
 });

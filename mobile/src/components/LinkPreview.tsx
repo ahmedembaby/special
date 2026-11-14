@@ -41,9 +41,9 @@ export const LinkPreview = ({ url, isOwn }: { url: string; isOwn?: boolean }) =>
 };
 
 const styles = StyleSheet.create({
-  card: { marginTop: 8, borderRadius: 14, overflow: 'hidden', width: 240 },
-  img: { width: '100%', height: 120 },
-  site: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
-  title: { fontSize: 14, fontWeight: '700', marginTop: 2 },
-  desc: { fontSize: 12, marginTop: 2 },
+  card: { marginTop: 10, borderRadius: 17, overflow: 'hidden', width: 252, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(110,120,150,0.22)' },
+  img: { width: '100%', height: 132 },
+  site: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8 },
+  title: { fontSize: 14, fontWeight: '800', lineHeight: 19, marginTop: 4 },
+  desc: { fontSize: 12, lineHeight: 17, marginTop: 4 },
 });

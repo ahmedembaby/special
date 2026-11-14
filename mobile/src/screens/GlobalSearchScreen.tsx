@@ -81,7 +81,7 @@ export default function GlobalSearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 14, marginTop: 10, padding: 12, borderRadius: 18, shadowOpacity: 1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
-  title: { fontSize: 16, fontWeight: '700' },
-  empty: { textAlign: 'center', marginTop: 40, fontSize: 15 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 13, marginHorizontal: 18, marginTop: 12, padding: 15, borderRadius: 21, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(110,120,150,0.18)' },
+  title: { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
+  empty: { textAlign: 'center', marginTop: 52, fontSize: 15, lineHeight: 23, paddingHorizontal: 30 },
 });
