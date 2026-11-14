@@ -223,6 +223,13 @@ export const conversations = {
   disappearing: (id: string | number, seconds: number) => api.put<Conversation>(`/conversations/${id}/disappearing`, { seconds }),
 };
 
+export const ai = {
+  assistant: (data: { task: 'summarize' | 'suggest_replies' | 'translate' | 'answer' | 'moderate' | 'search_terms'; context: string; prompt?: string; language?: string }) =>
+    api.post<{ result: string; usage?: { total_tokens?: number } | null }>('/ai/assistant', data, { timeout: 45000 }),
+  transcribeMessage: (messageId: string | number) =>
+    api.post<{ text: string }>(`/ai/transcribe/${encodeURIComponent(String(messageId))}`, {}, { timeout: 65000 }),
+};
+
 export const messages = {
   send: (data: { conversation_id: string | number; content: string; reply_to?: string | number; client_id?: string }) =>
     api.post<Message>('/messages', data),
