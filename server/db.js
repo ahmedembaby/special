@@ -197,7 +197,7 @@ const TABLES = [
     type ENUM(
       'like','comment','follow','group_invite',
       'group_request','group_approved','mention',
-      'follow_request','follow_accepted','broadcast'
+      'follow_request','follow_accepted','broadcast','digest'
     ) NOT NULL,
     group_id INT DEFAULT NULL,
     title VARCHAR(120) DEFAULT NULL,
@@ -532,7 +532,7 @@ const COLUMNS = [
 
 // Modifications for older database schemas
 const MODIFY = [
-  "ALTER TABLE notifications MODIFY type ENUM('like','comment','follow','group_invite','group_request','group_approved','mention','follow_request','follow_accepted','broadcast') NOT NULL",
+  "ALTER TABLE notifications MODIFY type ENUM('like','comment','follow','group_invite','group_request','group_approved','mention','follow_request','follow_accepted','broadcast','digest') NOT NULL",
   'ALTER TABLE notifications MODIFY from_user_id INT NULL',
 
   'ALTER TABLE users MODIFY email VARCHAR(150) NULL',
