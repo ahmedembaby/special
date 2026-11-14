@@ -21,7 +21,7 @@ async function runDigest(now = new Date()) {
       if (inQuiet(settings.quiet, now)) continue;
       const digestDate = localTime.toISOString().slice(0, 10);
       const [[counts]] = await pool.query(
-        'SELECT COUNT(*) AS total FROM notifications WHERE user_id = ? AND read_at IS NULL AND type <> 'digest' AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)',
+        "SELECT COUNT(*) AS total FROM notifications WHERE user_id = ? AND read_at IS NULL AND type <> 'digest' AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)",
         [user.id]
       );
       const total = Number(counts.total) || 0;
