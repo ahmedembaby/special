@@ -53,10 +53,11 @@ export default function ProfileEditScreen() {
   };
 
   const Field = ({ label, value, onChange, multiline }: { label: string; value: string; onChange: (t: string) => void; multiline?: boolean }) => (
-    <View style={[styles.field, { borderColor: c.inputBorder }]}>
-      <Text style={{ color: c.textSecondary, fontSize: 13 }}>{label}</Text>
+    <View style={[styles.field, { borderColor: c.inputBorder, backgroundColor: c.card }]}>
+      <Text style={{ color: c.textSecondary, fontSize: 13, fontWeight: '600' }}>{label}</Text>
       <TextInput
         value={value}
+        accessibilityLabel={label}
         onChangeText={onChange}
         multiline={multiline}
         style={{ color: c.text, fontSize: 17, paddingVertical: 4, minHeight: multiline ? 70 : undefined, textAlignVertical: multiline ? 'top' : 'center' }}
@@ -70,7 +71,7 @@ export default function ProfileEditScreen() {
     <View style={[styles.root, { backgroundColor: c.background }]}>
       <ScreenHeader title="Edit profile" onBack={() => nav.goBack()} rightText="Save" onRightPress={save} />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, gap: 14 }}>
-        <TouchableOpacity onPress={pick} activeOpacity={0.8} style={{ alignSelf: 'center' }}>
+        <TouchableOpacity onPress={pick} activeOpacity={0.8} style={{ alignSelf: 'center' }} accessibilityRole="button" accessibilityLabel="Change profile photo" accessibilityState={{ disabled: uploading, busy: uploading }}>
           <Avatar source={avatar} name={name} size={96} />
           <View style={styles.cam}>
             {uploading ? <ActivityIndicator color="#FFFFFF" /> : <Icon name="camera" size={22} color="#FFFFFF" />}
@@ -85,6 +86,6 @@ export default function ProfileEditScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  field: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8 },
+  field: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 15, paddingVertical: 12, gap: 5 },
   cam: { ...StyleSheet.absoluteFill, borderRadius: 48, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
 });
