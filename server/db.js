@@ -228,6 +228,28 @@ const TABLES = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
+  // AD CAMPAIGNS
+  `CREATE TABLE IF NOT EXISTS ad_campaigns (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(120) NOT NULL,
+    headline VARCHAR(180) NOT NULL,
+    body TEXT DEFAULT NULL,
+    media_url VARCHAR(500) DEFAULT NULL,
+    target_url VARCHAR(1000) NOT NULL,
+    audience ENUM('all','new','active') NOT NULL DEFAULT 'all',
+    status ENUM('draft','active','paused','ended') NOT NULL DEFAULT 'draft',
+    budget DECIMAL(12,2) NOT NULL DEFAULT 0,
+    starts_at DATETIME DEFAULT NULL,
+    ends_at DATETIME DEFAULT NULL,
+    impressions BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    clicks BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    created_by INT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ad_campaign_status (status, starts_at, ends_at),
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
   // ADMIN ROLES
   `CREATE TABLE IF NOT EXISTS admin_roles (
     user_id INT PRIMARY KEY,

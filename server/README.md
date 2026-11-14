@@ -26,3 +26,19 @@ All privileged data/actions are served by `/api/admin` behind the existing JWT s
 - Privacy policy: `GET /privacy`
 - Optional Redis: `REDIS_URL` for multi-instance sockets, OTP storage and token blacklist.
 - WhatsApp OTP: `WHATSAPP_ENABLED=true` and a working WhatsApp setup; `CHROME_PATH` may be needed on some hosts.
+
+
+## Encrypted database backups
+
+Configure a persistent writable directory and a 32-byte encryption key (64 hexadecimal characters):
+
+```env
+BACKUP_DIR=/var/lib/special/backups
+BACKUP_ENCRYPTION_KEY=replace-with-64-hex-characters
+```
+
+The host must provide `mysqldump` and `mysql` client binaries. Backups use AES-256-GCM encryption. Keep the key outside the backup directory and store a secure copy separately; losing it makes backups unrecoverable. The backup directory must be on persistent storage, not an ephemeral deployment filesystem. Restore is owner-only and requires typing the exact database name; it replaces current database contents. Test restores on staging before relying on production backups.
+
+## Advertising campaigns
+
+The admin dashboard manages campaign settings and statuses. This does not yet render ads in mobile feeds or record real impressions/clicks; mobile ad placements and event tracking are a separate rollout before activating campaigns for users.
