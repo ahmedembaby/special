@@ -104,13 +104,13 @@ export const NotificationItem = ({ item, onDelete, onPress }: { item: AppNotific
 };
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 14, gap: 10, borderBottomWidth: StyleSheet.hairlineWidth },
-  iconCol: { width: 40, alignItems: 'flex-start', paddingTop: 2 },
-  iconTile: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', paddingHorizontal: 18, paddingVertical: 16, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  iconCol: { width: 42, alignItems: 'flex-start', paddingTop: 2 },
+  iconTile: { width: 38, height: 38, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  text: { fontSize: 15, lineHeight: 21 },
+  text: { fontSize: 15, lineHeight: 22, letterSpacing: -0.1 },
   quote: { fontSize: 15, marginTop: 4, lineHeight: 21 },
   followBtn: { alignSelf: 'flex-start', borderRadius: 16, paddingHorizontal: 16, height: 32, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
-  img: { width: '100%', height: 120, borderRadius: 12, marginTop: 8 },
-  reply: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, padding: 10, marginTop: 8 },
+  img: { width: '100%', height: 132, borderRadius: 16, marginTop: 10 },
+  reply: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 15, padding: 12, marginTop: 10 },
 });
