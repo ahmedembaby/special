@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Alert, Modal, View, Text, Image, TouchableOpacity, StyleSheet, Vibration, Platform } from 'react-native';
 import api from '../services/api';
+import { Icon } from '../components/Icon';
 import { getSocket, onSocket } from '../services/socket';
 import { resolveUrl } from '../config';
 import { useAuth } from './AuthContext';
@@ -253,19 +254,19 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
           <View style={styles.controls}>
             {phase === 'ringing' ? (
               <>
-                <TouchableOpacity style={[styles.btn, { backgroundColor: '#F4212E' }]} onPress={reject}><Text style={styles.btnText}>✕</Text></TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, { backgroundColor: '#00BA7C' }]} onPress={accept}><Text style={styles.btnText}>✆</Text></TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Decline call" style={[styles.btn, styles.endBtn]} onPress={reject}><Icon name="close" size={25} color="#FFFFFF" /></TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Accept call" style={[styles.btn, styles.acceptBtn]} onPress={accept}><Icon name="phone" size={25} color="#FFFFFF" /></TouchableOpacity>
               </>
             ) : (
               <>
-                <TouchableOpacity style={[styles.btn, muted && styles.btnOn]} onPress={toggleMute}><Text style={styles.btnText}>{muted ? '🔇' : '🎤'}</Text></TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel={muted ? 'Unmute microphone' : 'Mute microphone'} style={[styles.btn, muted && styles.btnOn]} onPress={toggleMute}><Icon name="mic" size={23} color="#FFFFFF" /></TouchableOpacity>
                 {type === 'video' ? (
                   <>
-                    <TouchableOpacity style={[styles.btn, camOff && styles.btnOn]} onPress={toggleCam}><Text style={styles.btnText}>{camOff ? '🚫' : '📹'}</Text></TouchableOpacity>
-                    <TouchableOpacity style={styles.btn} onPress={flipCam}><Text style={styles.btnText}>🔄</Text></TouchableOpacity>
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel={camOff ? 'Turn camera on' : 'Turn camera off'} style={[styles.btn, camOff && styles.btnOn]} onPress={toggleCam}><Icon name="video" size={23} color="#FFFFFF" /></TouchableOpacity>
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Switch camera" style={styles.btn} onPress={flipCam}><Icon name="repeat" size={23} color="#FFFFFF" /></TouchableOpacity>
                   </>
                 ) : null}
-                <TouchableOpacity style={[styles.btn, { backgroundColor: '#F4212E' }]} onPress={hangUp}><Text style={styles.btnText}>✕</Text></TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="End call" style={[styles.btn, styles.endBtn]} onPress={hangUp}><Icon name="close" size={25} color="#FFFFFF" /></TouchableOpacity>
               </>
             )}
           </View>
@@ -276,16 +277,18 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#0F0D1A', justifyContent: 'space-between', paddingTop: Platform.OS === 'ios' ? 80 : 60, paddingBottom: 50 },
-  top: { alignItems: 'center', gap: 10 },
-  avatar: { width: 110, height: 110, borderRadius: 55 },
-  avatarFallback: { backgroundColor: '#6C4DF6', alignItems: 'center', justifyContent: 'center' },
+  screen: { flex: 1, backgroundColor: '#101426', justifyContent: 'space-between', paddingTop: Platform.OS === 'ios' ? 84 : 64, paddingBottom: Platform.OS === 'ios' ? 52 : 38, paddingHorizontal: 22 },
+  top: { alignItems: 'center', gap: 12, paddingTop: 28 },
+  avatar: { width: 116, height: 116, borderRadius: 38, borderWidth: 3, borderColor: 'rgba(255,255,255,0.14)' },
+  avatarFallback: { backgroundColor: '#5558D9', alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontSize: 44, fontWeight: '800' },
-  name: { color: '#fff', fontSize: 26, fontWeight: '700' },
-  status: { color: 'rgba(255,255,255,0.8)', fontSize: 16 },
-  local: { position: 'absolute', top: 60, right: 16, width: 110, height: 160, borderRadius: 12, overflow: 'hidden' },
-  controls: { flexDirection: 'row', justifyContent: 'center', gap: 22 },
-  btn: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.18)' },
-  btnOn: { backgroundColor: 'rgba(255,255,255,0.45)' },
-  btnText: { color: '#fff', fontSize: 26 },
+  name: { color: '#fff', fontSize: 28, fontWeight: '800', letterSpacing: -0.6, marginTop: 12 },
+  status: { color: 'rgba(235,239,255,0.72)', fontSize: 14, fontWeight: '600', letterSpacing: 0.2 },
+  local: { position: 'absolute', top: 58, right: 18, width: 104, height: 152, borderRadius: 22, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.28)' },
+  controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 18, paddingHorizontal: 14, paddingVertical: 18, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.10)' },
+  btn: { width: 58, height: 58, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
+  btnOn: { backgroundColor: '#5558D9' },
+  endBtn: { backgroundColor: '#E54858' },
+  acceptBtn: { backgroundColor: '#16A878' },
+  
 });
