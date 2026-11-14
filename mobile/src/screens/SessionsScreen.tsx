@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useAppColors } from '../theme/useAppColors';
@@ -37,10 +37,10 @@ export default function SessionsScreen() {
       <ScreenHeader title="Devices and sessions" onBack={() => navigation.goBack()} />
       {loading ? <ActivityIndicator color={c.primary} style={{ marginTop: 32 }} /> : (
         <FlatList data={sessions} keyExtractor={(item) => item.id} contentContainerStyle={{ padding: 14, paddingBottom: 32 }}
-          ListEmptyComponent={<Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 30 }}>No active sessions found.</Text>}
-          ListHeaderComponent={<Text style={{ color: c.textSecondary, marginBottom: 12 }}>Sessions currently authorized to access your Special account.</Text>}
+          ListEmptyComponent={<Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 44, paddingHorizontal: 28, lineHeight: 22 }}>No other devices are currently connected to your account.</Text>}
+          ListHeaderComponent={<Text style={{ color: c.textSecondary, marginBottom: 16, lineHeight: 20 }}>Review devices that can access your account. Sign out any session you do not recognize.</Text>}
           renderItem={({ item }) => (
-            <View style={{ backgroundColor: c.card, borderRadius: 16, padding: 15, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ backgroundColor: c.card, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth, borderRadius: 22, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 13 }}>
               <View style={{ width: 42, height: 42, borderRadius: 13, backgroundColor: c.primaryLight, alignItems: 'center', justifyContent: 'center' }}><Icon name={item.platform === 'web' ? 'file' : 'phone'} size={21} color={c.primary} /></View>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: c.text, fontWeight: '700', fontSize: 15 }}>{item.device_name || 'Unknown device'}</Text>
@@ -48,7 +48,7 @@ export default function SessionsScreen() {
                 <Text style={{ color: c.textMuted, fontSize: 11, marginTop: 2 }}>Signed in {date(item.created_at)}</Text>
                 {item.is_current ? <Text style={{ color: c.primary, fontWeight: '700', fontSize: 12, marginTop: 4 }}>This device · Current session</Text> : null}
               </View>
-              <TouchableOpacity disabled={busy === item.id} onPress={() => revoke(item)} style={{ padding: 8 }}>{busy === item.id ? <ActivityIndicator color={c.danger} /> : <Icon name="logout" size={20} color={c.danger} />}</TouchableOpacity>
+              <TouchableOpacity disabled={busy === item.id} onPress={() => revoke(item)} style={{ padding: 10, borderRadius: 14, backgroundColor: c.background }} accessibilityRole="button" accessibilityLabel={`Sign out ${item.device_name || "this device"}`} accessibilityState={{ disabled: busy === item.id }}>{busy === item.id ? <ActivityIndicator color={c.danger} /> : <Icon name="logout" size={20} color={c.danger} />}</TouchableOpacity>
             </View>
           )}
         />

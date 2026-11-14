@@ -36,10 +36,10 @@ export default function PrivacySettingsScreen() {
   const setQuiet = (p: Partial<S['quiet']>) => save({ ...s, quiet: { ...s.quiet, ...p } }, s);
 
   const sw = (v: boolean, f: (v: boolean) => void) => (
-    <Switch value={v} onValueChange={f} trackColor={{ false: c.inputBorder, true: c.primary }} thumbColor="#FFFFFF" />
+    <Switch value={v} onValueChange={f} accessibilityRole="switch" accessibilityLabel="Privacy or notification preference" trackColor={{ false: c.inputBorder, true: c.primary }} thumbColor="#FFFFFF" />
   );
   const Row = ({ title, sub, right, onPress }: { title: string; sub?: string; right?: React.ReactNode; onPress?: () => void }) => (
-    <TouchableOpacity style={[styles.row, { backgroundColor: c.card }]} onPress={onPress} activeOpacity={onPress ? 0.6 : 1}>
+    <TouchableOpacity style={[styles.row, { backgroundColor: c.card, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth }]} onPress={onPress} activeOpacity={onPress ? 0.7 : 1} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={title}>
       <View style={{ flex: 1 }}>
         <Text style={{ color: c.text, fontSize: 16, fontWeight: '600' }}>{title}</Text>
         {sub ? <Text style={{ color: c.textSecondary, fontSize: 13, marginTop: 2 }}>{sub}</Text> : null}
@@ -90,6 +90,6 @@ export default function PrivacySettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 14, marginTop: 8, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 18 },
-  section: { fontSize: 13, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', opacity: 0.6, paddingHorizontal: 20, paddingTop: 22, paddingBottom: 4 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginTop: 9, paddingHorizontal: 17, paddingVertical: 15, borderRadius: 22 },
+  section: { fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', opacity: 0.62, paddingHorizontal: 22, paddingTop: 27, paddingBottom: 6 },
 });
