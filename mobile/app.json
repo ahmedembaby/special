@@ -51,7 +51,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "react-native-compressor"
     ],
     "ios": {
       "supportsTablet": true,
