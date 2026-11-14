@@ -449,6 +449,25 @@ router.post('/reports/:id/resolve', async (req, res) => {
 });
 
 // Toggles the ban state (or sets it with { banned: true|false })
+router.post('/users/:id/warn', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const message = String(req.body.message || '').trim().slice(0, 500);
+    if (!Number.isInteger(id) || id <= 0 || !message) return res.status(400).json({ message: 'A user and warning message are required' });
+    const [users] = await pool.query('SELECT id FROM users WHERE id = ? AND banned = 0', [id]);
+    if (!users.length) return res.status(404).json({ message: 'Active user not found' });
+    const title = 'تنبيه إداري من Special';
+    const [created] = await pool.query(
+      "INSERT INTO notifications (user_id, type, title, body, from_user_id) VALUES (?, 'broadcast', ?, ?, ?)",
+      [id, title, message, req.user.id]
+    );
+    const notification = { id: String(created.insertId), type: 'broadcast', title, body: message, from: { id: req.user.id, name: req.user.name }, createdAt: new Date().toISOString() };
+    rt.emitToUser(id, 'notification', notification);
+    pushToUsers([id], { title, body: message, data: { type: 'broadcast', adminWarning: true } }).catch(() => {});
+    res.status(201).json({ success: true });
+  } catch { res.status(500).json({ message: 'Could not send user warning' }); }
+});
+
 router.post('/users/:id/ban', async (req, res) => {
   try {
     const id = Number(req.params.id);
