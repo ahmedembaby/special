@@ -67,7 +67,10 @@ router.get('/stats', async (req, res) => {
     const [[dau]] = await pool.query('SELECT COUNT(*) AS c FROM users WHERE last_seen >= DATE_SUB(NOW(), INTERVAL 1 DAY)');
     const [[wau]] = await pool.query('SELECT COUNT(*) AS c FROM users WHERE last_seen >= DATE_SUB(NOW(), INTERVAL 7 DAY)');
     const [[mau]] = await pool.query('SELECT COUNT(*) AS c FROM users WHERE last_seen >= DATE_SUB(NOW(), INTERVAL 30 DAY)');
-    const [[callsToday]] = await pool.query('SELECT COUNT(*) AS c FROM calls WHERE created_at >= CURDATE()');
+    const [[callsToday], [groupCallsToday]] = await Promise.all([
+      pool.query('SELECT COUNT(*) AS c FROM calls WHERE created_at >= CURDATE()'),
+      pool.query('SELECT COUNT(*) AS c FROM group_calls WHERE started_at >= CURDATE()')
+    ]);
     const [[media]] = await pool.query('SELECT COUNT(*) AS files, COALESCE(SUM(file_size), 0) AS bytes FROM messages WHERE file_url IS NOT NULL');
     const series = async (table) => {
       const [rows] = await pool.query(
@@ -89,7 +92,7 @@ router.get('/stats', async (req, res) => {
       messagesToday: mt.c,
       openReports: or.c,
       activeUsers: { daily: Number(dau.c), weekly: Number(wau.c), monthly: Number(mau.c) },
-      callsToday: Number(callsToday.c),
+      callsToday: Number(callsToday.c) + Number(groupCallsToday.c),
       media: { files: Number(media.files), bytes: Number(media.bytes) },
       activity: { users: await series('users'), messages: await series('messages'), posts: await series('posts') },
       totalUsers: u.c,
