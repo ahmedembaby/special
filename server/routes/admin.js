@@ -13,7 +13,7 @@ const permissionRoles = (req) => {
   const p = req.path;
   const write = req.method !== 'GET';
   if (p.startsWith('/admins') || p.startsWith('/backups')) return ['owner'];
-  if (p.startsWith('/reports') || p.startsWith('/posts') || p.startsWith('/groups') || p.startsWith('/banned-words')) return ['owner', 'admin', 'moderator'];
+  if (p.startsWith('/reports') || p.startsWith('/posts') || p.startsWith('/groups') || p.startsWith('/stories') || p.startsWith('/banned-words')) return ['owner', 'admin', 'moderator'];
   if (['/stats', '/system', '/release', '/users', '/sessions', '/conversations'].some((prefix) => p === prefix || p.startsWith(prefix + '/'))) {
     if (!write && ['support', 'moderator', 'admin', 'owner'].includes(req.adminRole)) return ['support', 'moderator', 'admin', 'owner'];
     return ['admin', 'owner'];
@@ -98,6 +98,34 @@ router.get('/audit', async (req, res) => {
     const [rows] = await pool.query('SELECT a.*, u.name AS admin_name FROM admin_audit a JOIN users u ON u.id = a.admin_id ORDER BY a.id DESC LIMIT 200');
     res.json(rows);
   } catch { res.status(500).json({ message: 'Could not load the audit log' }); }
+});
+
+// story moderation
+router.get('/stories', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT s.id, s.user_id, u.name AS user_name, u.username, s.media_type, s.media_url, s.caption,
+              s.text_content, s.audience, s.created_at, s.expires_at,
+              (SELECT COUNT(*) FROM story_views v WHERE v.story_id = s.id) AS views_count
+       FROM stories s JOIN users u ON u.id = s.user_id
+       ORDER BY s.created_at DESC LIMIT 100`
+    );
+    res.json(rows);
+  } catch { res.status(500).json({ message: 'Could not load stories' }); }
+});
+router.delete('/stories/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT media_url FROM stories WHERE id = ?', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ message: 'Story not found' });
+    await pool.query('DELETE FROM stories WHERE id = ?', [req.params.id]);
+    const mediaUrl = String(rows[0].media_url || '');
+    if (mediaUrl.startsWith('/uploads/stories/')) {
+      const fs = require('fs/promises');
+      const path = require('path');
+      await fs.unlink(path.join(__dirname, '..', 'uploads', 'stories', path.basename(mediaUrl))).catch(() => {});
+    }
+    res.json({ success: true });
+  } catch { res.status(500).json({ message: 'Could not delete story' }); }
 });
 
 // banned words (rejected in posts and comments)
