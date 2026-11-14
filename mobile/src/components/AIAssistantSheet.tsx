@@ -4,9 +4,9 @@ import { useAppColors } from '../theme/useAppColors';
 import * as api from '../services/api';
 
 type Task = 'summarize' | 'suggest_replies' | 'translate' | 'answer' | 'moderate' | 'search_terms';
-interface Props { visible: boolean; onClose: () => void; context: string; isGroup: boolean }
+interface Props { visible: boolean; onClose: () => void; context: string; isGroup: boolean; onSearchTerms?: (terms: string[]) => void }
 
-export const AIAssistantSheet = ({ visible, onClose, context, isGroup }: Props) => {
+export const AIAssistantSheet = ({ visible, onClose, context, isGroup, onSearchTerms }: Props) => {
   const { c } = useAppColors();
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState('');
@@ -26,7 +26,19 @@ export const AIAssistantSheet = ({ visible, onClose, context, isGroup }: Props) 
     setResult('');
     try {
       const response = await api.ai.assistant({ task, context, prompt: prompt.trim(), language });
-      setResult(response.data.result);
+      if (task === 'search_terms') {
+        let terms: string[] = [];
+        try {
+          const parsed = JSON.parse(response.data.result);
+          if (Array.isArray(parsed)) terms = parsed.filter((value) => typeof value === 'string').map((value) => value.trim()).filter(Boolean).slice(0, 8);
+        } catch {
+          terms = response.data.result.split(/[;,\\n]/).map((value) => value.replace(/^[0-9.\\s-]+/, '').trim()).filter(Boolean).slice(0, 8);
+        }
+        if (terms.length) {
+          onSearchTerms?.(terms);
+          setResult('Searching loaded and server-indexed messages for: ' + terms.join(' · '));
+        } else setResult(response.data.result);
+      } else setResult(response.data.result);
     } catch (error: any) {
       Alert.alert('AI unavailable', error?.response?.data?.message || 'Check the server AI configuration and try again.');
     } finally {
