@@ -250,6 +250,17 @@ const TABLES = [
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
+  // AD IMPRESSIONS (one counted impression per user per campaign per day)
+  `CREATE TABLE IF NOT EXISTS ad_impressions (
+    campaign_id INT NOT NULL,
+    user_id INT NOT NULL,
+    impression_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (campaign_id, user_id, impression_date),
+    FOREIGN KEY (campaign_id) REFERENCES ad_campaigns(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
   // ADMIN ROLES
   `CREATE TABLE IF NOT EXISTS admin_roles (
     user_id INT PRIMARY KEY,

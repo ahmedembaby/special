@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SponsoredAdCard } from '../components/SponsoredAdCard';
 import { View, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet, Text, RefreshControl, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,7 +37,7 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={c.primary} colors={[c.primary]} />}
-          ListHeaderComponent={<View><StoriesBar meId={String(me.id)} meAvatar={me.avatar} meName={me.name} /><PostComposer me={me} onPost={create} /></View>}
+          ListHeaderComponent={<View><StoriesBar meId={String(me.id)} meAvatar={me.avatar} meName={me.name} /><PostComposer me={me} onPost={create} /><SponsoredAdCard /></View>}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={[styles.emptyTitle, { color: c.text }]}>No posts yet</Text>
