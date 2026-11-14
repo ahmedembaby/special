@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   body: { flex: 1 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   nameRow: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 3 },
-  name: { fontSize: 15.5, fontWeight: '750', letterSpacing: -0.2, flexShrink: 1 },
+  name: { fontSize: 15.5, fontWeight: '700', letterSpacing: -0.2, flexShrink: 1 },
   meta: { fontSize: 14, flexShrink: 2 },
   content: { lineHeight: 23, marginTop: 4, fontSize: 15 },
   grid: { marginTop: 12, borderRadius: 20, overflow: 'hidden' },
