@@ -15,6 +15,8 @@ export default function ProfileEditScreen() {
   const { user, updateUser } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [bio, setBio] = useState((user as any)?.bio || '');
+  const [birthday, setBirthday] = useState((user as any)?.birthday || '');
+  const [location, setLocation] = useState((user as any)?.location || '');
   const [avatar, setAvatar] = useState<string | undefined>(user?.avatar ?? undefined);
   const [uploading, setUploading] = useState(false);
 
@@ -42,7 +44,7 @@ export default function ProfileEditScreen() {
     if (saving) return;
     setSaving(true);
     try {
-      const res = await api.users.updateMe({ name: name.trim() || user?.name, bio });
+      const res = await api.users.updateMe({ name: name.trim() || user?.name, bio, birthday, location });
       updateUser({ ...res.data, avatar: avatar ?? res.data.avatar });
       nav.goBack();
     } catch (err: any) {
@@ -52,7 +54,7 @@ export default function ProfileEditScreen() {
     }
   };
 
-  const Field = ({ label, value, onChange, multiline }: { label: string; value: string; onChange: (t: string) => void; multiline?: boolean }) => (
+  const Field = ({ label, value, onChange, multiline, maxLength }: { label: string; value: string; onChange: (t: string) => void; multiline?: boolean; maxLength?: number }) => (
     <View style={[styles.field, { borderColor: c.inputBorder, backgroundColor: c.card }]}>
       <Text style={{ color: c.textSecondary, fontSize: 13, fontWeight: '600' }}>{label}</Text>
       <TextInput
@@ -62,7 +64,7 @@ export default function ProfileEditScreen() {
         multiline={multiline}
         style={{ color: c.text, fontSize: 17, paddingVertical: 4, minHeight: multiline ? 70 : undefined, textAlignVertical: multiline ? 'top' : 'center' }}
         placeholderTextColor={c.placeholder}
-        maxLength={multiline ? 160 : 50}
+        maxLength={maxLength ?? (multiline ? 160 : 50)}
       />
     </View>
   );
@@ -78,7 +80,9 @@ export default function ProfileEditScreen() {
           </View>
         </TouchableOpacity>
         <Field label="Name" value={name} onChange={setName} />
-        <Field label="Bio" value={bio} onChange={setBio} multiline />
+        <Field label="Bio" value={bio} onChange={setBio} multiline maxLength={160} />
+        <Field label="Birthday (YYYY-MM-DD)" value={birthday} onChange={setBirthday} maxLength={10} />
+        <Field label="Location / City" value={location} onChange={setLocation} maxLength={255} />
       </ScrollView>
     </View>
   );
