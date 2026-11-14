@@ -521,6 +521,42 @@ export default function ChatScreen() {
   };
 
 
+  const pickDocument = async () => {
+    try {
+      suppressLockRef.current = true;
+      let result;
+      try {
+        result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
+      } finally {
+        suppressLockRef.current = false;
+      }
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      const file = { uri: asset.uri, type: asset.mimeType || 'application/octet-stream', name: asset.name || 'document' };
+      setUploading(true);
+      try {
+        const response = await api.messages.upload({ conversation_id: conversationId!, reply_to: replyTo?.id, file });
+        setMessages((prev) => appendUnique(prev, response.data));
+        setReplyTo(null);
+      } catch (error: any) {
+        if (isRetryable(error)) await queueUpload(file);
+        else Alert.alert('Error', error?.response?.data?.message || 'Document could not be sent');
+      } finally {
+        setUploading(false);
+      }
+    } catch {
+      Alert.alert('Error', 'Could not open the document picker');
+    }
+  };
+
+  const openAttachmentMenu = () => Alert.alert('Attach to message', 'Choose what you want to send.', [
+    { text: 'Photo or video', onPress: () => pickImage(false) },
+    { text: 'Document', onPress: pickDocument },
+    { text: 'Cancel', style: 'cancel' },
+  ]);
+
+
+
   const sendMessage = async () => {
     const content = input.trim();
     if (!content || sending || !conversationId) return;
