@@ -14,7 +14,7 @@ const permissionRoles = (req) => {
   const write = req.method !== 'GET';
   if (p.startsWith('/admins') || p.startsWith('/backups')) return ['owner'];
   if (p.startsWith('/reports') || p.startsWith('/posts') || p.startsWith('/groups') || p.startsWith('/stories') || p.startsWith('/banned-words')) return ['owner', 'admin', 'moderator'];
-  if (['/stats', '/system', '/release', '/users', '/sessions', '/conversations'].some((prefix) => p === prefix || p.startsWith(prefix + '/'))) {
+  if (['/stats', '/system', '/health', '/release', '/users', '/sessions', '/conversations'].some((prefix) => p === prefix || p.startsWith(prefix + '/'))) {
     if (!write && ['support', 'moderator', 'admin', 'owner'].includes(req.adminRole)) return ['support', 'moderator', 'admin', 'owner'];
     return ['admin', 'owner'];
   }
