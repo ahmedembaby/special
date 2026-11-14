@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   body: { flex: 1, minWidth: 0, gap: 6 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1, minWidth: 0 },
-  name: { fontSize: 15.5, fontWeight: '750', letterSpacing: -0.2, flexShrink: 1 },
+  name: { fontSize: 15.5, fontWeight: '700', letterSpacing: -0.2, flexShrink: 1 },
   time: { fontSize: 11, fontWeight: '600' },
   bottom: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   previewWrap: { flex: 1, minWidth: 0, gap: 2 },
