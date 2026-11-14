@@ -29,7 +29,7 @@ async function loadNotifications(userId, onlyId = null) {
             g.name AS group_name, g.avatar AS group_avatar,
             EXISTS(SELECT 1 FROM follows fo WHERE fo.follower_id = ? AND fo.following_id = f.id AND f.id IS NOT NULL) AS i_follow
      FROM notifications n
-     JOIN users f ON f.id = n.from_user_id
+     LEFT JOIN users f ON f.id = n.from_user_id
      LEFT JOIN posts p ON p.id = n.post_id
      LEFT JOIN post_comments c ON c.id = n.comment_id
      LEFT JOIN \`groups\` g ON g.id = n.group_id
