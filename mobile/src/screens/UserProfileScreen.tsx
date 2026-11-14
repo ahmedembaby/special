@@ -224,13 +224,13 @@ export default function UserProfileScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  banner: { width: '100%', height: 130, backgroundColor: '#333' },
+  banner: { width: '100%', height: 164, backgroundColor: '#252B45' },
   circle: { position: 'absolute', left: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
-  info: { paddingHorizontal: 16, paddingBottom: 14 },
-  avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -40, marginBottom: 8 },
+  info: { paddingHorizontal: 20, paddingBottom: 20 },
+  avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -44, marginBottom: 10 },
   avatarRing: { borderWidth: 4, borderRadius: 48 },
-  outBtn: { width: 36, height: 36, borderWidth: 1, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  followBtn: { borderRadius: 18, paddingHorizontal: 18, height: 36, alignItems: 'center', justifyContent: 'center' },
-  name: { fontSize: 22, fontWeight: '800' },
+  outBtn: { width: 40, height: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  followBtn: { borderRadius: 14, paddingHorizontal: 20, height: 40, alignItems: 'center', justifyContent: 'center' },
+  name: { fontSize: 25, fontWeight: '800', letterSpacing: -0.6 },
   counts: { flexDirection: 'row', gap: 18, marginTop: 10 },
 });
