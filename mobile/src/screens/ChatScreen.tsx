@@ -1336,7 +1336,7 @@ export default function ChatScreen() {
             placeholder="Search in this conversation"
             placeholderTextColor={TEXT_GRAY_500}
             value={msgSearch}
-            onChangeText={setMsgSearch}
+            onChangeText={(text) => { setAiSearchTerms([]); setMsgSearch(text); }}
             style={[styles.searchInput, { color: TEXT_GRAY_900 }]}
             autoFocus
           />
