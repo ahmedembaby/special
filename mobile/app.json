@@ -52,7 +52,6 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "react-native-compressor",
       "@config-plugins/react-native-webrtc"
     ],
     "ios": {
