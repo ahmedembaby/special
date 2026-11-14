@@ -65,13 +65,13 @@ test('link preview refuses private / loopback addresses', () => {
 });
 
 
-test('direct text messages require a valid E2EE envelope', () => {
+test('direct text messages allow plaintext and recognize valid E2EE envelopes', () => {
   const ciphertext = 'e2ee:v1:' + 'A'.repeat(56);
   assert.strictEqual(isEncrypted(ciphertext), true);
   assert.strictEqual(isEncrypted('plain text'), false);
   assert.strictEqual(isEncrypted('e2ee:v1:short'), false);
   assert.strictEqual(isEncrypted('e2ee:v1:' + '!'.repeat(60)), false);
-  assert.strictEqual(requiresEncryption('direct', 'plain text'), true);
+  assert.strictEqual(requiresEncryption('direct', 'plain text'), false);
   assert.strictEqual(requiresEncryption('direct', ciphertext), false);
   assert.strictEqual(requiresEncryption('group', 'plain text'), false);
 });
