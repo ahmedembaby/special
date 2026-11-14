@@ -90,14 +90,14 @@ export default function OTPScreen() {
         <View style={styles.timerRow}>
           <Icon name="clock" size={18} color={c.text} />
           <Text style={[styles.timer, { color: c.text }]}>{mm}</Text>
-          <TouchableOpacity onPress={resend} disabled={timer > 0}>
+          <TouchableOpacity onPress={resend} disabled={timer > 0} accessibilityRole="button" accessibilityLabel="Resend verification code" accessibilityState={{ disabled: timer > 0 }}>
             <Text style={[styles.resend, { color: timer > 0 ? c.textMuted : c.primary }, timer === 0 && styles.resendActive]}>
               Resend Code
             </Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity activeOpacity={1} onPress={() => inputRef.current?.focus()} style={styles.boxes}>
+        <TouchableOpacity activeOpacity={1} onPress={() => inputRef.current?.focus()} style={styles.boxes} accessibilityRole="button" accessibilityLabel={`Verification code, ${code.length} of ${LENGTH} digits entered`}>
           {Array.from({ length: LENGTH }).map((_, i) => {
             const active = i === Math.min(code.length, LENGTH - 1) && !error;
             const line = error ? c.danger : active ? focusColor : c.text;
@@ -112,6 +112,8 @@ export default function OTPScreen() {
             value={code}
             onChangeText={(v) => { setCode(v.replace(/\D/g, '').slice(0, LENGTH)); setError(false); }}
             keyboardType="number-pad"
+            accessibilityLabel="Four digit verification code"
+            textContentType="oneTimeCode"
             maxLength={LENGTH}
             autoFocus
             style={styles.hidden}
@@ -119,7 +121,7 @@ export default function OTPScreen() {
           />
         </TouchableOpacity>
 
-        {error ? <Text style={[styles.error, { color: c.danger }]}>Code Invalid</Text> : <View style={{ height: 22 }} />}
+        {error ? <Text accessibilityRole="alert" style={[styles.error, { color: c.danger }]}>Code Invalid</Text> : <View style={{ height: 22 }} />}
 
         <View style={styles.btnWrap}>
           <RoundArrowButton onPress={verify} disabled={code.length !== LENGTH} loading={loading} />
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
   resend: { fontSize: 14, textDecorationLine: 'underline' },
   resendActive: { fontWeight: '700' },
   boxes: { flexDirection: 'row', justifyContent: 'space-between' },
-  box: { width: 64, height: 56, borderBottomWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  box: { width: 64, height: 60, borderBottomWidth: 2, alignItems: 'center', justifyContent: 'center' },
   digit: { fontSize: 32, fontWeight: '500' },
   hidden: { position: 'absolute', opacity: 0, width: 1, height: 1 },
   error: { fontSize: 14, textAlign: 'center', marginTop: 14 },
