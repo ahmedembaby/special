@@ -42,6 +42,9 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
   const [seconds, setSeconds] = useState(0);
   const [localStream, setLocalStream] = useState<any>(null);
   const [remoteStream, setRemoteStream] = useState<any>(null);
+  const [screenStream, setScreenStream] = useState<any>(null);
+  const [screenSharing, setScreenSharing] = useState(false);
+  const screenTrackRef = useRef<any>(null);
 
   const pcRef = useRef<any>(null);
   const callIdRef = useRef<number | null>(null);
@@ -55,6 +58,10 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
 
   const cleanup = useCallback(() => {
     Vibration.cancel();
+    try { screenTrackRef.current?.stop(); } catch { /* ignore */ }
+    screenTrackRef.current = null;
+    setScreenStream(null);
+    setScreenSharing(false);
     try { pcRef.current?.close(); } catch { /* ignore */ }
     pcRef.current = null;
     try { localRef.current?.getTracks().forEach((t: any) => t.stop()); } catch { /* ignore */ }
@@ -223,6 +230,40 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
   };
   const flipCam = () => localRef.current?.getVideoTracks().forEach((t: any) => t._switchCamera && t._switchCamera());
 
+  const toggleScreenShare = useCallback(async () => {
+    if (phaseRef.current !== 'active' || type !== 'video') {
+      Alert.alert('Screen sharing', 'Start an active video call before sharing your screen.');
+      return;
+    }
+    const currentTrack = screenTrackRef.current;
+    const videoSender = pcRef.current?.getSenders?.().find((sender: any) => sender.track?.kind === 'video');
+    if (currentTrack) {
+      const cameraTrack = localRef.current?.getVideoTracks?.()[0] || null;
+      if (videoSender) await videoSender.replaceTrack(cameraTrack).catch(() => {});
+      try { currentTrack.stop(); } catch { /* ignore */ }
+      screenTrackRef.current = null;
+      setScreenStream(null);
+      setScreenSharing(false);
+      return;
+    }
+    if (!RTC?.mediaDevices?.getDisplayMedia) {
+      Alert.alert('Screen sharing unavailable', 'This device build does not support native screen capture.');
+      return;
+    }
+    try {
+      const stream = await RTC.mediaDevices.getDisplayMedia({ video: true });
+      const track = stream.getVideoTracks?.()[0];
+      if (!track || !videoSender) throw new Error('Screen capture or video sender is unavailable');
+      await videoSender.replaceTrack(track);
+      screenTrackRef.current = track;
+      setScreenStream(stream);
+      setScreenSharing(true);
+      track.onended = () => { toggleScreenShare().catch(() => {}); };
+    } catch (error: any) {
+      Alert.alert('Screen sharing failed', error?.message || 'The operating system did not allow screen capture.');
+    }
+  }, [type]);
+
   const available = webrtcReady();
   const value = useMemo(() => ({ available, start }), [available, start]);
   const mmss = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -237,8 +278,8 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
           {type === 'video' && remoteStream && RTCView ? (
             <RTCView streamURL={remoteStream.toURL()} style={StyleSheet.absoluteFill} objectFit="cover" />
           ) : null}
-          {type === 'video' && localStream && RTCView && !camOff ? (
-            <RTCView streamURL={localStream.toURL()} style={styles.local} objectFit="cover" mirror zOrder={1} />
+          {type === 'video' && (screenStream || localStream) && RTCView && (screenSharing || !camOff) ? (
+            <RTCView streamURL={(screenStream || localStream).toURL()} style={styles.local} objectFit="contain" mirror={!screenSharing} zOrder={1} />
           ) : null}
           <View style={styles.top}>
             {!(type === 'video' && remoteStream) && peer ? (
@@ -264,6 +305,7 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
                   <>
                     <TouchableOpacity accessibilityRole="button" accessibilityLabel={camOff ? 'Turn camera on' : 'Turn camera off'} style={[styles.btn, camOff && styles.btnOn]} onPress={toggleCam}><Icon name="video" size={23} color="#FFFFFF" /></TouchableOpacity>
                     <TouchableOpacity accessibilityRole="button" accessibilityLabel="Switch camera" style={styles.btn} onPress={flipCam}><Icon name="repeat" size={23} color="#FFFFFF" /></TouchableOpacity>
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel={screenSharing ? 'Stop screen sharing' : 'Share screen'} style={[styles.btn, screenSharing && styles.btnOn]} onPress={toggleScreenShare}><Icon name="share" size={23} color="#FFFFFF" /></TouchableOpacity>
                   </>
                 ) : null}
                 <TouchableOpacity accessibilityRole="button" accessibilityLabel="End call" style={[styles.btn, styles.endBtn]} onPress={hangUp}><Icon name="close" size={25} color="#FFFFFF" /></TouchableOpacity>
