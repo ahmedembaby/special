@@ -490,8 +490,13 @@ export default function ChatScreen() {
       setUploading(true);
       try {
         try {
-          // Expo Go has no native NitroModules. Load the compressor only in a custom build.
-          if (Constants.executionEnvironment !== 'storeClient') {
+          // Expo Go does not include native NitroModules. Only load the compressor
+          // when the runtime positively identifies itself as a standalone/native build.
+          const isExpoGo =
+            Constants.executionEnvironment === 'storeClient' ||
+            Constants.appOwnership === 'expo' ||
+            !Constants.executionEnvironment;
+          if (!isExpoGo) {
             const compressors = require('react-native-compressor');
             if (isVideoAsset) {
               uploadFile.uri = await compressors.Video.compress(asset.uri, {
