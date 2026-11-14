@@ -24,6 +24,10 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+      - name: Sync latest main
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
       - name: Install SVG renderer
         run: |
           sudo apt-get update
@@ -37,8 +41,6 @@ jobs:
           rsvg-convert -w 1024 -h 1024 mobile/assets/special-splash.svg -o mobile/assets/splash.png
       - name: Commit generated assets
         run: |
-          git fetch origin main
-          git reset --hard origin/main
           git add mobile/assets/logo.png mobile/assets/icon.png mobile/assets/adaptive-icon.png mobile/assets/favicon.png mobile/assets/splash.png
           if git diff --cached --quiet; then
             echo "Brand PNG assets are already up to date."
