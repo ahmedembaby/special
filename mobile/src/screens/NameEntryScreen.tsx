@@ -4,7 +4,6 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as api from '../services/api';
-import { Colors } from '../theme';
 import { useAuth } from '../context/AuthContext';
 import { useAppColors } from '../theme/useAppColors';
 import { AuthHeader } from '../components/AuthHeader';
@@ -62,6 +61,8 @@ export default function NameEntryScreen() {
             value={name}
             onChangeText={setName}
             placeholder="Your Name"
+            accessibilityLabel="Your name"
+            textContentType="name"
             placeholderTextColor={c.textSecondary}
             style={[styles.input, { color: c.text }]}
             autoCapitalize="words"
@@ -70,9 +71,12 @@ export default function NameEntryScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.btn, !name.trim() && styles.btnDisabled]}
+          style={[styles.btn, { backgroundColor: c.primary }, (!name.trim() || loading) && styles.btnDisabled]}
           onPress={submitName}
-          disabled={!name.trim()}
+          disabled={!name.trim() || loading}
+          accessibilityRole="button"
+          accessibilityLabel="Create account and continue"
+          accessibilityState={{ disabled: !name.trim() || loading, busy: loading }}
           activeOpacity={0.8}
         >
           <Text style={[styles.btnText, { color: '#FFFFFF' }]}>{loading ? 'Creating...' : 'Continue'}</Text>
@@ -88,19 +92,18 @@ const styles = StyleSheet.create({
   field: { flexDirection: 'row', alignItems: 'center', gap: 14, borderBottomWidth: 2, paddingBottom: 10 },
   input: { flex: 1, fontSize: 20, padding: 0 },
   btn: {
-    backgroundColor: '#6C4DF6',
-    borderRadius: 14,
+    borderRadius: 18,
     paddingVertical: 18,
     alignItems: 'center',
     marginTop: 40,
-    shadowColor: '#6C4DF6',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 3,
   },
   btnDisabled: {
-    backgroundColor: Colors.light.tabInactive,
+    opacity: 0.48,
   },
   btnText: {
     fontSize: 18,
