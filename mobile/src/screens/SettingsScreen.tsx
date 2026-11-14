@@ -27,7 +27,7 @@ export default function SettingsScreen() {
   const { darkMode, setDarkMode } = useThemeSettings();
 
   const Row = ({ icon, title, sub, onPress, right, danger }: { icon: IconName; title: string; sub?: string; onPress?: () => void; right?: React.ReactNode; danger?: boolean }) => (
-    <TouchableOpacity style={[styles.row, { backgroundColor: c.card, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth }]} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
+    <TouchableOpacity style={[styles.row, { backgroundColor: c.card, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth }]} onPress={onPress} activeOpacity={onPress ? 0.7 : 1} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={title}>
       <View style={[styles.iconBox, { backgroundColor: danger ? c.background : c.primaryLight }]}><Icon name={icon} size={20} color={danger ? c.danger : c.primary} /></View>
       <View style={{ flex: 1 }}>
         <Text style={{ color: danger ? c.danger : c.text, fontSize: 16, fontWeight: '600' }}>{title}</Text>
@@ -48,7 +48,7 @@ export default function SettingsScreen() {
           icon="lock"
           title="Private account"
           sub="Only people you approve can follow you and see your posts and stories"
-          right={<Switch value={!!user?.is_private} onValueChange={togglePrivate} trackColor={{ false: c.inputBorder, true: c.primary }} thumbColor="#FFFFFF" />}
+          right={<Switch value={!!user?.is_private} onValueChange={togglePrivate} accessibilityLabel="Private account" trackColor={{ false: c.inputBorder, true: c.primary }} thumbColor="#FFFFFF" />}
         />
         <Row icon="bookmark" title={t('Starred messages')} onPress={() => nav.navigate('Starred')} />
         <Row icon="lock" title={t('Privacy & notifications')} onPress={() => nav.navigate('PrivacySettings')} />
@@ -68,14 +68,13 @@ export default function SettingsScreen() {
         <Section t="Display" />
         <Row
           icon="moon" title="Dark mode" sub="Lights out for your eyes"
-          right={<Switch value={darkMode} onValueChange={setDarkMode} trackColor={{ false: c.inputBorder, true: c.primary }} thumbColor="#FFFFFF" />}
+          right={<Switch value={darkMode} onValueChange={setDarkMode} accessibilityLabel="Dark mode" trackColor={{ false: c.inputBorder, true: c.primary }} thumbColor="#FFFFFF" />}
         />
         <Row icon="globe" title={t('Language')} sub={lang === 'ar' ? 'العربية' : 'English'} onPress={() => setLangSheet(true)} />
         <OptionSheet visible={langSheet} title={t('Language')} onClose={() => setLangSheet(false)} options={[{ label: 'English', selected: lang === 'en', onPress: () => setLang('en') }, { label: 'العربية', selected: lang === 'ar', onPress: () => setLang('ar') }]} />
 
         <Section t="Notifications" />
-        <Row icon="bellOff" title="Mute notifications" right={<Switch value={false} onValueChange={() => {}} trackColor={{ false: c.inputBorder, true: c.primary }} thumbColor="#FFFFFF" />} />
-        <Row icon="eye" title="Hide chat history" right={<Switch value={false} onValueChange={() => {}} trackColor={{ false: c.inputBorder, true: c.primary }} thumbColor="#FFFFFF" />} />
+        <Row icon="bellOff" title="Notification preferences" sub="Manage message, activity and quiet-hour alerts" onPress={() => nav.navigate('PrivacySettings')} />
 
         <Section t="About" />
         <Row
@@ -108,8 +107,8 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  section: { fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', opacity: 0.62, paddingHorizontal: 22, paddingTop: 26, paddingBottom: 6 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 15, marginHorizontal: 16, marginTop: 8, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 20 },
-  iconBox: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  section: { fontSize: 11, fontWeight: '800', letterSpacing: 1.1, textTransform: 'uppercase', opacity: 0.62, paddingHorizontal: 22, paddingTop: 28, paddingBottom: 7 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 15, marginHorizontal: 16, marginTop: 9, paddingHorizontal: 16, paddingVertical: 15, borderRadius: 22 },
+  iconBox: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   sep: { height: StyleSheet.hairlineWidth, marginVertical: 12 },
 });
