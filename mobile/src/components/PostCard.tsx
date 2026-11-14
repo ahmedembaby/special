@@ -233,19 +233,19 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
 };
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', marginHorizontal: 16, marginTop: 8, paddingHorizontal: 15, paddingVertical: 15, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, gap: 12, shadowOpacity: 0, elevation: 0 },
+  card: { flexDirection: 'row', marginHorizontal: 18, marginTop: 10, paddingHorizontal: 17, paddingVertical: 17, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, gap: 13 },
   body: { flex: 1 },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   nameRow: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 3 },
-  name: { fontSize: 15, fontWeight: '700', flexShrink: 1 },
+  name: { fontSize: 15.5, fontWeight: '750', letterSpacing: -0.2, flexShrink: 1 },
   meta: { fontSize: 14, flexShrink: 2 },
-  content: { lineHeight: 22, marginTop: 2 },
-  grid: { marginTop: 10, borderRadius: 18, overflow: 'hidden' },
+  content: { lineHeight: 23, marginTop: 4, fontSize: 15 },
+  grid: { marginTop: 12, borderRadius: 20, overflow: 'hidden' },
   single: { width: '100%', height: 200 },
   gridRow: { flexDirection: 'row', height: 220, gap: 2 },
   col: { flex: 1, gap: 2 },
   cell: { width: '100%', height: '100%' },
-  actions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingRight: 24 },
+  actions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 15, paddingRight: 18 },
   action: { flexDirection: 'row', alignItems: 'center', gap: 6, minWidth: 44 },
   count: { fontSize: 13 },
 });
