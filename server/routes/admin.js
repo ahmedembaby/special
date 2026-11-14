@@ -9,6 +9,24 @@ const { participantIds } = require('../services/chat');
 const router = express.Router();
 router.use(adminMiddleware); // mounted behind authMiddleware in index.js
 
+const permissionRoles = (req) => {
+  const p = req.path;
+  const write = req.method !== 'GET';
+  if (p.startsWith('/admins') || p.startsWith('/backups')) return ['owner'];
+  if (p.startsWith('/reports') || p.startsWith('/posts') || p.startsWith('/groups') || p.startsWith('/banned-words')) return ['owner', 'admin', 'moderator'];
+  if (['/stats', '/system', '/release', '/users', '/sessions', '/conversations'].some((prefix) => p === prefix || p.startsWith(prefix + '/'))) {
+    if (!write && ['support', 'moderator', 'admin', 'owner'].includes(req.adminRole)) return ['support', 'moderator', 'admin', 'owner'];
+    return ['admin', 'owner'];
+  }
+  if (p.startsWith('/audit')) return ['admin', 'owner'];
+  return ['admin', 'owner'];
+};
+router.use((req, res, next) => {
+  const allowed = permissionRoles(req);
+  if (!allowed.includes(req.adminRole)) return res.status(403).json({ message: 'Your admin role cannot perform this action' });
+  next();
+});
+
 // audit log: every successful change made from the dashboard is recorded
 router.use((req, res, next) => {
   if (req.method !== 'GET') {
@@ -22,6 +40,57 @@ router.use((req, res, next) => {
     });
   }
   next();
+});
+
+router.get('/admins', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT ar.user_id, ar.role, ar.created_at, ar.updated_at, u.name, u.username, u.phone FROM admin_roles ar JOIN users u ON u.id = ar.user_id ORDER BY ar.created_at DESC'
+    );
+    const owners = await pool.query('SELECT id, name, username, phone FROM users WHERE id IN (?)', [isAdminId ? [0] : [0]]).catch(() => [[]]);
+    res.json({ admins: rows, owners: owners[0] || [] });
+  } catch { res.status(500).json({ message: 'Could not load admin roles' }); }
+});
+router.post('/admins', async (req, res) => {
+  try {
+    const userId = Number(req.body.userId);
+    const role = String(req.body.role || '');
+    if (!Number.isInteger(userId) || userId <= 0 || !['admin', 'moderator', 'support'].includes(role)) {
+      return res.status(400).json({ message: 'Choose a valid user and role' });
+    }
+    const [users] = await pool.query('SELECT id FROM users WHERE id = ? AND banned = 0', [userId]);
+    if (!users.length) return res.status(404).json({ message: 'User not found' });
+    if (await isAdminId(userId)) return res.status(409).json({ message: 'Bootstrap owners cannot be changed here' });
+    await pool.query(
+      'INSERT INTO admin_roles (user_id, role, granted_by) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE role = VALUES(role), granted_by = VALUES(granted_by)',
+      [userId, role, req.user.id]
+    );
+    res.status(201).json({ success: true, userId, role });
+  } catch { res.status(500).json({ message: 'Could not assign admin role' }); }
+});
+router.delete('/admins/:userId', async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+    if (!Number.isInteger(userId) || userId <= 0 || userId === Number(req.user.id)) return res.status(400).json({ message: 'Invalid admin account' });
+    await pool.query('DELETE FROM admin_roles WHERE user_id = ?', [userId]);
+    res.json({ success: true });
+  } catch { res.status(500).json({ message: 'Could not remove admin role' }); }
+});
+
+router.get('/release', async (req, res) => {
+  try {
+    const serverPackage = require('../package.json');
+    const mobilePackage = require('../../mobile/package.json');
+    res.json({
+      serverVersion: serverPackage.version || 'unknown',
+      mobileVersion: mobilePackage.version || 'unknown',
+      appVersion: mobilePackage.expo?.version || 'unknown',
+      commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || process.env.SOURCE_VERSION || null,
+      nodeVersion: process.version,
+      environment: process.env.NODE_ENV || 'development',
+      checkedAt: new Date().toISOString(),
+    });
+  } catch { res.status(500).json({ message: 'Could not load release information' }); }
 });
 
 router.get('/audit', async (req, res) => {
