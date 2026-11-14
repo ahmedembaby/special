@@ -42,16 +42,20 @@ export default function KeyBackupScreen() {
         </Text>
         <TextInput
           value={pass}
+          accessibilityLabel="Encryption backup passphrase"
+          accessibilityHint="Enter the same passphrase to restore your encryption key"
+          autoCapitalize="none"
+          autoCorrect={false}
           onChangeText={setPass}
           secureTextEntry
           placeholder="Passphrase (8+ characters)"
           placeholderTextColor={c.placeholder}
-          style={[styles.input, { color: c.text, borderColor: c.border }]}
+          style={[styles.input, { color: c.text, borderColor: c.border, backgroundColor: c.card }]}
         />
-        <TouchableOpacity disabled={busy} onPress={() => run('backup')} style={[styles.btn, { backgroundColor: c.primary }]}>
+        <TouchableOpacity disabled={busy} onPress={() => run('backup')} style={[styles.btn, { backgroundColor: c.primary, opacity: busy ? 0.65 : 1 }]} accessibilityRole="button" accessibilityLabel="Back up this device encryption key" accessibilityState={{ disabled: busy, busy }}>
           <Text style={styles.btnText}>{busy ? 'Working…' : 'Back up this device’s key'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity disabled={busy} onPress={() => run('restore')} style={[styles.btn, { borderWidth: 1, borderColor: c.border }]}>
+        <TouchableOpacity disabled={busy} onPress={() => run('restore')} style={[styles.btn, { borderWidth: 1, borderColor: c.border, backgroundColor: c.card, opacity: busy ? 0.65 : 1 }]} accessibilityRole="button" accessibilityLabel="Restore encryption key on this device" accessibilityState={{ disabled: busy, busy }}>
           <Text style={[styles.btnText, { color: c.text }]}>Restore the key on this device</Text>
         </TouchableOpacity>
         <Text style={{ color: c.textSecondary, fontSize: 13 }}>
@@ -62,7 +66,7 @@ export default function KeyBackupScreen() {
   );
 }
 const styles = StyleSheet.create({
-  input: { borderWidth: 1, borderRadius: 10, padding: 12, fontSize: 16 },
-  btn: { height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  input: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 15, fontSize: 16 },
+  btn: { minHeight: 52, borderRadius: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
   btnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
 });
