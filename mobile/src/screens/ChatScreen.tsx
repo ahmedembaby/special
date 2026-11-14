@@ -539,7 +539,7 @@ export default function ChatScreen() {
         setMessages((prev) => appendUnique(prev, response.data));
         setReplyTo(null);
       } catch (error: any) {
-        if (isRetryable(error)) await queueUpload(file);
+        if (isRetryable(error)) await queueUpload(file, {});
         else Alert.alert('Error', error?.response?.data?.message || 'Document could not be sent');
       } finally {
         setUploading(false);
