@@ -95,9 +95,9 @@ export default function ContactScreen() {
           data={list}
           ListHeaderComponent={
             !search.trim() ? (
-              <TouchableOpacity style={{ padding: 14, flexDirection: 'row', gap: 8, alignItems: 'center' }} onPress={fromContacts ? () => setFromContacts(null) : findFromContacts} disabled={syncing}>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel={fromContacts ? 'Show all users' : 'Find friends from your phone contacts'} accessibilityState={{ disabled: syncing, busy: syncing }} style={{ marginHorizontal: 16, marginTop: 10, marginBottom: 6, padding: 15, borderRadius: 18, backgroundColor: c.card, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border, flexDirection: 'row', gap: 8, alignItems: 'center' }} onPress={fromContacts ? () => setFromContacts(null) : findFromContacts} disabled={syncing}>
                 <Text style={{ color: c.primary, fontWeight: '700' }}>
-                  {syncing ? 'Searching your contacts…' : fromContacts ? `${fromContacts.length} of your contacts are on the app — tap to show everyone` : '📇 Find friends from your contacts'}
+                  {syncing ? 'Searching your contacts…' : fromContacts ? `${fromContacts.length} of your contacts are on the app — tap to show everyone` : 'Find friends from your contacts'}
                 </Text>
               </TouchableOpacity>
             ) : undefined
@@ -109,6 +109,8 @@ export default function ContactScreen() {
               style={[styles.item, { borderBottomColor: c.border, backgroundColor: c.background }]}
               onPress={() => startChat(item)}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={`Start a chat with ${item.name}`}
             >
               <Avatar source={item.avatar} name={item.name} size={52} status={item.status} userId={item.id} />
               <View style={styles.body}>
@@ -131,9 +133,12 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginHorizontal: 14,
+    marginTop: 7,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   body: { flex: 1, marginLeft: 12 },
   name: { ...Typography.body, color: '#1B1730', fontWeight: '600' },

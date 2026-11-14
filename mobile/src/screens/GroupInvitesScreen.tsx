@@ -47,20 +47,21 @@ export default function GroupInvitesScreen() {
       ) : (
         <FlatList
           data={items}
+          contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 8, paddingBottom: 32, flexGrow: 1 }}
           keyExtractor={(i) => i.token}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={c.primary} />}
-          ListEmptyComponent={<Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 60 }}>No pending invitations.</Text>}
+          ListEmptyComponent={<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28, paddingVertical: 56 }}><Text accessibilityRole="header" style={{ color: c.text, fontSize: 17, fontWeight: '700' }}>No pending invitations</Text><Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 7, lineHeight: 20 }}>When someone invites you to a group, it will appear here.</Text></View>}
           renderItem={({ item }) => (
-            <View style={[styles.row, { borderBottomColor: c.border }]}>
+            <View style={[styles.row, { backgroundColor: c.card, borderColor: c.border }]}>
               <Avatar source={item.group_avatar} name={item.group_name} size={48} />
               <View style={{ flex: 1 }}>
                 <Text style={{ color: c.text, fontWeight: '800', fontSize: 16 }} numberOfLines={1}>{item.group_name}</Text>
                 <Text style={{ color: c.textSecondary, fontSize: 13 }}>Invited by {item.inviter_name}</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-                  <TouchableOpacity disabled={busy === item.token} onPress={() => answer(item, true)} style={[styles.btn, { backgroundColor: c.text }]}>
+                  <TouchableOpacity disabled={busy === item.token} onPress={() => answer(item, true)} accessibilityRole="button" accessibilityLabel={`Join ${item.group_name}`} accessibilityState={{ disabled: busy === item.token, busy: busy === item.token }} style={[styles.btn, { backgroundColor: c.primary, opacity: busy === item.token ? 0.6 : 1 }]}>
                     <Text style={{ color: c.background, fontWeight: '800' }}>Join</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity disabled={busy === item.token} onPress={() => answer(item, false)} style={[styles.btn, { borderWidth: 1, borderColor: c.border }]}>
+                  <TouchableOpacity disabled={busy === item.token} onPress={() => answer(item, false)} accessibilityRole="button" accessibilityLabel={`Decline invitation to ${item.group_name}`} accessibilityState={{ disabled: busy === item.token, busy: busy === item.token }} style={[styles.btn, { borderWidth: 1, borderColor: c.border, backgroundColor: c.background, opacity: busy === item.token ? 0.6 : 1 }]}>
                     <Text style={{ color: c.text, fontWeight: '800' }}>Decline</Text>
                   </TouchableOpacity>
                 </View>
@@ -75,6 +76,6 @@ export default function GroupInvitesScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  row: { flexDirection: 'row', gap: 12, padding: 16, borderBottomWidth: StyleSheet.hairlineWidth },
-  btn: { borderRadius: 16, paddingHorizontal: 18, height: 32, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 16, marginBottom: 10, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth },
+  btn: { borderRadius: 15, paddingHorizontal: 18, minHeight: 38, alignItems: 'center', justifyContent: 'center' },
 });
