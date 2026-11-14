@@ -50,3 +50,10 @@ A green CI run is not a production-readiness certification. Before public releas
 ## Data and compatibility
 
 The existing MySQL database name and schema are intentionally not renamed by this repository cleanup. Back up production data before applying any future migration.
+
+
+## Mobile media features
+
+The chat client supports photo, video, and document attachments. Photos and videos are compressed on-device before upload when the native codec is available; if compression fails for a particular file, the app asks to continue with the original. Videos play inside the conversation and documents open with the device's registered viewer.
+
+The media picker/compressor adds native modules. After merging these changes, install the updated mobile dependencies and create a fresh EAS development/production build; Expo Go cannot load the native compressor. The current app binary will not gain these features until it is rebuilt.

@@ -87,7 +87,7 @@ const TABLES = [
     conversation_id INT NOT NULL,
     sender_id INT NOT NULL,
     content TEXT NOT NULL,
-    type ENUM('text','image','file','voice','poll') DEFAULT 'text',
+    type ENUM('text','image','video','file','voice','poll') DEFAULT 'text',
     file_url VARCHAR(500) DEFAULT NULL,
     file_name VARCHAR(255) DEFAULT NULL,
     file_size INT DEFAULT NULL,
@@ -500,7 +500,7 @@ const COLUMNS = [
   ['users', 'status', "VARCHAR(20) DEFAULT 'offline'"],
   ['users', 'last_seen', 'TIMESTAMP NULL DEFAULT NULL'],
 
-  ['messages', 'type', "ENUM('text','image','file','voice','poll') DEFAULT 'text'"],
+  ['messages', 'type', "ENUM('text','image','video','file','voice','poll') DEFAULT 'text'"],
   ['messages', 'client_id', 'VARCHAR(64) NULL DEFAULT NULL'],
   ['messages', 'file_url', 'VARCHAR(500) DEFAULT NULL'],
   ['messages', 'file_name', 'VARCHAR(255) DEFAULT NULL'],
@@ -529,7 +529,7 @@ const MODIFY = [
   'ALTER TABLE users MODIFY email VARCHAR(150) NULL',
   'ALTER TABLE users MODIFY password VARCHAR(255) NULL',
 
-  "ALTER TABLE messages MODIFY type ENUM('text','image','file','voice','poll') DEFAULT 'text'",
+  "ALTER TABLE messages MODIFY type ENUM('text','image','video','file','voice','poll') DEFAULT 'text'",
   "ALTER TABLE stories MODIFY media_type ENUM('image','video','text') NOT NULL DEFAULT 'image'",
   "ALTER TABLE messages MODIFY status ENUM('sending','sent','delivered','read') DEFAULT 'sent'",
 
