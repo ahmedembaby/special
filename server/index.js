@@ -124,6 +124,7 @@ app.use('/api/messages', apiLimiter, authMiddleware, require('./routes/messages'
 app.use('/api/search', apiLimiter, authMiddleware, require('./routes/search'));
 app.use('/api/social', apiLimiter, authMiddleware, require('./routes/social'));
 app.use('/api/translate', apiLimiter, authMiddleware, require('./routes/translate'));
+app.use('/api/ai', apiLimiter, authMiddleware, require('./routes/ai'));
 app.use('/api/safety', apiLimiter, authMiddleware, require('./routes/safety'));
 app.use('/api/stories', apiLimiter, authMiddleware, require('./routes/stories'));
 app.use('/api/calls', apiLimiter, authMiddleware, require('./routes/calls'));

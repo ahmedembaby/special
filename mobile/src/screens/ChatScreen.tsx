@@ -9,6 +9,7 @@ import { Icon } from '../components/Icon';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
 import * as api from '../services/api';
+import { AIAssistantSheet } from '../components/AIAssistantSheet';
 import { resolveUrl } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { getChatName } from '../components/ChatItem';
@@ -161,6 +162,7 @@ export default function ChatScreen() {
   const [myKey, setMyKey] = useState<string | null>(null);
   const [report, setReport] = useState<ReportTarget>(null);
   const [stickerOpen, setStickerOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [scheduleMenu, setScheduleMenu] = useState<null | 'when' | 'list'>(null);
   const [scheduledList, setScheduledList] = useState<Array<{ id: number; content: string; send_at: string }>>([]);
   const [pinned, setPinned] = useState<api.Conversation['pinned_message']>(null);
@@ -894,6 +896,25 @@ export default function ChatScreen() {
     }
   };
 
+  const transcribeVoiceMessage = async () => {
+    const message = selectedMessageForReaction;
+    if (!message || message.type !== 'voice') return;
+    closeOptions();
+    try {
+      const result = await api.ai.transcribeMessage(message.id);
+      Alert.alert('Voice transcription', result.data.text || 'No speech was detected.');
+    } catch (error: any) {
+      Alert.alert('Transcription unavailable', error?.response?.data?.message || 'Could not transcribe this recording.');
+    }
+  };
+
+  const aiContext = messages
+    .filter((message) => message.type === 'text' || !message.type)
+    .slice(-35)
+    .map((message) => (isMine(message.sender_id) ? 'Me' : message.sender_name || 'Participant') + ': ' + textOf(message))
+    .join('\\n')
+    .slice(-16000);
+
   const DISAPPEAR_OPTIONS: Array<[string, number]> = [['Off', 0], ['1 hour', 3600], ['24 hours', 86400], ['7 days', 604800], ['90 days', 7776000]];
 
   const mainMenu: SheetOption[] = [
@@ -901,6 +922,7 @@ export default function ChatScreen() {
     { label: showSearch ? 'Hide search' : 'Search in conversation', onPress: () => { setShowSearch((v) => !v); setMsgSearch(''); } },
     { label: meta.muted ? 'Unmute notifications' : 'Mute notifications', onPress: () => (meta.muted ? setMute(0) : setMenu('mute')) },
     { label: `Disappearing messages${meta.disappear ? ' (on)' : ''}`, onPress: () => setMenu('disappear') },
+    { label: 'Special AI assistant', onPress: () => setAiOpen(true) },
     { label: 'Create a poll', onPress: () => setPollOpen(true) },
     { label: 'Chat theme (wallpaper & colors)', onPress: () => { setThemeDraft(theme); setThemeOpen(true); } },
     { label: 'Starred messages', onPress: () => navigation.navigate('Starred') },
@@ -1447,6 +1469,11 @@ export default function ChatScreen() {
                 <TouchableOpacity style={styles.actionChip} onPress={() => { const m = selectedMessageForReaction; closeOptions(); if (m) api.conversations.pinMessage(conversationId!, pinned?.id === m.id ? null : m.id).catch(() => Alert.alert('Error', 'Could not pin')); }} activeOpacity={0.8}>
                   <Text style={{ color: TEXT_GRAY_900, fontWeight: '600' }}>📌 {pinned?.id === selectedMessageForReaction?.id ? 'Unpin' : 'Pin'}</Text>
                 </TouchableOpacity>
+                {selectedMessageForReaction?.type === 'voice' ? (
+                  <TouchableOpacity style={styles.actionChip} onPress={transcribeVoiceMessage} activeOpacity={0.8}>
+                    <Text style={{ color: TEXT_GRAY_900, fontWeight: '600' }}>Transcribe voice message</Text>
+                  </TouchableOpacity>
+                ) : null}
                 {selectedMessageForReaction && (selectedMessageForReaction.type === 'text' || !selectedMessageForReaction.type) && !textOf(selectedMessageForReaction).startsWith('sticker:') ? (
                   <TouchableOpacity style={styles.actionChip} onPress={translateMessage} activeOpacity={0.8}>
                     <Text style={{ color: TEXT_GRAY_900, fontWeight: '600' }}>🌐 Translate</Text>
@@ -1736,6 +1763,7 @@ export default function ChatScreen() {
           </View>
         </View>
       </Modal>
+      <AIAssistantSheet visible={aiOpen} onClose={() => setAiOpen(false)} context={aiContext} isGroup={inGroup} />
     </SafeAreaView>
   );
 }
