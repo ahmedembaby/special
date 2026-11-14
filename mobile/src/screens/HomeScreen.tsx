@@ -9,10 +9,12 @@ import { PostCard } from '../components/PostCard';
 import { PostComposer } from '../components/PostComposer';
 import { Icon } from '../components/Icon';
 import { StoriesBar } from '../components/StoriesBar';
+import { useUnreadCounts } from '../context/UnreadCountsContext';
 
 export default function HomeScreen() {
   const nav = useNavigation() as any;
   const { c, isDark } = useAppColors();
+  const { messageCount } = useUnreadCounts();
   const insets = useSafeAreaInsets();
   const { me, posts, loading, refreshing, refresh, like, remove, create } = useFeed();
 
@@ -22,7 +24,7 @@ export default function HomeScreen() {
       <ScreenHeader
         logo
         onSearchPress={() => nav.navigate('Search')}
-        onMessagesPress={() => nav.navigate('Messages')}
+        onMessagesPress={() => nav.navigate('Messages')} messageBadge={messageCount}
       />
 
       {loading ? (
