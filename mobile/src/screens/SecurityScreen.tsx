@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { SafeAreaView, View, Text, TouchableOpacity, StatusBar, Switch, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
+import { Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
 import { Icon } from '../components/Icon';
 import { useAppLock } from '../context/AppLockContext';
@@ -32,10 +32,10 @@ export default function SecurityScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <View style={[styles.header, { backgroundColor: c.background, borderBottomColor: c.border }]}>
-        <TouchableOpacity style={styles.backWrap} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.backWrap} onPress={() => navigation.goBack()} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Back">
           <Icon name="arrowLeft" size={24} color={c.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: c.text }]}>Security</Text>
+        <Text accessibilityRole="header" style={[styles.headerTitle, { color: c.text }]}>Security</Text>
         <View style={{ width: 40 }} />
       </View>
       <View style={styles.list}>
@@ -48,12 +48,14 @@ export default function SecurityScreen() {
             <Switch
               value={settings.pinEnabled}
               onValueChange={toggleLock}
+              accessibilityLabel="App Lock"
+              accessibilityHint="Require your PIN to open the app"
               trackColor={{ false: c.border, true: c.primary }}
             />
           </View>
         </View>
         <View style={[(row as any), { borderBottomWidth: 1, borderBottomColor: c.border }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('PINSecurity')} activeOpacity={0.8}>
+          <TouchableOpacity onPress={() => navigation.navigate('PINSecurity')} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="PIN Security">
             <View style={styles.rowLeft}>
               <Icon name="pin" size={22} color={c.text} />
               <Text style={[styles.rowTitle, { color: c.text }]}>PIN Security</Text>
@@ -62,7 +64,7 @@ export default function SecurityScreen() {
           </TouchableOpacity>
         </View>
         <View style={[(row as any), { borderBottomWidth: 1, borderBottomColor: c.border }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('FaceID')} activeOpacity={0.8}>
+          <TouchableOpacity onPress={() => navigation.navigate('FaceID')} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Face Recognition">
             <View style={styles.rowLeft}>
               <Icon name="face" size={22} color={c.text} />
               <Text style={[styles.rowTitle, { color: c.text }]}>Face Recognition</Text>
@@ -71,7 +73,7 @@ export default function SecurityScreen() {
           </TouchableOpacity>
         </View>
         <View style={[(row as any), { borderBottomWidth: 1, borderBottomColor: c.border }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('TouchID')} activeOpacity={0.8}>
+          <TouchableOpacity onPress={() => navigation.navigate('TouchID')} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Fingerprint Security">
             <View style={styles.rowLeft}>
               <Icon name="fingerprint" size={22} color={c.text} />
               <Text style={[styles.rowTitle, { color: c.text }]}>Fingerprint Security</Text>
@@ -80,7 +82,7 @@ export default function SecurityScreen() {
           </TouchableOpacity>
         </View>
       </View>
-      <TouchableOpacity style={styles.changePIN} activeOpacity={0.8} onPress={() => navigation.navigate('PINSecurity')}>
+      <TouchableOpacity style={[styles.changePIN, { backgroundColor: c.primary }]} activeOpacity={0.8} onPress={() => navigation.navigate('PINSecurity')} accessibilityRole="button" accessibilityLabel={settings.pinEnabled ? "Change PIN" : "Set PIN"}>
         <View style={styles.changePINIcon}><Icon name="pen" size={20} color={'#FFFFFF'} /></View>
         <Text style={[styles.changePINText, { color: '#FFFFFF' }]}>{settings.pinEnabled ? 'Change PIN' : 'Set PIN'}</Text>
       </TouchableOpacity>
@@ -102,7 +104,7 @@ const styles = StyleSheet.create({
   backWrap: { padding: 8, marginRight: 8 },
   backIcon: { fontSize: 24 },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 23,
     fontWeight: '800',
     color: '#1B1730',
   },
@@ -120,6 +122,7 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: 16,
+    fontWeight: '600',
     color: '#1B1730',
   },
   rowRight: {},
@@ -130,17 +133,17 @@ const styles = StyleSheet.create({
   changePIN: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#6C4DF6',
+    backgroundColor: '#000000',
     borderRadius: BorderRadius.button,
     paddingHorizontal: 20,
     paddingVertical: 14,
     marginHorizontal: Spacing.lg,
     marginVertical: 16,
-    shadowColor: '#6C4DF6',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 3,
   },
   changePINIcon: {
     fontSize: 20,
