@@ -256,31 +256,36 @@ router.post('/broadcast', async (req, res) => {
     const [users] = await pool.query('SELECT id FROM users WHERE banned = 0');
     const ids = users.map((u) => Number(u.id));
     if (ids.length) {
-      // Persist one inbox item per recipient so announcements remain visible after reconnects.
-      const values = ids.map((userId) => [userId, 'broadcast', title, body, null]);
-      const [insert] = await pool.query(
-        'INSERT INTO notifications (user_id, type, title, body, from_user_id) VALUES ?',
-        [values]
-      );
-      const firstId = Number(insert.insertId);
-      const createdAt = new Date().toISOString();
-      ids.forEach((userId, index) => {
-        const notification = {
-          id: String(firstId + index),
-          type: 'broadcast',
-          title,
-          body,
-          from: { id: 'system', name: 'E-Chat', username: 'echat', avatar: null },
-          createdAt,
-          read: false,
-        };
-        rt.emitToUser(userId, 'notification', notification);
-        rt.emitToUser(userId, 'broadcast', { title, body, notificationId: notification.id });
-      });
+      // Persist in batches so large user bases do not create one oversized SQL statement.
+      let firstNotificationId = null;
+      for (let offset = 0; offset < ids.length; offset += 500) {
+        const batch = ids.slice(offset, offset + 500);
+        const values = batch.map((userId) => [userId, 'broadcast', title, body, null]);
+        const [insert] = await pool.query(
+          'INSERT INTO notifications (user_id, type, title, body, from_user_id) VALUES ?',
+          [values]
+        );
+        const firstId = Number(insert.insertId);
+        if (firstNotificationId === null) firstNotificationId = firstId;
+        const createdAt = new Date().toISOString();
+        batch.forEach((userId, index) => {
+          const notification = {
+            id: String(firstId + index),
+            type: 'broadcast',
+            title,
+            body,
+            from: { id: 'system', name: 'E-Chat', username: 'echat', avatar: null },
+            createdAt,
+            read: false,
+          };
+          rt.emitToUser(userId, 'notification', notification);
+          rt.emitToUser(userId, 'broadcast', { title, body, notificationId: notification.id });
+        });
+      }
       await pushToUsers(ids, {
         title,
         body,
-        data: { type: 'broadcast', notificationId: String(firstId) },
+        data: { type: 'broadcast', notificationId: String(firstNotificationId) },
       });
     }
     res.json({ success: true, message: `Broadcast sent to ${ids.length} users`, count: ids.length });
