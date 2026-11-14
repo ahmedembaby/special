@@ -202,6 +202,7 @@ const TABLES = [
     group_id INT DEFAULT NULL,
     title VARCHAR(120) DEFAULT NULL,
     body TEXT DEFAULT NULL,
+    broadcast_id CHAR(36) DEFAULT NULL,
     from_user_id INT DEFAULT NULL,
     post_id INT DEFAULT NULL,
     comment_id INT DEFAULT NULL,
@@ -460,6 +461,7 @@ const COLUMNS = [
   ['notifications', 'group_id', 'INT DEFAULT NULL'],
   ['notifications', 'title', 'VARCHAR(120) DEFAULT NULL'],
   ['notifications', 'body', 'TEXT DEFAULT NULL'],
+  ['notifications', 'broadcast_id', 'CHAR(36) DEFAULT NULL'],
 
   ['users', 'hide_presence', 'TINYINT(1) NOT NULL DEFAULT 0'],
   ['users', 'read_receipts', 'TINYINT(1) NOT NULL DEFAULT 1'],
@@ -570,6 +572,7 @@ const INDEXES = [
   ['follows', 'idx_follows_following', '(following_id)', false],
 
   ['notifications', 'idx_notifications_user', '(user_id, created_at)', false],
+  ['notifications', 'idx_notifications_broadcast', '(broadcast_id)', false],
 
   ['groups', 'idx_groups_type', '(type)', false],
 

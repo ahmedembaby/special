@@ -59,7 +59,7 @@ export const NotificationItem = ({ item, onDelete, onPress }: { item: AppNotific
       </View>
       <View style={{ flex: 1 }}>
         <View style={styles.top}>
-          <Avatar source={item.from.avatar} name={item.from.name} size={34} userId={item.from.id} />
+          <Avatar source={item.from.avatar} name={item.from.name} size={34} userId={item.from.id === 'system' ? undefined : item.from.id} />
           <TouchableOpacity onPress={confirm} hitSlop={10}>
             <Icon name="moreHorizontal" size={18} color={c.textSecondary} />
           </TouchableOpacity>
