@@ -84,7 +84,7 @@ export interface Conversation {
   unread_count?: number;
   participants?: Array<{ id: string | number; name?: string; username?: string | null; avatar?: string | null; status?: string; last_seen?: string | null; public_key?: string | null }>;
   last_message?: string;
-  last_message_type?: 'text' | 'image' | 'file' | 'voice' | 'poll';
+  last_message_type?: 'text' | 'image' | 'video' | 'file' | 'voice' | 'poll';
   last_message_at?: string;
   last_message_sender_id?: number | string;
 }
@@ -94,7 +94,7 @@ export interface Message {
   conversation_id: string | number;
   sender_id: string | number;
   content: string;
-  type?: 'text' | 'image' | 'file' | 'voice' | 'poll';
+  type?: 'text' | 'image' | 'video' | 'file' | 'voice' | 'poll';
   file_url?: string;
   file_uri?: string;
   file_name?: string;
