@@ -31,8 +31,14 @@ import { ReportSheet, ReportTarget } from '../components/ReportSheet';
 import { Linking } from 'react-native';
 import { useCall } from '../context/CallContext';
 import { useGroupCall } from '../context/GroupCallContext';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import { authenticateBiometric, biometricAvailable } from '../services/appLock';
 import * as chatSecurity from '../services/chatSecurity';
+
+const ChatCaptureGuard = () => {
+  usePreventScreenCapture('special-chat');
+  return null;
+};
 
 const PAGE_SIZE = 50;
 
@@ -1859,6 +1865,7 @@ export default function ChatScreen() {
         </View>
       </Modal>
       <AIAssistantSheet visible={aiOpen} onClose={() => setAiOpen(false)} context={aiContext} isGroup={inGroup} />
+      {isFocused ? <ChatCaptureGuard /> : null}
     </SafeAreaView>
   );
 }
