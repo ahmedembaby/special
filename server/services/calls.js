@@ -68,7 +68,7 @@ async function removeGroupParticipant(roomId, userId) {
 }
 
 function register(socket) {
-  const me = socket.user.id;
+  const me = Number(socket.user.id);
   const ack = (cb, payload) => typeof cb === 'function' && cb(payload);
 
   socket.on('call:invite', async ({ to, type, offer } = {}, cb) => {
