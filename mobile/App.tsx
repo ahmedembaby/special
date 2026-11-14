@@ -31,6 +31,8 @@ import PostDetailScreen from './src/screens/PostDetailScreen';
 import ComposeScreen from './src/screens/ComposeScreen';
 import SearchScreen from './src/screens/SearchScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
+import { navigationRef } from './src/navigation/ref';
+import { PushNavigationHandler } from './src/components/PushNavigationHandler';
 import ChatsScreen from './src/screens/ChatsScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import GroupChatScreen from './src/screens/GroupChatScreen';
@@ -199,7 +201,7 @@ function RootNavigator() {
   }
 
   return (
-    <NavigationContainer theme={darkMode ? DarkNavTheme : LightNavTheme}>
+    <NavigationContainer ref={navigationRef} theme={darkMode ? DarkNavTheme : LightNavTheme}>
       <StatusBar style={darkMode ? 'light' : 'dark'} />
       {token ? (
         <RootStack.Navigator screenOptions={noHeader}>
@@ -226,6 +228,7 @@ function RootNavigator() {
           <AuthStack.Screen name="UserInfo" component={UserInfoScreen} />
         </AuthStack.Navigator>
       )}
+      {token ? <PushNavigationHandler /> : null}
       <OfflineIndicator />
       {locked ? <LockScreen /> : null}
     </NavigationContainer>

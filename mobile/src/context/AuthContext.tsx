@@ -8,7 +8,6 @@ import { setUnauthorizedHandler } from '../services/api';
 import { connectSocket, disconnectSocket } from '../services/socket';
 import { startOutbox, stopOutbox } from '../services/outbox';
 import { queryClient } from '../providers/QueryProvider';
-import { registerForPushNotificationsAsync, sendPushTokenToServer } from '../services/notifications';
 
 export interface User {
   id?: string | number;
@@ -78,15 +77,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // The token must be in storage before any screen mounts and fires requests
     await SecureStore.setItemAsync('echat_token', newToken);
     await AsyncStorage.setItem('echat_user', JSON.stringify(userData || {}));
+    // Fresh login: force the device token to be sent again for this account (see PushNavigationHandler)
+    await AsyncStorage.removeItem('push_token').catch(() => {});
     queryClient.clear();
     setMediaToken(newToken);
     setUser(userData || null);
     setToken(newToken);
-
-    // Register push notifications (optional)
-    registerForPushNotificationsAsync()
-      .then((pushToken) => (pushToken ? sendPushTokenToServer(pushToken) : undefined))
-      .catch(() => {});
   }, []);
 
   const logout = useCallback(async () => {

@@ -58,3 +58,11 @@ export const sendPushTokenToServer = async (token: string) => {
     // push is optional
   }
 };
+
+/** Registers this device for push and tells the server. Safe to call on every launch. */
+export const syncPushToken = async () => {
+  const token = await registerForPushNotificationsAsync();
+  if (!token) return;
+  if ((await AsyncStorage.getItem('push_token').catch(() => null)) === token) return; // server already has it
+  await sendPushTokenToServer(token);
+};
