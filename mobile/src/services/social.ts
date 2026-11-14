@@ -62,7 +62,7 @@ export interface Post {
 export interface AppNotification {
   id: string;
   read?: boolean;
-  type: 'like' | 'comment' | 'follow' | 'group_invite' | 'group_request' | 'group_approved' | 'mention' | 'follow_request' | 'follow_accepted' | 'broadcast';
+  type: 'like' | 'comment' | 'follow' | 'group_invite' | 'group_request' | 'group_approved' | 'mention' | 'follow_request' | 'follow_accepted' | 'broadcast' | 'digest' | 'message' | 'reply';
   title?: string;
   body?: string;
   from: SocialUser;
