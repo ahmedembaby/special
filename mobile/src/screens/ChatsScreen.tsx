@@ -174,7 +174,14 @@ export default function ChatsScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <ReanimatedSwipeable renderRightActions={() => renderSwipeActions(item)} overshootRight={false} friction={2} rightThreshold={36}>
+            <ReanimatedSwipeable
+              containerStyle={styles.swipeableContainer}
+              renderRightActions={() => renderSwipeActions(item)}
+              overshootRight={false}
+              friction={2}
+              rightThreshold={48}
+              dragOffsetFromRightEdge={12}
+            >
               <ChatItem item={item} draft={drafts[String(item.id)]} onPress={() => navigation.navigate('Chat', { conversationId: item.id, unread: Number(item.unread_count) || 0 })} />
             </ReanimatedSwipeable>
           )}
@@ -206,8 +213,10 @@ export default function ChatsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  swipeActions: { flexDirection: 'row', alignItems: 'stretch', marginTop: 8, marginRight: 14, borderRadius: 16, overflow: 'hidden' },
-  swipeAction: { minWidth: 68, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 9, gap: 5 },
+  // Clip the action rail completely while the row is closed; it is revealed only by a horizontal swipe.
+  swipeableContainer: { overflow: 'hidden' },
+  swipeActions: { width: 216, flexDirection: 'row', alignItems: 'stretch', borderRadius: 14, overflow: 'hidden' },
+  swipeAction: { width: 72, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, gap: 5 },
   swipeActionText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
   empty: { alignItems: 'center', paddingTop: 70, paddingHorizontal: 40, gap: 10 },
   emptyTitle: { fontSize: 22, fontWeight: '700' },
