@@ -215,19 +215,32 @@ export const getHashtagPosts = async (tag: string): Promise<Post[]> =>
   (await api.get<Post[]>(`/social/hashtags/${encodeURIComponent(tag)}/posts`)).data || [];
 
 // ---------- stories ----------
-export interface Story { id: string; media_url: string; media_type: 'image' | 'video'; caption?: string; created_at: string; expires_at: string; seen: boolean; views_count?: number }
+export interface Story { id: string; media_url?: string; media_type: 'image' | 'video' | 'text'; caption?: string; text_content?: string; audience?: 'everyone' | 'followers' | 'only_me'; created_at: string; expires_at: string; seen: boolean; views_count?: number }
 export interface StoryGroup { user: SocialUser; stories: Story[]; all_seen: boolean }
 export const getStoryFeed = async (): Promise<StoryGroup[]> => {
   try { return (await api.get<StoryGroup[]>('/stories/feed')).data || []; } catch { return []; }
 };
 export const getUserStories = async (userId: string): Promise<Story[]> =>
   (await api.get<Story[]>(`/stories/user/${userId}`)).data || [];
-export const publishStory = async (file: { uri: string; type: string; name: string }, caption?: string): Promise<Story> => {
+export const publishStory = async (
+  file: { uri: string; type: string; name: string },
+  caption?: string,
+  audience: 'everyone' | 'followers' | 'only_me' = 'followers'
+): Promise<Story> => {
   const fd = new FormData();
   fd.append('media', { uri: file.uri, type: file.type, name: file.name } as any);
   if (caption) fd.append('caption', caption);
+  fd.append('audience', audience);
   return (await api.post<Story>('/stories', fd, { headers: { 'Content-Type': 'multipart/form-data' }, transformRequest: (d) => d, timeout: 120000 })).data;
 };
+export const publishTextStory = async (
+  text: string,
+  audience: 'everyone' | 'followers' | 'only_me' = 'followers'
+): Promise<Story> => (await api.post<Story>('/stories', {
+  media_type: 'text',
+  text_content: text,
+  audience,
+})).data;
 export const markStorySeen = (id: string) => api.post(`/stories/${id}/view`).catch(() => {});
 export const getStoryViewers = async (id: string): Promise<SocialUser[]> => (await api.get<SocialUser[]>(`/stories/${id}/viewers`)).data || [];
 export const deleteStory = async (id: string) => { await api.delete(`/stories/${id}`); };

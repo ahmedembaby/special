@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions, Alert, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import * as api from '../services/api';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { resolveUrl } from '../config';
 import * as social from '../services/social';
@@ -29,6 +31,7 @@ interface Props {
 
 /** Full-screen story player: tap right/left to move, auto-advances, owner sees viewers and can delete. */
 export const StoryViewer = ({ groups: initial, startGroup, meId, onClose }: Props) => {
+  const navigation = useNavigation() as any;
   const [groups, setGroups] = useState(initial);
   const [g, setG] = useState(startGroup);
   const [i, setI] = useState(0);
@@ -63,6 +66,30 @@ export const StoryViewer = ({ groups: initial, startGroup, meId, onClose }: Prop
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [g, i, story?.id]);
 
+  const replyToStory = async () => {
+    if (!group || mine) return;
+    try {
+      const conversation = (await api.conversations.create({
+        type: 'direct',
+        participantIds: [group.user.id],
+      })).data;
+      const storyText = story.media_type === 'text'
+        ? story.text_content
+        : story.caption || (story.media_type === 'video' ? 'a video story' : 'a photo story');
+      onClose(changed.current);
+      navigation.navigate('Messages', {
+        screen: 'Chat',
+        params: {
+          conversationId: conversation.id,
+          conversationName: group.user.name,
+          storyReplyText: `Replying to ${group.user.name}'s story: ${storyText || 'Story'}`,
+        },
+      });
+    } catch (error: any) {
+      Alert.alert('Unable to reply', error?.response?.data?.message || 'Could not open this conversation.');
+    }
+  };
+
   const remove = () => {
     Alert.alert('Delete story', 'This story will be removed for everyone.', [
       { text: 'Cancel', style: 'cancel' },
@@ -88,7 +115,7 @@ export const StoryViewer = ({ groups: initial, startGroup, meId, onClose }: Prop
   };
 
   if (!story) return null;
-  const uri = resolveUrl(story.media_url) || undefined;
+  const uri = resolveUrl(story.media_url || null) || undefined;
   const avatar = resolveUrl(group.user.avatar);
 
   return (
@@ -96,6 +123,10 @@ export const StoryViewer = ({ groups: initial, startGroup, meId, onClose }: Prop
       <View style={styles.root}>
         {story.media_type === 'video' ? (
           <StoryVideo key={story.id} uri={uri!} onProgress={(p) => progress.setValue(p)} onEnd={next} />
+        ) : story.media_type === 'text' ? (
+          <View style={styles.textStory}>
+            <Text style={styles.textStoryContent}>{story.text_content}</Text>
+          </View>
         ) : (
           <CachedImage source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="contain" />
         )}
@@ -128,7 +159,11 @@ export const StoryViewer = ({ groups: initial, startGroup, meId, onClose }: Prop
           <TouchableOpacity style={styles.viewersBtn} onPress={async () => setViewers(await social.getStoryViewers(story.id).catch(() => []))}>
             <Text style={styles.viewersText}>👁 Viewers</Text>
           </TouchableOpacity>
-        ) : null}
+        ) : (
+          <TouchableOpacity style={styles.viewersBtn} onPress={replyToStory}>
+            <Text style={styles.viewersText}>Reply to story</Text>
+          </TouchableOpacity>
+        )}
       </View>
       <OptionSheet
         visible={viewers !== null}
@@ -142,6 +177,8 @@ export const StoryViewer = ({ groups: initial, startGroup, meId, onClose }: Prop
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
+  textStory: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 34, backgroundColor: '#6C4DF6' },
+  textStoryContent: { color: '#FFFFFF', fontSize: 28, lineHeight: 39, fontWeight: '800', textAlign: 'center' },
   touch: { ...StyleSheet.absoluteFill, flexDirection: 'row', top: 120, bottom: 90 },
   top: { position: 'absolute', top: Platform.OS === 'ios' ? 54 : 34, left: 10, right: 10 },
   bars: { flexDirection: 'row', gap: 4 },

@@ -202,7 +202,6 @@ const TABLES = [
     group_id INT DEFAULT NULL,
     title VARCHAR(120) DEFAULT NULL,
     body TEXT DEFAULT NULL,
-    broadcast_id CHAR(36) DEFAULT NULL,
     from_user_id INT DEFAULT NULL,
     post_id INT DEFAULT NULL,
     comment_id INT DEFAULT NULL,
@@ -318,9 +317,11 @@ const TABLES = [
   `CREATE TABLE IF NOT EXISTS stories (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    media_url VARCHAR(255) NOT NULL,
-    media_type ENUM('image','video') NOT NULL DEFAULT 'image',
+    media_url VARCHAR(255) NOT NULL DEFAULT '',
+    media_type ENUM('image','video','text') NOT NULL DEFAULT 'image',
     caption VARCHAR(300) CHARACTER SET utf8mb4 DEFAULT NULL,
+    text_content TEXT CHARACTER SET utf8mb4 DEFAULT NULL,
+    audience ENUM('everyone','followers','only_me') NOT NULL DEFAULT 'followers',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -461,7 +462,8 @@ const COLUMNS = [
   ['notifications', 'group_id', 'INT DEFAULT NULL'],
   ['notifications', 'title', 'VARCHAR(120) DEFAULT NULL'],
   ['notifications', 'body', 'TEXT DEFAULT NULL'],
-  ['notifications', 'broadcast_id', 'CHAR(36) DEFAULT NULL'],
+  ['stories', 'text_content', 'TEXT CHARACTER SET utf8mb4 DEFAULT NULL'],
+  ['stories', 'audience', "ENUM('everyone','followers','only_me') NOT NULL DEFAULT 'followers'"],
 
   ['users', 'hide_presence', 'TINYINT(1) NOT NULL DEFAULT 0'],
   ['users', 'read_receipts', 'TINYINT(1) NOT NULL DEFAULT 1'],
@@ -528,6 +530,7 @@ const MODIFY = [
   'ALTER TABLE users MODIFY password VARCHAR(255) NULL',
 
   "ALTER TABLE messages MODIFY type ENUM('text','image','file','voice','poll') DEFAULT 'text'",
+  "ALTER TABLE stories MODIFY media_type ENUM('image','video','text') NOT NULL DEFAULT 'image'",
   "ALTER TABLE messages MODIFY status ENUM('sending','sent','delivered','read') DEFAULT 'sent'",
 
   'ALTER TABLE message_reactions MODIFY emoji VARCHAR(16) CHARACTER SET utf8mb4 NOT NULL',
@@ -572,7 +575,6 @@ const INDEXES = [
   ['follows', 'idx_follows_following', '(following_id)', false],
 
   ['notifications', 'idx_notifications_user', '(user_id, created_at)', false],
-  ['notifications', 'idx_notifications_broadcast', '(broadcast_id)', false],
 
   ['groups', 'idx_groups_type', '(type)', false],
 

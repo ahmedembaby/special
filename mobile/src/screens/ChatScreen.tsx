@@ -78,6 +78,14 @@ export default function ChatScreen() {
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
+  useEffect(() => {
+    const storyReplyText = route.params?.storyReplyText;
+    if (typeof storyReplyText === 'string' && storyReplyText.trim()) {
+      setInput(storyReplyText);
+      navigation.setParams({ storyReplyText: undefined });
+    }
+  }, [route.params?.storyReplyText, navigation]);
+
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [msgOffset, setMsgOffset] = useState(0);
