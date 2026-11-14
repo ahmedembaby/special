@@ -5,6 +5,7 @@ const rt = require('../services/realtime');
 const { pushToUsers } = require('../services/push');
 const { adminMiddleware, isAdminId, isAdminUser } = require('../middleware/auth');
 const { participantIds } = require('../services/chat');
+const adminBackups = require('../services/adminBackups');
 
 const router = express.Router();
 router.use(adminMiddleware); // mounted behind authMiddleware in index.js
@@ -512,6 +513,66 @@ router.delete('/sessions/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Could not revoke session' });
   }
+});
+
+// Advertising campaign management; mobile placements are a separate rollout.
+router.get('/campaigns', async (req, res) => {
+  try { const [rows] = await pool.query('SELECT * FROM ad_campaigns ORDER BY created_at DESC LIMIT 200'); res.json(rows); }
+  catch { res.status(500).json({ message: 'Could not load campaigns' }); }
+});
+router.post('/campaigns', async (req, res) => {
+  try {
+    const name = String(req.body.name || '').trim().slice(0, 120);
+    const headline = String(req.body.headline || '').trim().slice(0, 180);
+    const body = String(req.body.body || '').trim().slice(0, 5000);
+    const targetUrl = String(req.body.target_url || '').trim();
+    const mediaUrl = String(req.body.media_url || '').trim().slice(0, 500) || null;
+    const audience = ['all', 'new', 'active'].includes(req.body.audience) ? req.body.audience : 'all';
+    const status = ['draft', 'active', 'paused'].includes(req.body.status) ? req.body.status : 'draft';
+    const budget = Math.max(0, Math.min(100000000, Number(req.body.budget) || 0));
+    const startsAt = req.body.starts_at || null, endsAt = req.body.ends_at || null;
+    let target; try { target = new URL(targetUrl); } catch { return res.status(400).json({ message: 'A valid destination URL is required' }); }
+    if (!['https:', 'http:'].includes(target.protocol)) return res.status(400).json({ message: 'Destination must use HTTP or HTTPS' });
+    if (!name || !headline) return res.status(400).json({ message: 'Campaign name and headline are required' });
+    if (startsAt && endsAt && new Date(endsAt) <= new Date(startsAt)) return res.status(400).json({ message: 'End date must be after start date' });
+    const [result] = await pool.query('INSERT INTO ad_campaigns (name, headline, body, media_url, target_url, audience, status, budget, starts_at, ends_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [name, headline, body || null, mediaUrl, target.href, audience, status, budget, startsAt, endsAt, req.user.id]);
+    res.status(201).json({ success: true, id: result.insertId });
+  } catch { res.status(500).json({ message: 'Could not create campaign' }); }
+});
+router.put('/campaigns/:id/status', async (req, res) => {
+  try {
+    const status = String(req.body.status || '');
+    if (!['draft', 'active', 'paused', 'ended'].includes(status)) return res.status(400).json({ message: 'Invalid campaign status' });
+    const [result] = await pool.query('UPDATE ad_campaigns SET status = ? WHERE id = ?', [status, req.params.id]);
+    if (!result.affectedRows) return res.status(404).json({ message: 'Campaign not found' });
+    res.json({ success: true });
+  } catch { res.status(500).json({ message: 'Could not update campaign' }); }
+});
+router.delete('/campaigns/:id', async (req, res) => {
+  try {
+    const [result] = await pool.query('DELETE FROM ad_campaigns WHERE id = ?', [req.params.id]);
+    if (!result.affectedRows) return res.status(404).json({ message: 'Campaign not found' });
+    res.json({ success: true });
+  } catch { res.status(500).json({ message: 'Could not delete campaign' }); }
+});
+router.get('/backups', async (req, res) => {
+  try { res.json(await adminBackups.list()); }
+  catch (error) { res.status(503).json({ message: error.message || 'Backups are not configured' }); }
+});
+router.post('/backups', async (req, res) => {
+  try { res.status(201).json(await adminBackups.create()); }
+  catch (error) { res.status(503).json({ message: error.message || 'Could not create backup' }); }
+});
+router.post('/backups/:file/restore', async (req, res) => {
+  try {
+    if (String(req.body.confirmDatabase || '') !== String(process.env.DB_NAME || 'echat')) return res.status(400).json({ message: 'Type the exact database name to confirm restore' });
+    await adminBackups.restore(req.params.file);
+    res.json({ success: true, message: 'Database restore completed' });
+  } catch (error) { res.status(503).json({ message: error.message || 'Could not restore backup' }); }
+});
+router.delete('/backups/:file', async (req, res) => {
+  try { await adminBackups.remove(req.params.file); res.json({ success: true }); }
+  catch (error) { res.status(503).json({ message: error.message || 'Could not delete backup' }); }
 });
 
 module.exports = router;
