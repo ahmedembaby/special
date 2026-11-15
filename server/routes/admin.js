@@ -14,6 +14,7 @@ router.use(adminMiddleware); // mounted behind authMiddleware in index.js
 const permissionRoles = (req) => {
   const p = String(req.path || '/').toLowerCase();
   const write = req.method !== 'GET';
+  if (p === '/me') return ['support', 'moderator', 'admin', 'owner'];
   if (p.startsWith('/admins') || p.startsWith('/backups')) return ['owner'];
   if (p.startsWith('/reports') || p.startsWith('/posts') || p.startsWith('/groups') || p.startsWith('/stories') || p.startsWith('/banned-words')) return ['owner', 'admin', 'moderator'];
   if (['/stats', '/system', '/health', '/errors', '/release', '/users', '/sessions', '/conversations'].some((prefix) => p === prefix || p.startsWith(prefix + '/'))) {
@@ -99,24 +100,61 @@ router.get('/release', async (req, res) => {
   } catch { res.status(500).json({ message: 'Could not load release information' }); }
 });
 
+// ---- helpers -------------------------------------------------------------
+const pageParams = (req, def = 50, max = 200) => ({
+  limit: Math.min(Math.max(Number(req.query.limit) || def, 1), max),
+  offset: Math.max(Number(req.query.offset) || 0, 0),
+  q: String(req.query.q || '').trim().slice(0, 100),
+});
+// Lists stay plain arrays (existing clients); the total goes in a header
+const sendList = (res, rows, total) => { res.set('X-Total-Count', String(total)); res.json(rows); };
+const like = (q) => `%${q.replace(/[\\%_]/g, (m) => '\\' + m)}%`;
+
+// Pages each role may open (the dashboard hides the rest)
+const PAGE_ROLES = {
+  overview: ['support', 'moderator', 'admin', 'owner'], users: ['support', 'moderator', 'admin', 'owner'],
+  posts: ['moderator', 'admin', 'owner'], stories: ['moderator', 'admin', 'owner'], reports: ['moderator', 'admin', 'owner'],
+  groups: ['moderator', 'admin', 'owner'], conversations: ['support', 'moderator', 'admin', 'owner'], sessions: ['support', 'moderator', 'admin', 'owner'],
+  broadcast: ['admin', 'owner'], campaigns: ['admin', 'owner'], backups: ['owner'], words: ['moderator', 'admin', 'owner'],
+  audit: ['admin', 'owner'], admins: ['owner'], errors: ['support', 'moderator', 'admin', 'owner'], release: ['support', 'moderator', 'admin', 'owner'],
+};
+router.get('/me', (req, res) => {
+  res.json({
+    id: req.user.id, name: req.user.name, username: req.user.username, role: req.adminRole,
+    pages: Object.keys(PAGE_ROLES).filter((page) => PAGE_ROLES[page].includes(req.adminRole)),
+    canWrite: ['admin', 'owner'].includes(req.adminRole),
+  });
+});
+
 router.get('/audit', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT a.*, u.name AS admin_name FROM admin_audit a JOIN users u ON u.id = a.admin_id ORDER BY a.id DESC LIMIT 200');
-    res.json(rows);
+    const { limit, offset, q } = pageParams(req, 50, 200);
+    const method = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(String(req.query.method || '').toUpperCase()) ? String(req.query.method).toUpperCase() : '';
+    const where = []; const args = [];
+    if (q) { where.push('(u.name LIKE ? OR a.path LIKE ? OR a.details LIKE ?)'); args.push(like(q), like(q), like(q)); }
+    if (method) { where.push('a.method = ?'); args.push(method); }
+    const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const [[t]] = await pool.query(`SELECT COUNT(*) AS c FROM admin_audit a JOIN users u ON u.id = a.admin_id ${w}`, args);
+    const [rows] = await pool.query(`SELECT a.*, u.name AS admin_name FROM admin_audit a JOIN users u ON u.id = a.admin_id ${w} ORDER BY a.id DESC LIMIT ? OFFSET ?`, [...args, limit, offset]);
+    sendList(res, rows, t.c);
   } catch { res.status(500).json({ message: 'Could not load the audit log' }); }
 });
 
 // story moderation
 router.get('/stories', async (req, res) => {
   try {
+    const { limit, offset, q } = pageParams(req, 50, 200);
+    const w = q ? 'WHERE (u.name LIKE ? OR u.username LIKE ? OR s.caption LIKE ? OR s.text_content LIKE ?)' : '';
+    const args = q ? Array(4).fill(like(q)) : [];
+    const [[t]] = await pool.query(`SELECT COUNT(*) AS c FROM stories s JOIN users u ON u.id = s.user_id ${w}`, args);
     const [rows] = await pool.query(
       `SELECT s.id, s.user_id, u.name AS user_name, u.username, s.media_type, s.media_url, s.caption,
               s.text_content, s.audience, s.created_at, s.expires_at,
               (SELECT COUNT(*) FROM story_views v WHERE v.story_id = s.id) AS views_count
-       FROM stories s JOIN users u ON u.id = s.user_id
-       ORDER BY s.created_at DESC LIMIT 100`
+       FROM stories s JOIN users u ON u.id = s.user_id ${w}
+       ORDER BY s.created_at DESC LIMIT ? OFFSET ?`, [...args, limit, offset]
     );
-    res.json(rows);
+    sendList(res, rows, t.c);
   } catch { res.status(500).json({ message: 'Could not load stories' }); }
 });
 router.delete('/stories/:id', async (req, res) => {
@@ -158,6 +196,7 @@ router.delete('/banned-words/:word', async (req, res) => {
 
 router.get('/stats', async (req, res) => {
   try {
+    const days = [7, 14, 30, 90].includes(Number(req.query.days)) ? Number(req.query.days) : 7;
     const [[u]] = await pool.query('SELECT COUNT(*) AS c FROM users');
     const [[c]] = await pool.query('SELECT COUNT(*) AS c FROM conversations');
     const [[m]] = await pool.query('SELECT COUNT(*) AS c FROM messages');
@@ -178,11 +217,11 @@ router.get('/stats', async (req, res) => {
     const series = async (table) => {
       const [rows] = await pool.query(
         `SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS d, COUNT(*) AS c FROM ${table}
-         WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY d`
+         WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ${days - 1} DAY) GROUP BY d`
       );
       const map = new Map(rows.map((r) => [r.d, Number(r.c)]));
       const out = [];
-      for (let i = 6; i >= 0; i--) {
+      for (let i = days - 1; i >= 0; i--) {
         const dt = new Date(Date.now() - i * 86400000);
         const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
         out.push({ date: key, count: map.get(key) || 0 });
@@ -197,6 +236,7 @@ router.get('/stats', async (req, res) => {
       activeUsers: { daily: Number(dau.c), weekly: Number(wau.c), monthly: Number(mau.c) },
       callsToday: Number(callsToday.c) + Number(groupCallsToday.c),
       media: { files: Number(media.files), bytes: Number(media.bytes) },
+      days,
       activity: { users: await series('users'), messages: await series('messages'), posts: await series('posts') },
       totalUsers: u.c,
       totalConversations: c.c,
@@ -224,6 +264,8 @@ router.get('/users', async (req, res) => {
     }
     if (filter === 'banned') where.push('banned = 1');
     if (filter === 'online') where.push("status = 'online'");
+    if (filter === 'new') where.push('created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)');
+    if (filter === 'inactive') where.push('(last_seen IS NULL OR last_seen < DATE_SUB(NOW(), INTERVAL 30 DAY))');
     const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const [[t]] = await pool.query(`SELECT COUNT(*) AS c FROM users ${w}`, args);
     const [users] = await pool.query(
@@ -254,7 +296,10 @@ router.get('/users/:id', async (req, res) => {
         messages: await one('SELECT COUNT(*) AS c FROM messages WHERE sender_id = ?'),
         followers: await one('SELECT COUNT(*) AS c FROM follows WHERE following_id = ?'),
         following: await one('SELECT COUNT(*) AS c FROM follows WHERE follower_id = ?'),
+        reportsAgainst: await one("SELECT COUNT(*) AS c FROM reports WHERE target_type = 'user' AND target_id = ?"),
+        activeSessions: await one('SELECT COUNT(*) AS c FROM device_sessions WHERE user_id = ? AND revoked_at IS NULL AND expires_at > NOW()'),
       },
+      recentPosts: (await pool.query('SELECT id, content, created_at FROM posts WHERE user_id = ? ORDER BY id DESC LIMIT 5', [id]))[0],
     });
   } catch (err) {
     res.status(500).json({ message: 'Could not load user' });
@@ -290,7 +335,8 @@ router.get('/posts', async (req, res) => {
        ORDER BY p.created_at DESC LIMIT ? OFFSET ?`,
       [...args, limit, offset]
     );
-    res.json(rows);
+    const [[t]] = await pool.query(`SELECT COUNT(*) AS c FROM posts p JOIN users u ON u.id = p.user_id ${w}`, args);
+    sendList(res, rows, t.c);
   } catch (err) {
     res.status(500).json({ message: 'Could not load posts' });
   }
@@ -308,12 +354,16 @@ router.delete('/posts/:id', async (req, res) => {
 
 router.get('/groups', async (req, res) => {
   try {
+    const { limit, offset, q } = pageParams(req, 50, 200);
+    const w = q ? 'WHERE (g.name LIKE ? OR u.name LIKE ?)' : '';
+    const args = q ? [like(q), like(q)] : [];
+    const [[t]] = await pool.query(`SELECT COUNT(*) AS c FROM \`groups\` g LEFT JOIN users u ON u.id = g.created_by ${w}`, args);
     const [rows] = await pool.query(
       `SELECT g.id, g.name, g.type, g.created_at, u.name AS owner_name,
               (SELECT COUNT(*) FROM group_members m WHERE m.group_id = g.id AND m.status = 'active') AS member_count
-       FROM \`groups\` g LEFT JOIN users u ON u.id = g.created_by ORDER BY g.created_at DESC LIMIT 500`
+       FROM \`groups\` g LEFT JOIN users u ON u.id = g.created_by ${w} ORDER BY g.created_at DESC LIMIT ? OFFSET ?`, [...args, limit, offset]
     );
-    res.json(rows);
+    sendList(res, rows, t.c);
   } catch (err) {
     res.status(500).json({ message: 'Could not load groups' });
   }
@@ -336,14 +386,21 @@ router.delete('/groups/:id', async (req, res) => {
 
 router.get('/conversations', async (req, res) => {
   try {
+    const { limit, offset, q } = pageParams(req, 50, 200);
+    const type = ['direct', 'group'].includes(String(req.query.type)) ? String(req.query.type) : '';
+    const where = []; const args = [];
+    if (q) { where.push('c.name LIKE ?'); args.push(like(q)); }
+    if (type) { where.push('c.type = ?'); args.push(type); }
+    const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const [[t]] = await pool.query(`SELECT COUNT(*) AS c FROM conversations c ${w}`, args);
     const [convs] = await pool.query(
       `SELECT c.id, c.name, c.type, c.created_at, COUNT(cp.user_id) AS participant_count,
               (SELECT MAX(created_at) FROM messages m WHERE m.conversation_id = c.id) AS last_message_at,
               (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) AS message_count
-       FROM conversations c LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id
-       GROUP BY c.id ORDER BY c.created_at DESC LIMIT 500`
+       FROM conversations c LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id ${w}
+       GROUP BY c.id ORDER BY c.created_at DESC LIMIT ? OFFSET ?`, [...args, limit, offset]
     );
-    res.json(convs);
+    sendList(res, convs, t.c);
   } catch (err) {
     res.status(500).json({ message: 'Could not load conversations' });
   }
@@ -363,6 +420,29 @@ router.delete('/conversations/:id', async (req, res) => {
   }
 });
 
+// Who an announcement reaches: everyone, recently active users, or specific user ids
+async function audienceIds(audience, userIds) {
+  if (audience === 'users') {
+    const wanted = [...new Set((Array.isArray(userIds) ? userIds : []).map(Number).filter((n) => Number.isSafeInteger(n) && n > 0))].slice(0, 500);
+    if (!wanted.length) return null;
+    const [rows] = await pool.query('SELECT id FROM users WHERE banned = 0 AND id IN (?)', [wanted]);
+    return rows.length ? rows.map((u) => Number(u.id)) : null;
+  }
+  const days = audience === 'active7' ? 7 : audience === 'active30' ? 30 : 0;
+  const [rows] = days
+    ? await pool.query('SELECT id FROM users WHERE banned = 0 AND last_seen >= DATE_SUB(NOW(), INTERVAL ? DAY)', [days])
+    : await pool.query('SELECT id FROM users WHERE banned = 0');
+  return rows.map((u) => Number(u.id));
+}
+router.get('/broadcast/audience', async (req, res) => {
+  try {
+    const days = req.query.audience === 'active7' ? 7 : req.query.audience === 'active30' ? 30 : 0;
+    const [[row]] = days
+      ? await pool.query('SELECT COUNT(*) AS c FROM users WHERE banned = 0 AND last_seen >= DATE_SUB(NOW(), INTERVAL ? DAY)', [days])
+      : await pool.query('SELECT COUNT(*) AS c FROM users WHERE banned = 0');
+    res.json({ count: Number(row.c) });
+  } catch { res.status(500).json({ message: 'Could not count the audience' }); }
+});
 router.post('/broadcast', async (req, res) => {
   const title = String(req.body.title || '').trim();
   const body = String(req.body.body || '').trim();
@@ -370,8 +450,8 @@ router.post('/broadcast', async (req, res) => {
   if (title.length > 120) return res.status(400).json({ message: 'Title must be 120 characters or fewer' });
   if (body.length > 1500) return res.status(400).json({ message: 'Body must be 1500 characters or fewer' });
   try {
-    const [users] = await pool.query('SELECT id FROM users WHERE banned = 0');
-    const ids = users.map((u) => Number(u.id));
+    const ids = await audienceIds(req.body.audience, req.body.userIds);
+    if (ids === null) return res.status(400).json({ message: 'Choose at least one valid user for a targeted announcement' });
     if (ids.length) {
       const broadcastId = crypto.randomUUID();
       for (let offset = 0; offset < ids.length; offset += 500) {
@@ -461,10 +541,43 @@ router.post('/push/test', async (req, res) => {
 router.get('/reports', async (req, res) => {
   try {
     const status = ['open', 'resolved', 'dismissed'].includes(req.query.status) ? req.query.status : 'open';
+    const type = ['user', 'post', 'comment', 'message', 'story'].includes(req.query.type) ? req.query.type : '';
+    const { limit, offset } = pageParams(req, 30, 100);
+    const where = ['r.status = ?']; const args = [status];
+    if (type) { where.push('r.target_type = ?'); args.push(type); }
+    const w = `WHERE ${where.join(' AND ')}`;
+    const [[t]] = await pool.query(`SELECT COUNT(*) AS c FROM reports r ${w}`, args);
     const [rows] = await pool.query(
-      `SELECT r.*, u.name AS reporter_name, u.username AS reporter_username FROM reports r JOIN users u ON u.id = r.reporter_id
-       WHERE r.status = ? ORDER BY r.id DESC LIMIT 200`, [status]);
-    res.json(rows);
+      `SELECT r.*, u.name AS reporter_name, u.username AS reporter_username,
+              (SELECT COUNT(*) FROM reports x WHERE x.target_type = r.target_type AND x.target_id = r.target_id) AS reports_on_target
+       FROM reports r JOIN users u ON u.id = r.reporter_id ${w} ORDER BY r.id DESC LIMIT ? OFFSET ?`, [...args, limit, offset]);
+    // Preview what was reported. Private message text is never shown: admins only see who sent it and what kind it is.
+    const ids = (kind) => [...new Set(rows.filter((r) => r.target_type === kind).map((r) => r.target_id))];
+    const fetchMap = async (kind, sql) => {
+      const list = ids(kind);
+      if (!list.length) return new Map();
+      const [found] = await pool.query(sql, [list]);
+      return new Map(found.map((x) => [Number(x.id), x]));
+    };
+    const [users, posts, comments, messages, stories] = await Promise.all([
+      fetchMap('user', 'SELECT id, name, username, banned FROM users WHERE id IN (?)'),
+      fetchMap('post', 'SELECT p.id, p.content, p.user_id, u.name AS author FROM posts p JOIN users u ON u.id = p.user_id WHERE p.id IN (?)'),
+      fetchMap('comment', 'SELECT c.id, c.content, c.user_id, u.name AS author FROM post_comments c JOIN users u ON u.id = c.user_id WHERE c.id IN (?)'),
+      fetchMap('message', 'SELECT m.id, m.type, m.sender_id AS user_id, u.name AS author FROM messages m JOIN users u ON u.id = m.sender_id WHERE m.id IN (?)'),
+      fetchMap('story', 'SELECT s.id, COALESCE(s.caption, s.text_content) AS content, s.user_id, u.name AS author FROM stories s JOIN users u ON u.id = s.user_id WHERE s.id IN (?)'),
+    ]);
+    const maps = { user: users, post: posts, comment: comments, message: messages, story: stories };
+    sendList(res, rows.map((r) => {
+      const hit = maps[r.target_type].get(Number(r.target_id));
+      const preview = hit ? {
+        author: hit.author || hit.name || null,
+        authorId: hit.user_id || (r.target_type === 'user' ? hit.id : null),
+        text: r.target_type === 'message' ? null : String(hit.content || '').slice(0, 300) || null,
+        kind: hit.type || null,
+        banned: hit.banned ? true : undefined,
+      } : null;
+      return { ...r, reports_on_target: Number(r.reports_on_target), target_missing: !hit, preview };
+    }), t.c);
   } catch (err) {
     res.status(500).json({ message: 'Could not load reports' });
   }
@@ -491,6 +604,20 @@ router.post('/reports/:id/resolve', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: 'Could not update report' });
+  }
+});
+
+// Signs the user out of every device (e.g. a compromised account)
+router.post('/users/:id/sessions/revoke', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ message: 'Invalid user id' });
+    if (id === req.user.id) return res.status(400).json({ message: 'Use the app to sign out of your own devices' });
+    const [r] = await pool.query('UPDATE device_sessions SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL', [id]);
+    rt.disconnectUser(id);
+    res.json({ success: true, revoked: r.affectedRows });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not end the sessions' });
   }
 });
 
@@ -552,15 +679,17 @@ router.get('/system', async (req, res) => {
  // Active device sessions across the service. Tokens and token hashes are never exposed.
 router.get('/sessions', async (req, res) => {
   try {
+    const { limit, offset, q } = pageParams(req, 50, 200);
+    const w = q ? 'AND (u.name LIKE ? OR u.username LIKE ? OR u.phone LIKE ? OR ds.device_name LIKE ?)' : '';
+    const args = q ? Array(4).fill(like(q)) : [];
+    const base = `FROM device_sessions ds JOIN users u ON u.id = ds.user_id WHERE ds.revoked_at IS NULL AND ds.expires_at > NOW() ${w}`;
+    const [[t]] = await pool.query(`SELECT COUNT(*) AS c ${base}`, args);
     const [rows] = await pool.query(
       `SELECT ds.id, ds.user_id, ds.device_name, ds.platform, ds.created_at,
-              ds.last_active_at, ds.expires_at, u.name AS user_name, u.username,
-              u.phone, u.banned
-       FROM device_sessions ds JOIN users u ON u.id = ds.user_id
-       WHERE ds.revoked_at IS NULL AND ds.expires_at > NOW()
-       ORDER BY ds.last_active_at DESC LIMIT 300`
+              ds.last_active_at, ds.expires_at, u.name AS user_name, u.username, u.phone, u.banned
+       ${base} ORDER BY ds.last_active_at DESC LIMIT ? OFFSET ?`, [...args, limit, offset]
     );
-    res.json(rows.map((row) => ({ ...row, banned: !!row.banned, is_current: row.id === req.user.sessionId })));
+    sendList(res, rows.map((row) => ({ ...row, banned: !!row.banned, is_current: row.id === req.user.sessionId })), t.c);
   } catch (err) {
     res.status(500).json({ message: 'Could not load sessions' });
   }

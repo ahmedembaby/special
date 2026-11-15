@@ -144,3 +144,31 @@ tbody tr{transition:background .15s}tbody tr:hover{background:var(--surface-2)}
 .push-preview .brand-mark.small{width:20px;height:20px;font-size:11px;border-radius:6px}
 .push-preview b{display:block;font-size:15px;margin-bottom:4px}
 .push-preview p{margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+
+/* ---- console v2 ---- */
+.two-col{grid-template-columns:1fr 1fr;margin-bottom:18px}
+@media(max-width:1250px){.two-col{grid-template-columns:1fr}}
+.block{display:block;margin-top:3px}
+.row-end{display:flex;align-items:center;gap:8px}
+.notice-box{background:var(--amber-soft);color:var(--amber);border-radius:13px;padding:13px 16px;font-size:12px;line-height:1.8;margin-bottom:16px}
+.stat-card.clickable{cursor:pointer}.stat-card.clickable:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.seg-group{display:inline-flex;background:var(--surface-3);border-radius:12px;padding:3px;gap:2px}
+.seg{border:0;background:transparent;color:var(--muted);font-size:11px;font-weight:800;padding:7px 13px;border-radius:9px;cursor:pointer}
+.seg.active{background:var(--surface);color:var(--primary);box-shadow:0 2px 8px #1a274412}
+.chart .dot{fill:var(--surface);stroke:var(--primary);stroke-width:2}
+.chart-sum{font-size:11px;color:var(--muted);margin-top:8px}.chart-sum b{color:var(--text)}
+.live-dot.offline{color:var(--red);background:var(--red-soft)}.live-dot.offline:before{background:var(--red);box-shadow:0 0 0 4px #d94d6117}
+.report-target{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:12px;margin:10px 0 12px}
+.report-target p{margin:6px 0 0;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.report-target.gone{color:var(--muted);border-style:dashed}
+.modal-sub{font-size:13px;margin:20px 0 8px}.modal-actions{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+/* confirm / prompt dialog (replaces confirm() and prompt()) */
+#dialogRoot .dialog-backdrop{z-index:60}
+.dialog{background:var(--surface);border:1px solid var(--line);border-radius:20px;width:min(430px,100%);padding:24px;box-shadow:0 25px 90px #0b122066}
+.dialog h2{margin:0 0 10px;font-size:17px;font-weight:900}
+.dialog-text{margin:0 0 16px;color:var(--muted);font-size:13px;line-height:1.9}
+.dialog-error{color:var(--red);font-size:12px;min-height:16px;margin:6px 0 0}
+.dialog-actions{display:flex;gap:10px;justify-content:flex-start;margin-top:12px}
+.btn.danger-solid{background:var(--red);color:#fff;border-color:transparent}
+.btn.danger-solid:hover{filter:brightness(1.06)}
+.field textarea{width:100%;resize:vertical;min-height:90px}
