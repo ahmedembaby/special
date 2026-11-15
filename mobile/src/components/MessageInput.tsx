@@ -52,12 +52,16 @@ export const MessageInput = ({ value, onChangeText, onSend, onTyping, disabled }
         value={value}
         onChangeText={handleChange}
         multiline
+        accessibilityLabel="Message"
         style={[styles.input, { backgroundColor: c.inputBg, borderWidth: 0, borderRadius: 18, color: c.text }]}
       />
       <TouchableOpacity
         style={[styles.sendBtn, { backgroundColor: canSend ? c.primary : c.disabledBtn }]}
         onPress={handleSend}
         disabled={!canSend}
+        accessibilityRole="button"
+        accessibilityLabel="Send message"
+        accessibilityState={{ disabled: !canSend }}
       >
         <Text style={styles.sendText}>Send</Text>
       </TouchableOpacity>

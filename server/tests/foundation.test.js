@@ -107,3 +107,13 @@ test('offhost: signed headers are deterministic and well-formed', () => {
   assert.match(h.authorization, /^AWS4-HMAC-SHA256 Credential=AK\/20260102\/auto\/s3\/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=[a-f0-9]{64}$/);
   assert.strictEqual(offhost.sign(args).authorization, h.authorization);
 });
+
+const { mentionsUser } = require('../utils/mentionsFilter');
+test('mentionsUser: whole-handle, case-insensitive, not inside emails/longer names', () => {
+  assert.ok(mentionsUser('hi @Ahmed how are you', 'ahmed'));
+  assert.ok(mentionsUser('@ahmed', 'ahmed'));
+  assert.ok(!mentionsUser('mail a@ahmed.com', 'ahmed'));
+  assert.ok(!mentionsUser('hi @ahmed2', 'ahmed'));
+  assert.ok(mentionsUser('x @a.b!', 'a.b'));
+  assert.ok(!mentionsUser('', 'ahmed') && !mentionsUser('hi', ''));
+});

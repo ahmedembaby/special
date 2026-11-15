@@ -57,6 +57,9 @@ import DeleteAccountScreen from './src/screens/DeleteAccountScreen';
 import HashtagScreen from './src/screens/HashtagScreen';
 import GroupInvitesScreen from './src/screens/GroupInvitesScreen';
 import SessionsScreen from './src/screens/SessionsScreen';
+import { reportError } from './src/services/api';
+import TwoFactorScreen from './src/screens/TwoFactorScreen';
+import VerificationScreen from './src/screens/VerificationScreen';
 import { onSocket } from './src/services/socket';
 import { UnreadCountsProvider, useUnreadCounts } from './src/context/UnreadCountsContext';
 
@@ -99,6 +102,8 @@ const ProfileStackScreen = () => (
     <ProfileStack.Screen name="Settings" component={SettingsScreen} />
     <ProfileStack.Screen name="Security" component={SecurityScreen} />
     <ProfileStack.Screen name="Sessions" component={SessionsScreen} />
+    <ProfileStack.Screen name="TwoFactor" component={TwoFactorScreen} />
+    <ProfileStack.Screen name="Verification" component={VerificationScreen} />
     <ProfileStack.Screen name="PINSecurity" component={PINSecurityScreen} />
     <ProfileStack.Screen name="FaceID" component={FaceIDScreen} />
     <ProfileStack.Screen name="TouchID" component={TouchIDScreen} />
@@ -117,7 +122,14 @@ const TAB_ICONS: Record<string, [IconName, IconName]> = {
 };
 
 // screens inside a tab that should hide the tab bar (full-screen chat UIs)
-const HIDE_TABBAR = ['Chat', 'GroupChat', 'ContactScreen', 'PostDetail', 'ProfileEdit', 'Settings', 'PrivacySettings', 'Security', 'Sessions', 'PINSecurity', 'FaceID', 'TouchID', 'Terms', 'AdminDashboard', 'GroupDetail', 'GroupMembers', 'GroupSettings'];
+// Report uncaught JS errors to the server (shown in the admin console), then let React Native handle them as usual
+const previousErrorHandler = (globalThis as any).ErrorUtils?.getGlobalHandler?.();
+(globalThis as any).ErrorUtils?.setGlobalHandler?.((error: any, isFatal?: boolean) => {
+  reportError(error, !!isFatal);
+  previousErrorHandler?.(error, isFatal);
+});
+
+const HIDE_TABBAR = ['Chat', 'GroupChat', 'ContactScreen', 'PostDetail', 'ProfileEdit', 'Settings', 'PrivacySettings', 'Security', 'Sessions', 'TwoFactor', 'Verification', 'PINSecurity', 'FaceID', 'TouchID', 'Terms', 'AdminDashboard', 'GroupDetail', 'GroupMembers', 'GroupSettings'];
 
 const MainTabs = () => {
   const { darkMode } = useThemeSettings();

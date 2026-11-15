@@ -5,6 +5,7 @@ const pool = require('../db');
 const upload = require('../middleware/upload');
 const rt = require('../services/realtime');
 const { pushToUsers } = require('../services/push');
+const { mentionsUser } = require('../utils/mentionsFilter');
 const { isBlockedBetween } = require('../utils/blocks');
 const { isParticipant, participantIds, MESSAGE_SELECT, visible, attachReactions, getMessage } = require('../services/chat');
 const { toInt } = require('../utils/format');
@@ -48,6 +49,22 @@ async function deliver(message, sender) {
     );
     const mutedIds = new Set(muted.map((r) => r.user_id));
     offline = offline.filter((id) => !mutedIds.has(id));
+  }
+  if (offline.length) {
+    // "Mentions and replies only": push just when this person is @mentioned or replied to
+    const [mo] = await pool.query(
+      'SELECT cp.user_id, u.username FROM conversation_participants cp JOIN users u ON u.id = cp.user_id WHERE cp.conversation_id = ? AND cp.user_id IN (?) AND cp.mentions_only = 1',
+      [message.conversation_id, offline]
+    );
+    if (mo.length) {
+      let replyAuthor = null;
+      if (message.reply_to) {
+        const [rr] = await pool.query('SELECT sender_id FROM messages WHERE id = ?', [message.reply_to]);
+        replyAuthor = rr[0] ? Number(rr[0].sender_id) : null;
+      }
+      const skip = new Set(mo.filter((r) => !(Number(r.user_id) === replyAuthor || mentionsUser(message.content, r.username))).map((r) => r.user_id));
+      offline = offline.filter((id) => !skip.has(id));
+    }
   }
   if (offline.length) {
     pushToUsers(offline, {

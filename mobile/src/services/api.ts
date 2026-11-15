@@ -2,9 +2,22 @@ import axios, { AxiosInstance } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import * as Crypto from 'expo-crypto';
 import { API_URL } from '../config';
 
 const api: AxiosInstance = axios.create({ baseURL: API_URL, timeout: 15000 });
+
+// Stable per-install id so the server can tell a genuinely new device (login alert).
+let deviceId: string | null = null;
+const getDeviceId = async () => {
+  if (deviceId) return deviceId;
+  try {
+    let id = await SecureStore.getItemAsync('echat_device_id');
+    if (!id) { id = Crypto.randomUUID(); await SecureStore.setItemAsync('echat_device_id', id); }
+    deviceId = id;
+  } catch { deviceId = 'unknown'; }
+  return deviceId;
+};
 
 let onUnauthorized: (() => void) | null = null;
 export const setUnauthorizedHandler = (fn: () => void) => {
@@ -17,6 +30,7 @@ api.interceptors.request.use(async (config) => {
   config.headers.set('skip_zrok_interstitial', '1');
   config.headers['X-Device-Name'] = Device.deviceName || Device.modelName || 'Mobile device';
   config.headers['X-Device-Platform'] = Platform.OS;
+  config.headers['X-Device-Id'] = await getDeviceId();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -49,6 +63,8 @@ export interface LoginData {
 export interface OTPOptions {
   phone: string;
   code?: string;
+  /** authenticator code when two-step verification is enabled */
+  totp?: string;
 }
 
 export interface AuthUser {
@@ -62,6 +78,7 @@ export interface AuthUser {
   is_admin?: boolean;
   is_private?: boolean;
   public_key?: string | null;
+  verified?: boolean;
 }
 
 export interface MessageFile {
@@ -78,6 +95,7 @@ export interface Conversation {
   group_id?: number | string | null;
   pinned?: boolean;
   muted?: boolean;
+  mentions_only?: boolean;
   archived?: boolean;
   pinned_message?: { id: string | number; content: string; type: string; sender_name?: string } | null;
   disappear_after?: number | null;
@@ -162,6 +180,7 @@ export interface User {
   avatar?: string | null;
   bio?: string | null;
   status?: string;
+  verified?: boolean;
 }
 
 export const auth = {
@@ -173,6 +192,11 @@ export const auth = {
   // registrationToken comes from verify-otp for phone numbers that have no account yet
   setName: (data: { registrationToken: string; name: string }) => api.post('/auth/set-name', data),
   logout: () => api.post('/auth/logout'),
+  twoFactorStatus: () => api.get<{ enabled: boolean }>('/auth/2fa'),
+  twoFactorSetup: () => api.post<{ secret: string; otpauthUrl: string }>('/auth/2fa/setup'),
+  twoFactorEnable: (code: string) => api.post<{ enabled: boolean }>('/auth/2fa/enable', { code }),
+  twoFactorDisable: (code: string) => api.post<{ enabled: boolean }>('/auth/2fa/disable', { code }),
+  appeal: (identifier: string, message: string) => api.post('/auth/appeal', { identifier, message }),
   pushRegister: (data: { token: string }) => api.post('/auth/push/register', data),
   sessions: () => api.get<DeviceSession[]>('/auth/sessions'),
   revokeSession: (id: string) => api.delete<{ revoked: boolean; current: boolean }>(`/auth/sessions/${encodeURIComponent(id)}`),
@@ -216,7 +240,7 @@ export const conversations = {
   messages: (id: string | number, limit?: number, offset?: number) =>
     api.get<{ messages: Message[]; hasMore: boolean }>(`/conversations/${id}/messages`, { params: { limit, offset } }),
   search: (id: string | number, q: string) => api.get<{ messages: Message[] }>(`/conversations/${id}/search`, { params: { q } }),
-  /** hours: -1 = until turned off, 0 = unmute */
+  /** hours: -1 = until turned off, -2 = mentions and replies only, 0 = unmute */
   archive: (id: string | number) => api.put<Conversation>(`/conversations/${id}/archive`),
   remove: (id: string | number) => api.delete<{ removed: boolean }>(`/conversations/${id}`),
   pinMessage: (id: string | number, messageId: string | number | null) => api.put(`/conversations/${id}/pin-message`, { message_id: messageId }),
@@ -224,8 +248,28 @@ export const conversations = {
   disappearing: (id: string | number, seconds: number) => api.put<Conversation>(`/conversations/${id}/disappearing`, { seconds }),
 };
 
+export interface VerificationStatus { verified: boolean; request: { id: number; status: 'pending' | 'approved' | 'rejected'; review_note?: string | null; created_at: string } | null }
+export const verification = {
+  status: () => api.get<VerificationStatus>('/users/me/verification'),
+  request: (data: { category: string; reason: string; link?: string }) => api.post('/users/me/verification', data),
+};
+
+/** Fire-and-forget client error report (shown in the admin console). Never throws. */
+export const reportError = (error: any, fatal = false) => {
+  try {
+    api.post('/telemetry/error', {
+      message: String(error?.message || error || 'Unknown error').slice(0, 500),
+      stack: String(error?.stack || '').slice(0, 2000),
+      platform: Platform.OS,
+      version: String((require('expo-constants').default?.expoConfig?.version) || ''),
+      fatal,
+    }, { timeout: 8000 }).catch(() => {});
+  } catch { /* ignore */ }
+};
+
 export const ai = {
-  assistant: (data: { task: 'summarize' | 'suggest_replies' | 'translate' | 'answer' | 'moderate' | 'search_terms'; context: string; prompt?: string; language?: string }) =>
+  usage: () => api.get<{ used: { requests: number; tokens: number }; limits: { requests: number; tokens: number }; configured: boolean }>('/ai/usage'),
+  assistant: (data: { task: 'summarize' | 'suggest_replies' | 'translate' | 'answer' | 'moderate' | 'search_terms'; context: string; prompt?: string; language?: string; consent?: boolean }) =>
     api.post<{ result: string; usage?: { total_tokens?: number } | null }>('/ai/assistant', data, { timeout: 45000 }),
   transcribeMessage: (messageId: string | number) =>
     api.post<{ text: string }>(`/ai/transcribe/${encodeURIComponent(String(messageId))}`, {}, { timeout: 65000 }),

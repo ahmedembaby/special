@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAppColors } from '../theme/useAppColors';
 import * as api from '../services/api';
@@ -11,6 +11,22 @@ export const AIAssistantSheet = ({ visible, onClose, context, unreadContext = ''
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState('');
   const [busy, setBusy] = useState(false);
+  const [consented, setConsented] = useState(false);
+  const [quota, setQuota] = useState<{ used: number; limit: number } | null>(null);
+
+  const loadQuota = () => api.ai.usage().then((r) => setQuota({ used: r.data.used.requests, limit: r.data.limits.requests })).catch(() => {});
+  useEffect(() => { if (visible) loadQuota(); else { setConsented(false); setResult(''); } }, [visible]);
+
+  // Conversation text leaves the device for a third-party model, so ask once per opening of the sheet.
+  const askConsent = () => new Promise<boolean>((resolve) => {
+    if (consented) return resolve(true);
+    Alert.alert(
+      'Send conversation text to AI?',
+      'The loaded messages will be sent to the AI provider configured by the server to produce this result. Nothing is sent unless you agree.',
+      [{ text: 'Cancel', style: 'cancel', onPress: () => resolve(false) }, { text: 'Agree and continue', onPress: () => { setConsented(true); resolve(true); } }],
+      { cancelable: true, onDismiss: () => resolve(false) },
+    );
+  });
 
   const run = async (task: Task, language = 'Arabic', sourceContext = context) => {
     if (busy) return;
@@ -22,10 +38,12 @@ export const AIAssistantSheet = ({ visible, onClose, context, unreadContext = ''
       Alert.alert('Ask a question', 'Write your question first.');
       return;
     }
+    if (!(await askConsent())) return;
     setBusy(true);
     setResult('');
     try {
-      const response = await api.ai.assistant({ task, context: sourceContext, prompt: prompt.trim(), language });
+      const response = await api.ai.assistant({ task, context: sourceContext, prompt: prompt.trim(), language, consent: true });
+      loadQuota();
       if (task === 'search_terms') {
         let terms: string[] = [];
         try {
@@ -40,7 +58,8 @@ export const AIAssistantSheet = ({ visible, onClose, context, unreadContext = ''
         } else setResult(response.data.result);
       } else setResult(response.data.result);
     } catch (error: any) {
-      Alert.alert('AI unavailable', error?.response?.data?.message || 'Check the server AI configuration and try again.');
+      Alert.alert(error?.response?.data?.dailyLimit ? 'Daily limit reached' : 'AI unavailable', error?.response?.data?.message || 'Check the server AI configuration and try again.');
+      loadQuota();
     } finally {
       setBusy(false);
     }
@@ -53,9 +72,9 @@ export const AIAssistantSheet = ({ visible, onClose, context, unreadContext = ''
           <View style={styles.header}>
             <View>
               <Text style={{ color: c.text, fontSize: 18, fontWeight: '800' }}>Special AI</Text>
-              <Text style={{ color: c.textSecondary, fontSize: 12, marginTop: 3 }}>Assistant for this conversation</Text>
+              <Text style={{ color: c.textSecondary, fontSize: 12, marginTop: 3 }}>Assistant for this conversation{quota ? ` · ${quota.used}/${quota.limit} today` : ''}</Text>
             </View>
-            <TouchableOpacity onPress={onClose}><Text style={{ color: c.textSecondary, fontSize: 24 }}>×</Text></TouchableOpacity>
+            <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel="Close"><Text style={{ color: c.textSecondary, fontSize: 24 }}>×</Text></TouchableOpacity>
           </View>
           <Text style={[styles.notice, { color: c.textSecondary, backgroundColor: c.surface }]}>
             When you choose an action, the loaded conversation text is sent to the AI provider configured by the server. Private message content is not sent until you explicitly tap an action.

@@ -99,8 +99,10 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
     onOpenComments: () => { setViewer(false); onComment(post); },
   };
 
+  const ACTION_LABELS: Record<string, string> = { messageCircle: 'Comments', repeat: 'Repost', bookmark: 'Save post', share: 'Share post', heart: 'Like' };
   const Action = ({ icon, count, color, onPress: onP }: { icon: any; count?: number; color: string; onPress?: () => void }) => (
-    <TouchableOpacity style={styles.action} onPress={onP} hitSlop={8} activeOpacity={0.6}>
+    <TouchableOpacity style={styles.action} onPress={onP} hitSlop={8} activeOpacity={0.6} accessibilityRole="button"
+      accessibilityLabel={`${ACTION_LABELS[icon] || String(icon)}${count ? `, ${count}` : ''}`}>
       <Icon name={icon} size={18} color={color} />
       {count !== undefined && count > 0 ? <Text style={[styles.count, { color }]}>{formatCount(count)}</Text> : null}
     </TouchableOpacity>
@@ -125,16 +127,16 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
           {own ? (
             <View style={{ flexDirection: 'row', gap: 14 }}>
               {!post.repost_of ? (
-                <TouchableOpacity onPress={() => { setDraft(content); setEditing(true); }} hitSlop={10}>
+                <TouchableOpacity onPress={() => { setDraft(content); setEditing(true); }} hitSlop={10} accessibilityRole="button" accessibilityLabel="Edit post">
                   <Icon name="edit" size={17} color={c.textSecondary} />
                 </TouchableOpacity>
               ) : null}
-              <TouchableOpacity onPress={confirmDelete} hitSlop={10}>
+              <TouchableOpacity onPress={confirmDelete} hitSlop={10} accessibilityRole="button" accessibilityLabel="Delete post">
                 <Icon name="trash" size={17} color={c.textSecondary} />
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity onPress={() => setReport({ type: 'post', id: post.id })} hitSlop={10}>
+            <TouchableOpacity onPress={() => setReport({ type: 'post', id: post.id })} hitSlop={10} accessibilityRole="button" accessibilityLabel="Report post">
               <Icon name="flag" size={17} color={c.textSecondary} />
             </TouchableOpacity>
           )}
@@ -159,7 +161,7 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
               const pct = poll.total ? Math.round((o.votes / poll.total) * 100) : 0;
               const mine = poll.my_vote === o.id;
               return (
-                <TouchableOpacity key={o.id} activeOpacity={0.8} onPress={() => vote(o.id)} style={{ borderWidth: 1, borderColor: mine ? c.primary : c.border, borderRadius: 10, overflow: 'hidden' }}>
+                <TouchableOpacity key={o.id} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`Vote: ${o.text || ''}`} onPress={() => vote(o.id)} style={{ borderWidth: 1, borderColor: mine ? c.primary : c.border, borderRadius: 10, overflow: 'hidden' }}>
                   {poll.my_vote ? <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, backgroundColor: c.primary, opacity: 0.18 }} /> : null}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 10 }}>
                     <Text style={{ color: c.text, fontWeight: mine ? '800' : '500' }}>{o.text}{mine ? ' ✓' : ''}</Text>
