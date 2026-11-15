@@ -3,7 +3,7 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const state = { token: sessionStorage.getItem('special_admin_token') || '', user: null, me: null, page: 'overview', days: 7, pg: {}, auto: false, loginPhone: '', refocus: null };
-const TITLES = { overview: 'نظرة عامة', users: 'إدارة المستخدمين', posts: 'إدارة المنشورات', stories: 'إدارة الحالات والقصص', reports: 'مراجعة البلاغات', groups: 'المجموعات', conversations: 'المحادثات', sessions: 'الجلسات والأجهزة', broadcast: 'إرسال إعلان', campaigns: 'إدارة الحملات الإعلانية', backups: 'النسخ الاحتياطية', words: 'الكلمات المحظورة', audit: 'سجل الإدارة', admins: 'صلاحيات الإدارة', release: 'الإصدارات والتحديثات', errors: 'أخطاء الخادم' };
+const TITLES = { overview: 'نظرة عامة', users: 'إدارة المستخدمين', posts: 'إدارة المنشورات', stories: 'إدارة الحالات والقصص', reports: 'مراجعة البلاغات', groups: 'المجموعات', conversations: 'المحادثات', sessions: 'الجلسات والأجهزة', broadcast: 'إرسال إعلان', campaigns: 'إدارة الحملات الإعلانية', backups: 'النسخ الاحتياطية', words: 'الكلمات المحظورة', audit: 'سجل الإدارة', admins: 'صلاحيات الإدارة', release: 'الإصدارات والتحديثات', errors: 'أخطاء الخادم', verifications: 'توثيق الحسابات', ai: 'الذكاء الاصطناعي' };
 const ROLE_LABEL = { owner: 'مالك', admin: 'مدير', moderator: 'مشرف محتوى', support: 'دعم فني' };
 
 /* ---------- helpers ---------- */
@@ -380,12 +380,40 @@ async function showUser(id) {
   const u = await api('/admin/users/' + id);
   const items = [['الاسم', u.name], ['اسم المستخدم', u.username && '@' + u.username], ['الهاتف', u.phone], ['البريد', u.email], ['الحالة', u.banned ? 'محظور' : u.status === 'online' ? 'متصل الآن' : 'نشط'], ['آخر ظهور', ago(u.last_seen)], ['تاريخ التسجيل', when(u.created_at)], ['جلسات نشطة', num(u.stats.activeSessions)], ['المنشورات', num(u.stats.posts)], ['الرسائل المرسلة', num(u.stats.messages)], ['المتابعون', num(u.stats.followers)], ['يتابع', num(u.stats.following)], ['بلاغات ضده', num(u.stats.reportsAgainst)], ['نبذة', u.bio]];
   const posts = (u.recentPosts || []).map((p) => `<div class="quick-row"><span class="cell-wrap">${esc(String(p.content || '(بدون نص)').slice(0, 120))}</span><small class="muted">${when(p.created_at)}</small></div>`).join('');
-  const actions = u.is_admin ? '' : W(`<div class="actions modal-actions">${btn('user-warn', u.id, 'إرسال تحذير')}${btn('user-sessions', u.id, 'تسجيل خروج من كل الأجهزة')}${btn('user-ban', u.id, u.banned ? 'إلغاء الحظر' : 'حظر الحساب', u.banned ? 'success' : 'danger', `data-banned="${u.banned}"`)}</div>`);
+  const actions = u.is_admin ? '' : W(`<div class="actions modal-actions">${btn('user-warn', u.id, 'إرسال تحذير')}${btn('user-sessions', u.id, 'تسجيل خروج من كل الأجهزة')}${btn('user-verify', u.id, u.verified ? 'سحب التوثيق' : 'توثيق الحساب', u.verified ? 'danger' : 'success', `data-on="${u.verified ? 0 : 1}"`)}${btn('user-ban', u.id, u.banned ? 'إلغاء الحظر' : 'حظر الحساب', u.banned ? 'success' : 'danger', `data-banned="${u.banned}"`)}</div>`);
   openModal('ملف المستخدم', `<div class="detail-grid">${items.map((x) => `<div class="detail-item"><small>${x[0]}</small><b>${esc(x[1] ?? '—')}</b></div>`).join('')}</div>${posts ? `<h3 class="modal-sub">آخر المنشورات</h3><div class="quick-list">${posts}</div>` : ''}${actions}`);
 }
 
 /* ---------- actions (one delegated handler; every destructive action asks first) ---------- */
-const PAGES = { overview, users: usersPage, posts: postsPage, stories: storiesPage, reports: reportsPage, groups: groupsPage, conversations: conversationsPage, sessions: sessionsPage, broadcast: broadcastPage, campaigns: campaignsPage, backups: backupsPage, words: wordsPage, audit: auditPage, admins: adminsPage, release: releasePage, errors: errorsPage };
+/* ---------- verification (blue check) ---------- */
+const VCAT = { person: 'شخصية عامة', creator: 'صانع محتوى', business: 'نشاط تجاري', organization: 'منظمة' };
+const VSTATUS = { pending: ['قيد المراجعة', 'amber'], approved: ['موثّق', 'green'], rejected: ['مرفوض', 'red'] };
+const checkMark = '<span class="vbadge" title="حساب موثّق" aria-label="حساب موثّق">✓</span>';
+async function verificationsPage() {
+  const st = pg('verifications'), limit = 20;
+  const status = st.f.status || 'pending';
+  const { items, total } = await apiList(`/admin/verifications?${new URLSearchParams({ status, limit, offset: st.offset })}`);
+  const opt = (cur, list) => list.map((o) => `<option value="${o[0]}" ${cur === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('');
+  const rows = items.map((v) => { const [label, kind] = VSTATUS[v.status] || [v.status, '']; return `<tr><td>${userCell(v)}${v.verified ? checkMark : ''}</td><td>${esc(VCAT[v.category] || v.category)}</td><td class="cell-wrap">${esc(v.reason || '—')}${v.link ? `<br><small class="muted">${esc(v.link)}</small>` : ''}</td><td>${num(v.followers)} متابع · ${num(v.posts)} منشور</td><td>${pill(label, kind)}${v.review_note ? `<br><small class="muted">${esc(v.review_note)}</small>` : ''}</td><td>${when(v.created_at)}</td><td>${v.status === 'pending' ? btn('verify-approve', v.id, 'توثيق', 'success') + ' ' + btn('verify-reject', v.id, 'رفض', 'danger') : ''}</td></tr>`; }).join('');
+  shell(toolbar('طلبات التوثيق', `<select class="select-small" data-filter="verifications:status" aria-label="الحالة">${opt(status, [['pending', 'قيد المراجعة'], ['approved', 'مقبولة'], ['rejected', 'مرفوضة']])}</select>`)
+    + '<div class="notice-box">يمكنك أيضاً منح أو سحب العلامة مباشرة من نافذة المستخدم. يصل المستخدم إشعار بالنتيجة.</div>'
+    + (rows ? table(['المستخدم', 'الفئة', 'السبب', 'النشاط', 'الحالة', 'التاريخ', 'الإجراء'], rows) : empty('لا توجد طلبات في هذا التصنيف.')) + pager('verifications', total, limit));
+}
+
+/* ---------- AI usage ---------- */
+async function aiPage() {
+  const d = await api('/admin/ai/usage');
+  const t = d.totals;
+  const days = (d.daily || []).slice(-14).map((x) => `<tr><td>${esc(String(x.day).slice(0, 10))}</td><td>${num(x.requests)}</td><td>${num(x.tokens)}</td><td>${num(x.users)}</td></tr>`).join('');
+  const top = (d.top || []).map((u) => `<tr><td>${userCell(u)}</td><td>${num(u.requests)}</td><td>${num(u.tokens)}</td></tr>`).join('');
+  shell(toolbar('استخدام الذكاء الاصطناعي', pill(d.configured ? 'المزوّد مُعدّ' : 'غير مُعدّ', d.configured ? 'green' : 'amber'))
+    + `<div class="stat-grid"><div class="stat-card"><span>طلبات (30 يوماً)</span><b>${num(t.requests)}</b></div><div class="stat-card"><span>توكنات</span><b>${num(t.tokens)}</b></div><div class="stat-card"><span>التكلفة التقديرية</span><b>${t.costPer1k ? '$' + t.estimatedCost : 'غير محدد'}</b></div><div class="stat-card"><span>الحد اليومي لكل مستخدم</span><b>${num(d.limits.requests)} طلب</b></div></div>`
+    + '<div class="notice-box">الحدود اليومية تُضبط بمتغيرات AI_DAILY_REQUESTS و AI_DAILY_TOKENS، وتقدير التكلفة بـ AI_COST_PER_1K_TOKENS.</div>'
+    + `<section class="panel"><div class="panel-head"><h2>آخر 14 يوماً</h2></div>${days ? table(['اليوم', 'الطلبات', 'التوكنات', 'المستخدمون'], days) : empty('لا يوجد استخدام بعد.')}</section>`
+    + `<section class="panel"><div class="panel-head"><h2>الأعلى استخداماً</h2></div>${top ? table(['المستخدم', 'الطلبات', 'التوكنات'], top) : empty('—')}</section>`);
+}
+
+const PAGES = { overview, users: usersPage, posts: postsPage, stories: storiesPage, reports: reportsPage, groups: groupsPage, conversations: conversationsPage, sessions: sessionsPage, broadcast: broadcastPage, campaigns: campaignsPage, backups: backupsPage, words: wordsPage, audit: auditPage, admins: adminsPage, release: releasePage, errors: errorsPage, verifications: verificationsPage, ai: aiPage };
 const reload = () => loadPage(state.page, { keepScroll: true });
 const ACTIONS = {
   'user-view': (id) => showUser(id),
@@ -408,6 +436,9 @@ const ACTIONS = {
   'report-dismiss': (id) => settleReport(id, 'dismissed', false, false, 'رفض البلاغ', 'سيُغلق البلاغ كمرفوض.'),
   'report-delete': (id) => settleReport(id, 'resolved', true, false, 'حذف المحتوى', 'سيُحذف المحتوى المبلغ عنه نهائياً ويُغلق البلاغ.'),
   'report-ban': (id, el) => settleReport(id, 'resolved', false, el.dataset.user, 'حظر صاحب المحتوى', 'سيُحظر الحساب ويُغلق البلاغ.'),
+  'verify-approve': async (id) => { if (!(await ask({ title: 'توثيق الحساب', message: 'ستظهر علامة التحقق بجانب اسم الحساب.', confirm: 'توثيق' }))) return; await post(`/admin/verifications/${id}/decide`, { approve: true }); toast('تم توثيق الحساب'); reload(); },
+  'verify-reject': async (id) => { const v = await ask({ title: 'رفض طلب التوثيق', message: 'سيُرسل السبب للمستخدم.', confirm: 'رفض', danger: true, fields: [{ name: 'note', label: 'سبب الرفض', required: true }] }); if (!v) return; await post(`/admin/verifications/${id}/decide`, { approve: false, note: v.note }); toast('تم رفض الطلب'); reload(); },
+  'user-verify': async (id, el) => { const on = el.dataset.on === '1'; if (!(await ask({ title: on ? 'منح علامة التحقق' : 'سحب علامة التحقق', message: on ? 'سيظهر الحساب كموثّق.' : 'ستُزال علامة التحقق من الحساب.', confirm: on ? 'منح' : 'سحب', danger: !on }))) return; await post(`/admin/verifications/user/${id}`, { verified: on }); toast('تم التحديث'); closeModal(); reload(); },
   go: (id) => navigate(id),
   range: (id) => { state.days = Number(id); reload(); },
   rebroadcast: (id, el) => { if (state.fillBroadcast) state.fillBroadcast(el.dataset.title, el.dataset.body); },

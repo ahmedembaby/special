@@ -16,6 +16,7 @@ const permissionRoles = (req) => {
   const write = req.method !== 'GET';
   if (p === '/me') return ['support', 'moderator', 'admin', 'owner'];
   if (p.startsWith('/admins') || p.startsWith('/backups')) return ['owner'];
+  if (p.startsWith('/verifications')) return ['owner', 'admin', 'moderator'];
   if (p.startsWith('/reports') || p.startsWith('/posts') || p.startsWith('/groups') || p.startsWith('/stories') || p.startsWith('/banned-words')) return ['owner', 'admin', 'moderator'];
   if (['/stats', '/system', '/health', '/errors', '/release', '/users', '/sessions', '/conversations'].some((prefix) => p === prefix || p.startsWith(prefix + '/'))) {
     if (!write && ['support', 'moderator', 'admin', 'owner'].includes(req.adminRole)) return ['support', 'moderator', 'admin', 'owner'];
@@ -116,7 +117,7 @@ const PAGE_ROLES = {
   posts: ['moderator', 'admin', 'owner'], stories: ['moderator', 'admin', 'owner'], reports: ['moderator', 'admin', 'owner'],
   groups: ['moderator', 'admin', 'owner'], conversations: ['support', 'moderator', 'admin', 'owner'], sessions: ['support', 'moderator', 'admin', 'owner'],
   broadcast: ['admin', 'owner'], campaigns: ['admin', 'owner'], backups: ['owner'], words: ['moderator', 'admin', 'owner'],
-  audit: ['admin', 'owner'], admins: ['owner'], errors: ['support', 'moderator', 'admin', 'owner'], release: ['support', 'moderator', 'admin', 'owner'],
+  audit: ['admin', 'owner'], admins: ['owner'], errors: ['support', 'moderator', 'admin', 'owner'], verifications: ['moderator', 'admin', 'owner'], ai: ['admin', 'owner'], release: ['support', 'moderator', 'admin', 'owner'],
 };
 router.get('/me', (req, res) => {
   res.json({
@@ -283,7 +284,7 @@ router.get('/users/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
     const [rows] = await pool.query(
-      'SELECT id, name, username, email, phone, avatar, bio, status, banned, last_seen, created_at FROM users WHERE id = ?', [id]
+      'SELECT id, name, username, email, phone, avatar, bio, status, banned, verified, last_seen, created_at FROM users WHERE id = ?', [id]
     );
     if (!rows.length) return res.status(404).json({ message: 'User not found' });
     const one = async (sql) => (await pool.query(sql, [id]))[0][0].c;
@@ -622,6 +623,84 @@ router.post('/users/:id/sessions/revoke', async (req, res) => {
 });
 
 // Toggles the ban state (or sets it with { banned: true|false })
+// ---------- Verification (blue check) ----------
+router.get('/verifications', async (req, res) => {
+  try {
+    const { limit, offset } = pageParams(req, 30);
+    const status = ['pending', 'approved', 'rejected'].includes(req.query.status) ? req.query.status : null;
+    const where = status ? 'WHERE v.status = ?' : '';
+    const params = status ? [status] : [];
+    const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM verification_requests v ${where}`, params);
+    const [rows] = await pool.query(
+      `SELECT v.id, v.user_id, v.category, v.reason, v.link, v.status, v.review_note, v.created_at, v.reviewed_at,
+              u.name, u.username, u.avatar, u.verified,
+              (SELECT COUNT(*) FROM follows f WHERE f.following_id = u.id) AS followers,
+              (SELECT COUNT(*) FROM posts p WHERE p.user_id = u.id) AS posts
+       FROM verification_requests v JOIN users u ON u.id = v.user_id ${where}
+       ORDER BY (v.status = 'pending') DESC, v.created_at DESC LIMIT ? OFFSET ?`, [...params, limit, offset]);
+    sendList(res, rows, total);
+  } catch { res.status(500).json({ message: 'Could not load verification requests' }); }
+});
+
+async function setVerified(userId, value, adminId, note, requestId) {
+  await pool.query('UPDATE users SET verified = ?, verified_at = ? WHERE id = ?', [value ? 1 : 0, value ? new Date() : null, userId]);
+  require('../services/verified').set(userId, value);
+  if (requestId) {
+    await pool.query('UPDATE verification_requests SET status = ?, reviewed_by = ?, review_note = ?, reviewed_at = NOW() WHERE id = ?',
+      [value ? 'approved' : 'rejected', adminId, note || null, requestId]);
+  }
+}
+
+router.post('/verifications/:id/decide', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const approve = req.body.approve === true;
+    const note = String(req.body.note || '').trim().slice(0, 250);
+    const [rows] = await pool.query("SELECT id, user_id FROM verification_requests WHERE id = ? AND status = 'pending'", [id]);
+    if (!rows.length) return res.status(404).json({ message: 'Pending request not found' });
+    const userId = rows[0].user_id;
+    if (approve) await setVerified(userId, true, req.user.id, note, id);
+    else {
+      await pool.query("UPDATE verification_requests SET status = 'rejected', reviewed_by = ?, review_note = ?, reviewed_at = NOW() WHERE id = ?", [req.user.id, note || null, id]);
+    }
+    require('../services/notify').systemNotice(userId,
+      approve ? 'تم توثيق حسابك' : 'تعذر توثيق حسابك',
+      approve ? 'تهانينا! أصبح حسابك يحمل علامة التحقق.' : (note || 'لم نتمكن من الموافقة على طلب التوثيق هذه المرة.'),
+      { verification: approve ? 'approved' : 'rejected' });
+    res.json({ success: true });
+  } catch { res.status(500).json({ message: 'Could not save the decision' }); }
+});
+
+// Grant or remove the badge directly (no request needed)
+router.post('/verifications/user/:userId', async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+    const value = req.body.verified === true;
+    const [u] = await pool.query('SELECT id FROM users WHERE id = ?', [userId]);
+    if (!u.length) return res.status(404).json({ message: 'User not found' });
+    await setVerified(userId, value, req.user.id, null, null);
+    res.json({ success: true, verified: value });
+  } catch { res.status(500).json({ message: 'Could not update verification' }); }
+});
+
+router.get('/ai/usage', async (req, res) => {
+  try {
+    const quota = require('../services/aiQuota');
+    const [daily] = await pool.query('SELECT day, SUM(requests) AS requests, SUM(tokens) AS tokens, COUNT(*) AS users FROM ai_usage WHERE day >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY day ORDER BY day');
+    const [top] = await pool.query(
+      `SELECT a.user_id, u.name, u.username, SUM(a.requests) AS requests, SUM(a.tokens) AS tokens
+       FROM ai_usage a JOIN users u ON u.id = a.user_id WHERE a.day >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+       GROUP BY a.user_id, u.name, u.username ORDER BY tokens DESC, requests DESC LIMIT 10`);
+    const tokens = daily.reduce((n, d) => n + Number(d.tokens), 0);
+    res.json({
+      limits: quota.limits(), configured: !!(process.env.AI_API_KEY && process.env.AI_MODEL),
+      totals: { requests: daily.reduce((n, d) => n + Number(d.requests), 0), tokens, estimatedCost: quota.estimateCost(tokens), costPer1k: quota.costPer1k() },
+      daily: daily.map((d) => ({ day: d.day, requests: Number(d.requests), tokens: Number(d.tokens), users: Number(d.users) })),
+      top,
+    });
+  } catch { res.status(500).json({ message: 'Could not load AI usage' }); }
+});
+
 router.post('/users/:id/warn', async (req, res) => {
   try {
     const id = Number(req.params.id);

@@ -238,6 +238,7 @@ async function start() {
     console.error('   Check DB_HOST / DB_USER / DB_PASSWORD in .env and that MySQL is running.');
     process.exit(1);
   }
+  require('./services/verified').start();
   require('./services/cleanup').start();
   require('./services/digest').start();
   if (config.WHATSAPP_ENABLED) require('./services/whatsapp').start();

@@ -13,7 +13,8 @@ const POST_SELECT = `
 const POST_VISIBLE = `(NOT EXISTS (SELECT 1 FROM user_blocks vb WHERE vb.blocker_id + vb.blocked_id = p.user_id + ? AND (vb.blocker_id = p.user_id OR vb.blocked_id = p.user_id))
   AND (u.is_private = 0 OR p.user_id = ? OR EXISTS (SELECT 1 FROM follows vf WHERE vf.follower_id = ? AND vf.following_id = p.user_id)))`;
 
-const shapeUser = (id, name, username, avatar) => ({ id: String(id), name, username: username || `user${id}`, avatar: avatar || undefined });
+const verified = require('../services/verified');
+const shapeUser = (id, name, username, avatar) => ({ id: String(id), name, username: username || `user${id}`, avatar: avatar || undefined, verified: verified.isVerified(id) || undefined });
 
 // Replies are one level deep: parentId is always the top-level comment, replyTo is who was answered
 const COMMENT_SELECT = `SELECT c.id, c.post_id, c.user_id, c.content, c.created_at, c.parent_id, c.reply_to_user_id,

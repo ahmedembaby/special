@@ -172,3 +172,5 @@ tbody tr{transition:background .15s}tbody tr:hover{background:var(--surface-2)}
 .btn.danger-solid{background:var(--red);color:#fff;border-color:transparent}
 .btn.danger-solid:hover{filter:brightness(1.06)}
 .field textarea{width:100%;resize:vertical;min-height:90px}
+
+.vbadge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-inline-start:6px;border-radius:50%;background:#1d9bf0;color:#fff;font-size:11px;font-weight:700;vertical-align:middle}

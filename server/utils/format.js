@@ -1,4 +1,6 @@
+const verifiedSet = require('../services/verified');
 const toUser = (u) => u && ({
+  verified: verifiedSet.isVerified(u.id),
   id: u.id,
   name: u.name,
   username: u.username || null,
@@ -16,6 +18,7 @@ const toUser = (u) => u && ({
 });
 
 const publicUser = (u) => u && ({
+  verified: verifiedSet.isVerified(u.id),
   id: u.id,
   name: u.name,
   username: u.username || null,

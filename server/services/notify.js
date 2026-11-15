@@ -74,4 +74,20 @@ async function notify(userId, type, fromUser, { postId = null, commentId = null,
   }
 }
 
-module.exports = { notify, loadNotifications };
+/** Notice from the platform itself (no sender): admin warnings, security alerts, verification results. */
+async function systemNotice(userId, title, body, data = {}) {
+  userId = Number(userId);
+  if (!userId) return null;
+  try {
+    const [r] = await pool.query("INSERT INTO notifications (user_id, type, title, body, from_user_id) VALUES (?, 'broadcast', ?, ?, NULL)", [userId, title, body]);
+    const item = { id: String(r.insertId), type: 'broadcast', title, body, from: { id: 'system', name: 'Special', username: 'special', avatar: null }, createdAt: new Date().toISOString(), read: false };
+    rt.emitToUser(userId, 'notification', item);
+    pushToUsers([userId], { title, body, data: { type: 'notification', notificationType: 'broadcast', notificationId: item.id, ...data } }).catch(() => {});
+    return item;
+  } catch (err) {
+    console.error('systemNotice:', err.message);
+    return null;
+  }
+}
+
+module.exports = { notify, loadNotifications, systemNotice };
