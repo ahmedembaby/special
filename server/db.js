@@ -819,6 +819,9 @@ async function initDatabase() {
         }
       }
 
+      // Versioned migrations (server/migrations)
+      await require('./services/migrate').run(newPool);
+
       // Verify connection
       const [result] = await newPool.query(
         'SELECT VERSION() AS version, DATABASE() AS database_name'

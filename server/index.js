@@ -4,7 +4,8 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const { Server } = require('socket.io');
-const rateLimit = require('express-rate-limit');
+const { securityHeaders, limits } = require('./middleware/security');
+const metrics = require('./services/metrics');
 
 const config = require('./config');
 const db = require('./db');
@@ -17,14 +18,6 @@ process.on('uncaughtException', (err) => { errorMonitor.record(err, 'uncaughtExc
 
 const { authMiddleware, authenticateToken, getToken } = require('./middleware/auth');
 const { isParticipant } = require('./services/chat');
-
-// Optional error monitoring: set SENTRY_DSN and run `npm i @sentry/node`
-let Sentry = null;
-if (process.env.SENTRY_DSN) {
-  try { Sentry = require('@sentry/node'); Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.05 }); }
-  catch { console.warn('SENTRY_DSN is set but @sentry/node is not installed'); }
-}
-process.on('unhandledRejection', (e) => { console.error('unhandledRejection:', e); if (Sentry) Sentry.captureException(e); });
 
 const app = express();
 const server = http.createServer(app);
@@ -49,6 +42,9 @@ if (redis.client) {
 }
 
 app.set('trust proxy', 1);
+app.disable('x-powered-by');
+app.use(securityHeaders({ isProd: config.isProd }));
+app.use(metrics.middleware);
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: '1mb' }));
 
@@ -93,12 +89,8 @@ app.use('/uploads/chat', authorizePrivateUpload('chat'));
 app.use('/uploads/stories', authorizePrivateUpload('stories'));
 app.use('/uploads', express.static(uploadsDir, { fallthrough: true, index: false }));
 
-const limiter = (windowMs, max, extra = {}) => rateLimit({
-  windowMs, max, standardHeaders: true, legacyHeaders: false,
-  message: { message: 'Too many requests, please try again later' }, ...extra,
-});
-const authLimiter = limiter(15 * 60 * 1000, 60);
-const apiLimiter = limiter(60 * 1000, 600);
+const authLimiter = limits.auth();
+const apiLimiter = limits.api();
 
 // Fail fast with a clear message while the database is not available
 app.get('/privacy', (req, res) => {
@@ -118,6 +110,15 @@ app.get('/privacy', (req, res) => {
 
 app.use('/api', (req, res, next) => (db.isReady() || req.path === '/health' ? next() : res.status(503).json({ message: 'Server is starting, try again shortly' })));
 
+app.use('/api/auth/login', limits.login());
+app.use('/api/auth/send-otp', limits.otpSend());
+app.use('/api/auth/resend-otp', limits.otpSend());
+app.use('/api/auth/verify-otp', limits.otpVerify());
+app.use('/api/messages/upload', limits.upload());
+const uploadLimiter = limits.upload();
+app.use('/api/stories', (req, res, next) => (req.method === 'POST' ? uploadLimiter(req, res, next) : next()));
+app.use('/api/search', limits.search());
+app.use('/api/ai', limits.ai());
 app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/users', apiLimiter, authMiddleware, require('./routes/users'));
 app.use('/api/conversations', apiLimiter, authMiddleware, require('./routes/conversations'));
@@ -132,6 +133,7 @@ app.use('/api/stories', apiLimiter, authMiddleware, require('./routes/stories'))
 app.use('/api/calls', apiLimiter, authMiddleware, require('./routes/calls'));
 app.use('/api/groups', apiLimiter, authMiddleware, require('./routes/groups'));
 app.use('/api/whatsapp', apiLimiter, require('./routes/whatsapp'));
+app.use('/api/telemetry', limits.telemetry(), authMiddleware, require('./routes/telemetry'));
 app.use('/api/admin', apiLimiter, authMiddleware, require('./routes/admin'));
 
 // Browser-based administration console. The UI authenticates through the existing
@@ -147,6 +149,7 @@ app.use('/admin', (req, res, next) => {
 app.get('/admin', (req, res) => res.sendFile(path.join(adminAssets, 'index.html')));
 
 
+app.get('/api/docs.json', (req, res) => res.json(require('./openapi')));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', db: db.isReady(), redis: redis.isReady(), time: new Date().toISOString() }));
 
 app.use('/api', (req, res) => res.status(404).json({ message: 'Not found' }));

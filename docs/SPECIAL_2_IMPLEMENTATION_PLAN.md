@@ -65,3 +65,12 @@ This document tracks the requested product scope and the technical dependencies 
 
 ## Current implementation note
 The first foundation change adds concurrency-safe unread badges, durable broadcast IDs, input validation for announcements, and active-user/call/media metrics to the admin stats API and overview. The remaining checkboxes require separate, testable feature pull requests and native build/deployment configuration.
+
+## Platform foundation (done)
+- [x] Security headers middleware and per-route rate limits (login, OTP send/verify, upload, search, AI, telemetry).
+- [x] Versioned migrations (`server/migrations/NNN_name.js`, tracked in `schema_migrations`); legacy schema in `db.js` is the baseline.
+- [x] Request latency/error metrics (`services/metrics.js`) and client error reports (`POST /api/telemetry/error`).
+- [x] Dockerfile + `docker-compose.yml` (API, MySQL, Redis).
+- [x] OpenAPI description served at `/api/docs.json`.
+- [x] Unit tests for headers, migrations, metrics and the OpenAPI document (`npm test`).
+- Out of scope by request: no change to the `whatsapp-web.js` integration.
