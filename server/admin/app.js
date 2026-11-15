@@ -3,7 +3,7 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const state = { token: sessionStorage.getItem('special_admin_token') || '', user: null, me: null, page: 'overview', days: 7, pg: {}, auto: false, loginPhone: '', refocus: null };
-const TITLES = { overview: 'نظرة عامة', users: 'إدارة المستخدمين', posts: 'إدارة المنشورات', stories: 'إدارة الحالات والقصص', reports: 'مراجعة البلاغات', groups: 'المجموعات', conversations: 'المحادثات', sessions: 'الجلسات والأجهزة', broadcast: 'إرسال إعلان', campaigns: 'إدارة الحملات الإعلانية', backups: 'النسخ الاحتياطية', words: 'الكلمات المحظورة', audit: 'سجل الإدارة', admins: 'صلاحيات الإدارة', release: 'الإصدارات والتحديثات', errors: 'أخطاء الخادم', verifications: 'توثيق الحسابات', ai: 'الذكاء الاصطناعي' };
+const TITLES = { rlog: 'سجل قرارات البلاغات', appeals: 'الاعتراضات', alerts: 'التنبيهات التلقائية', overview: 'نظرة عامة', users: 'إدارة المستخدمين', posts: 'إدارة المنشورات', stories: 'إدارة الحالات والقصص', reports: 'مراجعة البلاغات', groups: 'المجموعات', conversations: 'المحادثات', sessions: 'الجلسات والأجهزة', broadcast: 'إرسال إعلان', campaigns: 'إدارة الحملات الإعلانية', backups: 'النسخ الاحتياطية', words: 'الكلمات المحظورة', audit: 'سجل الإدارة', admins: 'صلاحيات الإدارة', release: 'الإصدارات والتحديثات', errors: 'أخطاء الخادم', verifications: 'توثيق الحسابات', ai: 'الذكاء الاصطناعي' };
 const ROLE_LABEL = { owner: 'مالك', admin: 'مدير', moderator: 'مشرف محتوى', support: 'دعم فني' };
 
 /* ---------- helpers ---------- */
@@ -285,7 +285,7 @@ async function broadcastPage() {
     api('/admin/broadcasts').catch(() => []),
   ]);
   const pct = stats.total ? Math.round((stats.withToken / stats.total) * 100) : 0;
-  const rows = history.map((h) => `<tr><td><b>${esc(h.title)}</b><small class="muted block">${esc((h.body || '').slice(0, 90))}</small></td><td>${num(h.recipients)}</td><td>${num(h.read_count)} <small class="muted">(${h.recipients ? Math.round((h.read_count / h.recipients) * 100) : 0}%)</small></td><td>${when(h.created_at)}</td><td>${btn('rebroadcast', h.broadcast_id, 'إعادة استخدام', 'ghost', `data-title="${esc(h.title)}" data-body="${esc(h.body)}"`)}</td></tr>`).join('');
+  const rows = history.map((h) => `<tr><td><b>${esc(h.title)}</b><small class="muted block">${esc((h.body || '').slice(0, 90))}</small></td><td>${num(h.recipients)}<small class="muted block">${num(h.push_capable)} يستقبلون Push</small></td><td>${num(h.read_count)} <small class="muted">(${h.recipients ? Math.round((h.read_count / h.recipients) * 100) : 0}%)</small></td><td>${when(h.created_at)}</td><td>${btn('rebroadcast', h.broadcast_id, 'إعادة استخدام', 'ghost', `data-title="${esc(h.title)}" data-body="${esc(h.body)}"`)}</td></tr>`).join('');
   shell(`<div class="grid stats-grid"><div class="stat-card"><div class="stat-head">الحسابات الفعّالة<span class="stat-icon">♙</span></div><div class="stat-value">${num(stats.total)}</div><div class="stat-foot">ستصلها الإشعارات داخل التطبيق</div></div><div class="stat-card"><div class="stat-head">أجهزة تستقبل الإشعارات<span class="stat-icon">◉</span></div><div class="stat-value">${num(stats.withToken)}</div><div class="stat-foot">${pct}% من الحسابات لديها جهاز مسجّل</div></div></div>
   <div class="grid overview-grid"><section class="panel"><div class="panel-head"><div><h2>إرسال إشعار</h2><p>يصل داخل التطبيق فوراً، وكإشعار دفع للأجهزة المسجّلة.</p></div></div>
   <form id="broadcastForm"><div class="field"><label>الجمهور <small class="muted" id="audienceCount"></small></label><select name="audience"><option value="all">كل المستخدمين</option><option value="active7">النشطون خلال 7 أيام</option><option value="active30">النشطون خلال 30 يوماً</option><option value="users">مستخدمون محددون (بالمعرّف)</option></select></div>
@@ -318,7 +318,7 @@ async function broadcastPage() {
     if (!(await ask({ title: 'تأكيد إرسال الإعلان', message: `سيصل الإعلان «${form.title.value.trim()}» إلى ${label}. لا يمكن التراجع بعد الإرسال.`, confirm: 'إرسال الآن' }))) return;
     const submit = e.submitter; submit.disabled = true;
     try {
-      const d = await post('/admin/broadcast', { title: form.title.value.trim(), body: form.body.value.trim(), audience, userIds });
+      const d = await post('/admin/broadcast', { title: form.title.value.trim(), body: form.body.value.trim(), audience, userIds, requestId: (form.dataset.rid ||= (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random())) });
       toast(`تم الإرسال إلى ${num(d.count)} مستخدم`); broadcastPage();
     } catch (err) { toast(err.message, true); submit.disabled = false; }
   };
@@ -352,9 +352,40 @@ async function campaignsPage() {
 
 const bytes = (n) => { n = Number(n || 0); return n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : n > 1024 ? (n / 1024).toFixed(0) + ' KB' : n + ' B'; };
 async function backupsPage() {
-  const rows = await api('/admin/backups');
-  const body = rows.map((x) => `<tr><td class="text-ltr">${esc(x.name)}</td><td>${bytes(x.size)}</td><td>${when(x.created_at)}</td><td><div class="actions">${btn('backup-restore', x.name, 'استعادة', 'danger')}${btn('backup-delete', x.name, 'حذف', 'ghost')}</div></td></tr>`).join('');
-  shell(toolbar('النسخ الاحتياطية المشفرة', '<button class="btn primary" data-act="backup-create">إنشاء نسخة الآن</button>') + '<div class="notice-box">النسخ مشفرة AES-256-GCM. يجب إعداد مجلد تخزين دائم ومفتاح تشفير وأدوات MySQL على الخادم. الاستعادة تستبدل بيانات قاعدة البيانات الحالية.</div>' + (rows.length ? table(['الملف', 'الحجم', 'تاريخ الإنشاء', 'الإجراء'], body) : empty('لا توجد نسخ احتياطية بعد.')));
+  const d = await api('/admin/backups');
+  const body = d.files.map((x) => `<tr><td class="text-ltr">${esc(x.name)}</td><td>${bytes(x.size)}</td><td>${when(x.created_at)}</td><td><div class="actions">${btn('backup-verify', x.name, 'فحص السلامة', 'success')}${d.offhost ? btn('backup-upload', x.name, 'رفع خارجي', 'ghost') : ''}${btn('backup-restore', x.name, 'استعادة', 'danger')}${btn('backup-delete', x.name, 'حذف', 'ghost')}</div></td></tr>`).join('');
+  const runs = d.runs.map((r) => `<tr><td>${when(r.created_at)}</td><td>${{ create: 'إنشاء', upload: 'رفع خارجي', verify: 'فحص سلامة' }[r.kind] || esc(r.kind)}</td><td class="text-ltr">${esc(r.file || '—')}</td><td>${pill(r.ok ? 'نجح' : 'فشل', r.ok ? 'green' : 'red')}</td><td class="cell-wrap">${esc(r.detail || '')}</td></tr>`).join('');
+  shell(toolbar('النسخ الاحتياطية المشفرة', `${pill(d.offhost ? 'نسخ خارجي مفعّل' : 'محلي فقط', d.offhost ? 'green' : 'amber')} ${pill(d.autoHours ? `تلقائي كل ${d.autoHours} ساعة` : 'بدون جدولة', d.autoHours ? 'green' : 'amber')} <button class="btn" data-act="backup-run">تشغيل دورة كاملة الآن</button> <button class="btn primary" data-act="backup-create">إنشاء نسخة</button>`)
+    + '<div class="notice-box">الدورة الكاملة: إنشاء ← فحص سلامة (فك التشفير والتحقق من اكتمال الملف) ← رفع إلى التخزين الخارجي المتوافق مع S3 والتحقق من الحجم. فحص السلامة لا يلمس قاعدة البيانات الحية؛ جرّب الاستعادة الفعلية دورياً على خادم اختبار. الإعداد: BACKUP_DIR وBACKUP_ENCRYPTION_KEY وBACKUP_S3_* وBACKUP_AUTO_HOURS.</div>'
+    + (d.files.length ? table(['الملف', 'الحجم', 'تاريخ الإنشاء', 'الإجراء'], body) : empty('لا توجد نسخ احتياطية بعد.'))
+    + `<section class="panel"><div class="panel-head"><h2>سجل العمليات</h2></div>${runs ? table(['الوقت', 'العملية', 'الملف', 'النتيجة', 'التفاصيل'], runs) : empty('لا عمليات مسجلة.')}</section>`);
+}
+
+/* ---------- report decision log, appeals, alerts ---------- */
+const ACTION_LABEL = { none: 'بدون إجراء', deleted_content: 'حذف المحتوى', banned_user: 'حظر المستخدم' };
+async function rlogPage() {
+  const st = pg('rlog'), limit = 30;
+  const { items, total } = await apiList(`/admin/reports-log?${new URLSearchParams({ limit, offset: st.offset })}`);
+  const rows = items.map((d) => `<tr><td>${when(d.created_at)}</td><td>#${d.report_id} · ${esc(TARGET_LABEL[d.target_type] || d.target_type || '')}</td><td>${pill(d.decision === 'resolved' ? 'تم الحل' : 'مرفوض', d.decision === 'resolved' ? 'green' : '')}</td><td>${esc(ACTION_LABEL[d.action] || d.action)}</td><td>${esc(d.admin_name || '—')}</td><td class="cell-wrap">${esc(d.note || '—')}</td></tr>`).join('');
+  shell(toolbar('سجل قرارات البلاغات') + (rows ? table(['الوقت', 'البلاغ', 'القرار', 'الإجراء', 'المشرف', 'الملاحظة'], rows) : empty('لا توجد قرارات مسجلة بعد.')) + pager('rlog', total, limit));
+}
+async function appealsPage() {
+  const st = pg('appeals'), limit = 20;
+  const status = st.f.status || 'pending';
+  const { items, total } = await apiList(`/admin/appeals?${new URLSearchParams({ status, limit, offset: st.offset })}`);
+  const rows = items.map((a) => `<tr><td>${userCell(a)}${a.banned ? ' ' + pill('محظور', 'red') : ''}</td><td>${a.kind === 'account' ? 'حظر الحساب' : 'قرار على محتوى'}</td><td class="cell-wrap">${esc(a.message)}</td><td>${when(a.created_at)}</td><td>${a.status === 'pending' ? btn('appeal-accept', a.id, 'قبول', 'success') + ' ' + btn('appeal-deny', a.id, 'رفض', 'danger') : pill(a.status === 'accepted' ? 'مقبول' : 'مرفوض', a.status === 'accepted' ? 'green' : 'red') + (a.review_note ? `<br><small class="muted">${esc(a.review_note)}</small>` : '')}</td></tr>`).join('');
+  shell(toolbar('اعتراضات المستخدمين', `<select class="select-small" data-filter="appeals:status" aria-label="الحالة"><option value="pending" ${status === 'pending' ? 'selected' : ''}>قيد المراجعة</option><option value="accepted" ${status === 'accepted' ? 'selected' : ''}>مقبولة</option><option value="denied" ${status === 'denied' ? 'selected' : ''}>مرفوضة</option></select>`)
+    + '<div class="notice-box">قبول اعتراض على حظر حساب يلغي الحظر تلقائياً. اعتراضات الحسابات المحظورة تصل من شاشة الدخول ولا يمكن التحقق من هوية صاحبها إلا عبر تواصل لاحق، فراجعها بحذر.</div>'
+    + (rows ? table(['المستخدم', 'النوع', 'الرسالة', 'التاريخ', 'القرار'], rows) : empty('لا توجد اعتراضات.')) + pager('appeals', total, limit));
+}
+async function alertsPage() {
+  const d = await api('/admin/alerts');
+  const m = d.metrics, t = d.thresholds;
+  const rows = d.items.map((a) => `<tr><td>${when(a.created_at)}</td><td>${pill({ error_rate: 'معدل الأخطاء', latency: 'زمن الاستجابة', backup: 'النسخ الاحتياطي' }[a.kind] || a.kind, 'amber')}</td><td class="cell-wrap">${esc(a.message)}</td></tr>`).join('');
+  shell(toolbar('التنبيهات التلقائية', pill(d.webhook ? 'Webhook مفعّل' : 'Webhook غير مُعدّ', d.webhook ? 'green' : 'amber'))
+    + `<div class="stat-grid"><div class="stat-card"><span>طلبات (آخر ${Math.round(m.windowSeconds / 60)} د)</span><b>${num(m.requests)}</b></div><div class="stat-card"><span>نسبة الأخطاء</span><b>${(m.errorRate * 100).toFixed(1)}%</b></div><div class="stat-card"><span>p50 / p95</span><b>${num(m.p50)} / ${num(m.p95)} ms</b></div><div class="stat-card"><span>حدود التنبيه</span><b>${(t.errorRate * 100).toFixed(0)}% · ${num(t.p95Ms)}ms</b></div></div>`
+    + '<div class="notice-box">تُرسل التنبيهات لمالكي الإدارة داخل التطبيق وكإشعار دفع، وإلى ALERT_WEBHOOK_URL إن وُجد، بحد أقصى تنبيه كل 30 دقيقة لكل نوع. المقاييس داخل ذاكرة العملية وتُصفَّر عند إعادة التشغيل.</div>'
+    + (rows ? table(['الوقت', 'النوع', 'الرسالة'], rows) : empty('لا توجد تنبيهات. كل شيء يعمل بشكل طبيعي.')));
 }
 
 async function errorsPage() {
@@ -413,7 +444,7 @@ async function aiPage() {
     + `<section class="panel"><div class="panel-head"><h2>الأعلى استخداماً</h2></div>${top ? table(['المستخدم', 'الطلبات', 'التوكنات'], top) : empty('—')}</section>`);
 }
 
-const PAGES = { overview, users: usersPage, posts: postsPage, stories: storiesPage, reports: reportsPage, groups: groupsPage, conversations: conversationsPage, sessions: sessionsPage, broadcast: broadcastPage, campaigns: campaignsPage, backups: backupsPage, words: wordsPage, audit: auditPage, admins: adminsPage, release: releasePage, errors: errorsPage, verifications: verificationsPage, ai: aiPage };
+const PAGES = { overview, users: usersPage, posts: postsPage, stories: storiesPage, reports: reportsPage, groups: groupsPage, conversations: conversationsPage, sessions: sessionsPage, broadcast: broadcastPage, campaigns: campaignsPage, backups: backupsPage, words: wordsPage, audit: auditPage, admins: adminsPage, release: releasePage, errors: errorsPage, verifications: verificationsPage, ai: aiPage, rlog: rlogPage, appeals: appealsPage, alerts: alertsPage };
 const reload = () => loadPage(state.page, { keepScroll: true });
 const ACTIONS = {
   'user-view': (id) => showUser(id),
@@ -439,6 +470,11 @@ const ACTIONS = {
   'verify-approve': async (id) => { if (!(await ask({ title: 'توثيق الحساب', message: 'ستظهر علامة التحقق بجانب اسم الحساب.', confirm: 'توثيق' }))) return; await post(`/admin/verifications/${id}/decide`, { approve: true }); toast('تم توثيق الحساب'); reload(); },
   'verify-reject': async (id) => { const v = await ask({ title: 'رفض طلب التوثيق', message: 'سيُرسل السبب للمستخدم.', confirm: 'رفض', danger: true, fields: [{ name: 'note', label: 'سبب الرفض', required: true }] }); if (!v) return; await post(`/admin/verifications/${id}/decide`, { approve: false, note: v.note }); toast('تم رفض الطلب'); reload(); },
   'user-verify': async (id, el) => { const on = el.dataset.on === '1'; if (!(await ask({ title: on ? 'منح علامة التحقق' : 'سحب علامة التحقق', message: on ? 'سيظهر الحساب كموثّق.' : 'ستُزال علامة التحقق من الحساب.', confirm: on ? 'منح' : 'سحب', danger: !on }))) return; await post(`/admin/verifications/user/${id}`, { verified: on }); toast('تم التحديث'); closeModal(); reload(); },
+  'backup-run': async () => { if (!(await ask({ title: 'دورة نسخ كاملة', message: 'إنشاء نسخة، فحص سلامتها، ثم رفعها خارج الخادم إن كان مُعدّاً.', confirm: 'تشغيل' }))) return; const r = await post('/admin/backups/run'); toast(r.ok ? 'اكتملت الدورة بنجاح' : 'فشلت الدورة: ' + (r.detail || ''), !r.ok); reload(); },
+  'backup-verify': async (id) => { const r = await post(`/admin/backups/${encodeURIComponent(id)}/verify`); toast(r.ok ? 'النسخة سليمة: ' + r.detail : 'النسخة غير سليمة: ' + r.detail, !r.ok); reload(); },
+  'backup-upload': async (id) => { await post(`/admin/backups/${encodeURIComponent(id)}/upload`); toast('تم الرفع والتحقق'); reload(); },
+  'appeal-accept': async (id) => { const v = await ask({ title: 'قبول الاعتراض', message: 'سيُرفع القرار ويُبلَّغ المستخدم.', confirm: 'قبول', fields: [{ name: 'note', label: 'ملاحظة للمستخدم', max: 300 }] }); if (!v) return; await post(`/admin/appeals/${id}/decide`, { accept: true, note: v.note }); toast('تم قبول الاعتراض'); reload(); },
+  'appeal-deny': async (id) => { const v = await ask({ title: 'رفض الاعتراض', message: 'سيُرسل السبب للمستخدم.', confirm: 'رفض', danger: true, fields: [{ name: 'note', label: 'سبب الرفض', required: true, max: 300 }] }); if (!v) return; await post(`/admin/appeals/${id}/decide`, { accept: false, note: v.note }); toast('تم رفض الاعتراض'); reload(); },
   go: (id) => navigate(id),
   range: (id) => { state.days = Number(id); reload(); },
   rebroadcast: (id, el) => { if (state.fillBroadcast) state.fillBroadcast(el.dataset.title, el.dataset.body); },
@@ -446,9 +482,10 @@ const ACTIONS = {
   page: (id, el) => { const st = pg(el.dataset.key); st.offset = Math.max(0, st.offset + Number(el.dataset.dir) * Number(el.dataset.limit)); reload(); window.scrollTo({ top: 0 }); },
 };
 async function settleReport(id, status, deleteContent, banUser, title, message) {
-  if (!(await ask({ title, message, confirm: title, danger: !!(deleteContent || banUser) }))) return;
+  const v = await ask({ title, message, confirm: title, danger: !!(deleteContent || banUser), fields: [{ name: 'note', label: 'ملاحظة القرار (تُحفظ في السجل)', max: 300 }] });
+  if (!v) return;
   if (banUser) await post(`/admin/users/${banUser}/ban`, { banned: true });
-  await post(`/admin/reports/${id}/resolve`, { status, delete_content: deleteContent });
+  await post(`/admin/reports/${id}/resolve`, { status, delete_content: deleteContent, banned_user: !!banUser, note: v ? v.note : '' });
   toast('تم تحديث البلاغ'); reload();
 }
 

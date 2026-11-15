@@ -111,6 +111,7 @@ app.get('/privacy', (req, res) => {
 app.use('/api', (req, res, next) => (db.isReady() || req.path === '/health' ? next() : res.status(503).json({ message: 'Server is starting, try again shortly' })));
 
 app.use('/api/auth/login', limits.login());
+app.use('/api/auth/appeal', limits.otpSend());
 app.use('/api/auth/send-otp', limits.otpSend());
 app.use('/api/auth/resend-otp', limits.otpSend());
 app.use('/api/auth/verify-otp', limits.otpVerify());
@@ -239,6 +240,8 @@ async function start() {
     process.exit(1);
   }
   require('./services/verified').start();
+  require('./services/alerts').start();
+  require('./services/backupJob').start();
   require('./services/cleanup').start();
   require('./services/digest').start();
   if (config.WHATSAPP_ENABLED) require('./services/whatsapp').start();

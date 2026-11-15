@@ -118,4 +118,35 @@ async function remove(name) {
   const { file } = await safeFile(name);
   await fsp.unlink(file);
 }
-module.exports = { list, create, restore, remove };
+
+// Integrity check without touching the live database: decrypts the whole file (GCM tag
+// authenticates every byte) and confirms the dump finished and contains the core tables.
+async function verify(name) {
+  const { c, file, stat } = await safeFile(name);
+  const handle = await fsp.open(file, 'r');
+  const header = Buffer.alloc(HEADER_SIZE);
+  const tag = Buffer.alloc(TAG_SIZE);
+  try {
+    await handle.read(header, 0, HEADER_SIZE, 0);
+    await handle.read(tag, 0, TAG_SIZE, stat.size - TAG_SIZE);
+  } finally { await handle.close(); }
+  if (!header.subarray(0, MAGIC.length).equals(MAGIC)) return { ok: false, detail: 'unknown format' };
+  const decipher = crypto.createDecipheriv('aes-256-gcm', c.key, header.subarray(MAGIC.length));
+  decipher.setAuthTag(tag);
+  let tail = '', sawUsers = false, bytes = 0;
+  try {
+    await pipeline(fs.createReadStream(file, { start: HEADER_SIZE, end: stat.size - TAG_SIZE - 1 }), decipher, async function (source) {
+      for await (const chunk of source) {
+        bytes += chunk.length;
+        const text = tail + chunk.toString('utf8');
+        if (!sawUsers && /CREATE TABLE `users`/.test(text)) sawUsers = true;
+        tail = text.slice(-400);
+      }
+    });
+  } catch (error) { return { ok: false, detail: 'decryption failed: ' + (error.message || 'bad key or corrupted file') }; }
+  if (!/Dump completed/.test(tail)) return { ok: false, detail: 'dump is incomplete (no completion marker)' };
+  if (!sawUsers) return { ok: false, detail: 'users table not found in dump' };
+  return { ok: true, detail: `decrypted ${bytes} bytes, dump complete` };
+}
+
+module.exports = { list, create, restore, remove, verify, config };

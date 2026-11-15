@@ -5,6 +5,14 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+// db.js needs mysql2 and a server; the pure helpers under test do not
+const Module = require('module');
+const origLoad = Module._load;
+Module._load = function (request, ...rest) {
+  if (request === '../db' || request.endsWith('/db')) return { query: async () => [[]] };
+  return origLoad.call(this, request, ...rest);
+};
+
 const { securityHeaders } = require('../middleware/security');
 const migrate = require('../services/migrate');
 const metrics = require('../services/metrics');
@@ -69,4 +77,33 @@ test('openapi: valid shape, every path is under /api and has a response', () => 
     assert.ok(p.startsWith('/api/'), p);
     for (const o of Object.values(item)) assert.ok(o.responses && o.summary, p);
   }
+});
+
+const alerts = require('../services/alerts');
+const offhost = require('../services/offhost');
+
+test('alerts: no alert below the minimum traffic, alerts on error rate and latency', () => {
+  const base = { windowSeconds: 300, errors: 0, errorRate: 0, p95: 100, requests: 100 };
+  assert.deepStrictEqual(alerts.evaluate({ ...base, requests: 5, errorRate: 1, p95: 9999 }), []);
+  assert.deepStrictEqual(alerts.evaluate(base), []);
+  const a = alerts.evaluate({ ...base, errors: 20, errorRate: 0.2, p95: 3000 });
+  assert.deepStrictEqual(a.map((x) => x.kind), ['error_rate', 'latency']);
+});
+
+test('alerts: cooldown suppresses repeats', () => {
+  assert.ok(alerts.shouldFire('t-' + Date.now()));
+});
+
+test('offhost: SigV4 signing key matches the AWS documentation example', () => {
+  assert.strictEqual(
+    offhost.signingKey('wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY', '20120215', 'us-east-1', 'iam').toString('hex'),
+    'f4780e2d9f65fa895f9c67b32ce1baf0b0d8a43505a000a1a9e090d414db404d');
+});
+
+test('offhost: signed headers are deterministic and well-formed', () => {
+  const args = { method: 'PUT', host: 'bucket.example.com', path: '/a/b.sdbak', region: 'auto', accessKey: 'AK', secretKey: 'SK', now: new Date('2026-01-02T03:04:05Z') };
+  const h = offhost.sign(args);
+  assert.strictEqual(h['x-amz-date'], '20260102T030405Z');
+  assert.match(h.authorization, /^AWS4-HMAC-SHA256 Credential=AK\/20260102\/auto\/s3\/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=[a-f0-9]{64}$/);
+  assert.strictEqual(offhost.sign(args).authorization, h.authorization);
 });

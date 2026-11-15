@@ -225,6 +225,23 @@ router.post('/set-name', async (req, res) => {
 });
 
 // --- Session ---
+// Suspended users cannot sign in, so account appeals are accepted from the login screen.
+// The response never reveals whether the account exists.
+router.post('/appeal', async (req, res) => {
+  try {
+    const id = String(req.body.identifier || '').trim().toLowerCase();
+    const message = String(req.body.message || '').trim().slice(0, 1000);
+    if (!id || message.length < 10) return res.status(400).json({ message: 'Email or phone and an explanation are required' });
+    const phone = normalizePhone(id);
+    const [rows] = await pool.query('SELECT id FROM users WHERE banned = 1 AND (email = ? OR phone = ?) LIMIT 1', [id, phone]);
+    if (rows.length) {
+      const [open] = await pool.query("SELECT id FROM appeals WHERE user_id = ? AND status = 'pending'", [rows[0].id]);
+      if (!open.length) await pool.query("INSERT INTO appeals (user_id, kind, message) VALUES (?, 'account', ?)", [rows[0].id, message]);
+    }
+    res.json({ success: true });
+  } catch { res.status(500).json({ message: 'Could not submit the appeal' }); }
+});
+
 router.get('/2fa', authMiddleware, async (req, res) => {
   const [r] = await pool.query('SELECT totp_enabled FROM users WHERE id = ?', [req.user.id]);
   res.json({ enabled: !!(r[0] && r[0].totp_enabled) });

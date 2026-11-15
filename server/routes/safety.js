@@ -51,6 +51,18 @@ const REASONS = ['spam', 'harassment', 'hate', 'violence', 'nudity', 'scam', 'im
 const TABLES = { user: 'users', post: 'posts', comment: 'comments', message: 'messages', story: 'stories' };
 
 // POST /api/safety/report { type, id, reason, details? }
+// POST /api/safety/appeals { message, kind? } - contest a moderation decision
+router.post('/appeals', async (req, res) => {
+  try {
+    const message = String(req.body.message || '').trim().slice(0, 1000);
+    if (message.length < 10) return res.status(400).json({ message: 'Please explain your appeal (at least 10 characters)' });
+    const [open] = await pool.query("SELECT COUNT(*) AS c FROM appeals WHERE user_id = ? AND status = 'pending'", [req.user.id]);
+    if (open[0].c >= 3) return res.status(429).json({ message: 'You already have pending appeals' });
+    await pool.query("INSERT INTO appeals (user_id, kind, message) VALUES (?, 'content', ?)", [req.user.id, message]);
+    res.status(201).json({ success: true });
+  } catch { res.status(500).json({ message: 'Could not submit the appeal' }); }
+});
+
 router.post('/report', async (req, res) => {
   try {
     const type = String(req.body.type || '');
