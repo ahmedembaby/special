@@ -27,6 +27,8 @@ export default function OTPScreen() {
   const [timer, setTimer] = useState(START);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [needTotp, setNeedTotp] = useState(false);
+  const [totp, setTotp] = useState('');
   const inputRef = useRef<any>(null);
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export default function OTPScreen() {
     if (code.length !== LENGTH) return;
     setLoading(true);
     try {
-      const res = await api.auth.verifyOTP({ phone, code });
+      const res = await api.auth.verifyOTP({ phone, code, ...(needTotp ? { totp } : {}) });
       const { token, user, userExists, registrationToken } = res.data || {};
 
       if (userExists && token) {
@@ -64,6 +66,12 @@ export default function OTPScreen() {
         setError(true);
       }
     } catch (err: any) {
+      if (err.response?.data?.twoFactorRequired) {
+        // Two-step verification: ask for the authenticator code (the SMS/WhatsApp code stays valid)
+        if (needTotp) Alert.alert('Invalid code', err.response?.data?.message || 'Check the code in your authenticator app.');
+        setNeedTotp(true);
+        return;
+      }
       setError(true);
       if (err.response?.status === 429) Alert.alert('Too many attempts', err.response?.data?.message || 'Request a new code.');
     } finally {
@@ -121,10 +129,27 @@ export default function OTPScreen() {
           />
         </TouchableOpacity>
 
+        {needTotp ? (
+          <View style={{ marginTop: 18 }}>
+            <Text style={{ color: c.text, fontSize: 14, textAlign: 'center', marginBottom: 8 }}>Two-step verification: enter the 6-digit code from your authenticator app</Text>
+            <TextInput
+              value={totp}
+              onChangeText={(v) => setTotp(v.replace(/\D/g, '').slice(0, 6))}
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
+              accessibilityLabel="Authenticator code, six digits"
+              placeholder="000000"
+              placeholderTextColor={c.textMuted}
+              style={{ borderBottomWidth: 2, borderBottomColor: c.primary, color: c.text, fontSize: 28, textAlign: 'center', letterSpacing: 6, paddingVertical: 6 }}
+            />
+          </View>
+        ) : null}
+
         {error ? <Text accessibilityRole="alert" style={[styles.error, { color: c.danger }]}>Code Invalid</Text> : <View style={{ height: 22 }} />}
 
         <View style={styles.btnWrap}>
-          <RoundArrowButton onPress={verify} disabled={code.length !== LENGTH} loading={loading} />
+          <RoundArrowButton onPress={verify} disabled={code.length !== LENGTH || (needTotp && totp.length !== 6)} loading={loading} />
         </View>
       </View>
     </KeyboardAvoidingView>

@@ -142,6 +142,10 @@ export default function ChatsScreen() {
       ) : (
         <FlatList
           data={filtered}
+          initialNumToRender={14}
+          maxToRenderPerBatch={10}
+          windowSize={9}
+          removeClippedSubviews
           ListHeaderComponent={
             search.trim().length >= 2 ? (
               <TouchableOpacity onPress={() => navigation.navigate('GlobalSearch', { q: search.trim() })} style={{ paddingHorizontal: 20, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 9 }}>

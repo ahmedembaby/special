@@ -3,6 +3,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const pool = require('../db');
 const { isParticipant } = require('../services/chat');
+const quota = require('../services/aiQuota');
 
 const router = express.Router();
 const windows = new Map();
@@ -52,9 +53,26 @@ const TASKS = {
   search_terms: 'Interpret the natural-language search request and return 3-8 short search terms or phrases as JSON array only. Do not invent people, dates, or files.',
 };
 
+// GET /api/ai/usage: today's usage against the daily quota
+router.get('/usage', async (req, res) => {
+  try {
+    const used = await quota.usageToday(req.user.id);
+    res.json({ used, limits: quota.limits(), configured: !!providerConfig() });
+  } catch { res.status(500).json({ message: 'Could not load AI usage' }); }
+});
+
+const CONTEXT_TASKS = new Set(['summarize', 'suggest_replies', 'translate', 'answer', 'moderate', 'search_terms']);
+
 router.post('/assistant', async (req, res) => {
   const userId = req.user.id;
   if (!takeQuota(userId)) return res.status(429).json({ message: 'AI usage limit reached. Try again in a minute.' });
+  // Conversation text is sent to a third-party model, so the user must explicitly agree each time.
+  if (CONTEXT_TASKS.has(String(req.body.task || '')) && req.body.consent !== true) {
+    return res.status(400).json({ message: 'Consent is required to send conversation text to the AI provider', consentRequired: true });
+  }
+  try {
+    if (quota.exceeded(await quota.usageToday(userId))) return res.status(429).json({ message: 'Daily AI limit reached. Try again tomorrow.', dailyLimit: true });
+  } catch { /* quota table unavailable: fall back to the per-minute limit only */ }
   const config = providerConfig();
   if (!config) return res.status(503).json({ message: 'AI is not configured. Set AI_API_KEY and AI_MODEL on the server.' });
   const task = String(req.body.task || '');
@@ -72,6 +90,7 @@ router.post('/assistant', async (req, res) => {
     else if (task === 'search_terms') user = 'Search request: ' + prompt + '\nConversation context:\n' + context;
     else user = 'Conversation context:\n' + context + (prompt ? '\n\nAdditional request: ' + prompt : '');
     const result = await chatCompletion(config, [{ role: 'system', content: system }, { role: 'user', content: user }]);
+    quota.record(userId, result.usage && result.usage.total_tokens).catch(() => {});
     res.json({ result: result.content, usage: result.usage, providerConfigured: true });
   } catch (error) {
     console.error('AI assistant:', error.message);
@@ -86,6 +105,7 @@ router.post('/transcribe/:messageId', async (req, res) => {
   const config = providerConfig();
   if (!config) return res.status(503).json({ message: 'AI is not configured on the server.' });
   try {
+    if (quota.exceeded(await quota.usageToday(userId))) return res.status(429).json({ message: 'Daily AI limit reached. Try again tomorrow.', dailyLimit: true });
     const [rows] = await pool.query(
       'SELECT id, conversation_id, type, file_url, file_name FROM messages WHERE id = ?',
       [req.params.messageId]
@@ -109,6 +129,7 @@ router.post('/transcribe/:messageId', async (req, res) => {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || typeof data.text !== 'string') throw Object.assign(new Error('Transcription provider failed'), { status: response.status === 429 ? 429 : 502 });
+    quota.record(userId, 0).catch(() => {});
     res.json({ text: data.text.trim() });
   } catch (error) {
     console.error('AI transcription:', error.message);

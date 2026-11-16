@@ -1,6 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const pool = require('../db');
+const kv = require('../services/kv');
 const rt = require('../services/realtime');
 const { pushToUsers } = require('../services/push');
 const { adminMiddleware, isAdminId, isAdminUser } = require('../middleware/auth');
@@ -16,6 +17,7 @@ const permissionRoles = (req) => {
   const write = req.method !== 'GET';
   if (p === '/me') return ['support', 'moderator', 'admin', 'owner'];
   if (p.startsWith('/admins') || p.startsWith('/backups')) return ['owner'];
+  if (p.startsWith('/verifications') || p.startsWith('/appeals')) return ['owner', 'admin', 'moderator'];
   if (p.startsWith('/reports') || p.startsWith('/posts') || p.startsWith('/groups') || p.startsWith('/stories') || p.startsWith('/banned-words')) return ['owner', 'admin', 'moderator'];
   if (['/stats', '/system', '/health', '/errors', '/release', '/users', '/sessions', '/conversations'].some((prefix) => p === prefix || p.startsWith(prefix + '/'))) {
     if (!write && ['support', 'moderator', 'admin', 'owner'].includes(req.adminRole)) return ['support', 'moderator', 'admin', 'owner'];
@@ -116,7 +118,7 @@ const PAGE_ROLES = {
   posts: ['moderator', 'admin', 'owner'], stories: ['moderator', 'admin', 'owner'], reports: ['moderator', 'admin', 'owner'],
   groups: ['moderator', 'admin', 'owner'], conversations: ['support', 'moderator', 'admin', 'owner'], sessions: ['support', 'moderator', 'admin', 'owner'],
   broadcast: ['admin', 'owner'], campaigns: ['admin', 'owner'], backups: ['owner'], words: ['moderator', 'admin', 'owner'],
-  audit: ['admin', 'owner'], admins: ['owner'], errors: ['support', 'moderator', 'admin', 'owner'], release: ['support', 'moderator', 'admin', 'owner'],
+  audit: ['admin', 'owner'], admins: ['owner'], errors: ['support', 'moderator', 'admin', 'owner'], verifications: ['moderator', 'admin', 'owner'], rlog: ['moderator', 'admin', 'owner'], appeals: ['moderator', 'admin', 'owner'], alerts: ['admin', 'owner'], ai: ['admin', 'owner'], release: ['support', 'moderator', 'admin', 'owner'],
 };
 router.get('/me', (req, res) => {
   res.json({
@@ -283,7 +285,7 @@ router.get('/users/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
     const [rows] = await pool.query(
-      'SELECT id, name, username, email, phone, avatar, bio, status, banned, last_seen, created_at FROM users WHERE id = ?', [id]
+      'SELECT id, name, username, email, phone, avatar, bio, status, banned, verified, last_seen, created_at FROM users WHERE id = ?', [id]
     );
     if (!rows.length) return res.status(404).json({ message: 'User not found' });
     const one = async (sql) => (await pool.query(sql, [id]))[0][0].c;
@@ -450,6 +452,12 @@ router.post('/broadcast', async (req, res) => {
   if (title.length > 120) return res.status(400).json({ message: 'Title must be 120 characters or fewer' });
   if (body.length > 1500) return res.status(400).json({ message: 'Body must be 1500 characters or fewer' });
   try {
+    // Idempotent: the console sends a requestId per form; a retry/double click returns the first result.
+    const requestId = String(req.body.requestId || '').slice(0, 64);
+    if (requestId) {
+      const prior = await kv.get('broadcast_req:' + requestId);
+      if (prior) return res.json({ ...JSON.parse(prior), duplicate: true });
+    }
     const ids = await audienceIds(req.body.audience, req.body.userIds);
     if (ids === null) return res.status(400).json({ message: 'Choose at least one valid user for a targeted announcement' });
     if (ids.length) {
@@ -489,7 +497,9 @@ router.post('/broadcast', async (req, res) => {
         data: { type: 'notification', notificationType: 'broadcast', broadcastId },
       });
     }
-    res.json({ success: true, message: `Broadcast sent to ${ids.length} users`, count: ids.length });
+    const result = { success: true, message: `Broadcast sent to ${ids.length} users`, count: ids.length };
+    if (requestId) await kv.set('broadcast_req:' + requestId, JSON.stringify(result), 600);
+    res.json(result);
   } catch (err) {
     console.error('admin broadcast:', err.message);
     res.status(500).json({ message: 'Broadcast failed' });
@@ -500,12 +510,12 @@ router.post('/broadcast', async (req, res) => {
 router.get('/broadcasts', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT broadcast_id, MAX(title) AS title, MAX(body) AS body, COUNT(*) AS recipients,
-              SUM(read_at IS NOT NULL) AS read_count, MIN(created_at) AS created_at
-       FROM notifications WHERE broadcast_id IS NOT NULL
-       GROUP BY broadcast_id ORDER BY created_at DESC LIMIT 30`
+      `SELECT n.broadcast_id, MAX(n.title) AS title, MAX(n.body) AS body, COUNT(*) AS recipients,
+              SUM(n.read_at IS NOT NULL) AS read_count, SUM(u.push_token IS NOT NULL) AS push_capable, MIN(n.created_at) AS created_at
+       FROM notifications n LEFT JOIN users u ON u.id = n.user_id WHERE n.broadcast_id IS NOT NULL
+       GROUP BY n.broadcast_id ORDER BY created_at DESC LIMIT 30`
     );
-    res.json(rows.map((r) => ({ ...r, recipients: Number(r.recipients), read_count: Number(r.read_count || 0) })));
+    res.json(rows.map((r) => ({ ...r, recipients: Number(r.recipients), read_count: Number(r.read_count || 0), push_capable: Number(r.push_capable || 0) })));
   } catch (err) {
     console.error('admin broadcasts:', err.message);
     res.status(500).json({ message: 'Could not load announcements' });
@@ -535,6 +545,62 @@ router.post('/push/test', async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Could not send test push' });
   }
+});
+
+// ---------- Report decision log + appeals ----------
+router.get('/reports-log', async (req, res) => {
+  try {
+    const { limit, offset } = pageParams(req, 30);
+    const reportId = Number(req.query.report) || null;
+    const where = reportId ? 'WHERE d.report_id = ?' : '';
+    const params = reportId ? [reportId] : [];
+    const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM report_decisions d ${where}`, params);
+    const [rows] = await pool.query(
+      `SELECT d.id, d.report_id, d.decision, d.action, d.note, d.created_at, a.name AS admin_name, a.username AS admin_username,
+              r.target_type, r.target_id, r.reason
+       FROM report_decisions d LEFT JOIN users a ON a.id = d.admin_id LEFT JOIN reports r ON r.id = d.report_id
+       ${where} ORDER BY d.id DESC LIMIT ? OFFSET ?`, [...params, limit, offset]);
+    sendList(res, rows, total);
+  } catch { res.status(500).json({ message: 'Could not load the decision log' }); }
+});
+
+router.get('/appeals', async (req, res) => {
+  try {
+    const { limit, offset } = pageParams(req, 30);
+    const status = ['pending', 'accepted', 'denied'].includes(req.query.status) ? req.query.status : 'pending';
+    const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM appeals WHERE status = ?', [status]);
+    const [rows] = await pool.query(
+      `SELECT a.id, a.user_id, a.kind, a.message, a.status, a.review_note, a.created_at, a.reviewed_at, a.decision_id,
+              u.name, u.username, u.banned
+       FROM appeals a JOIN users u ON u.id = a.user_id WHERE a.status = ? ORDER BY a.created_at DESC LIMIT ? OFFSET ?`, [status, limit, offset]);
+    sendList(res, rows.map((r) => ({ ...r, banned: !!r.banned })), total);
+  } catch { res.status(500).json({ message: 'Could not load appeals' }); }
+});
+
+router.post('/appeals/:id/decide', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const accept = req.body.accept === true;
+    const note = String(req.body.note || '').trim().slice(0, 300);
+    const [rows] = await pool.query("SELECT id, user_id, kind FROM appeals WHERE id = ? AND status = 'pending'", [id]);
+    if (!rows.length) return res.status(404).json({ message: 'Pending appeal not found' });
+    const a = rows[0];
+    if (accept && a.kind === 'account') await pool.query('UPDATE users SET banned = 0 WHERE id = ?', [a.user_id]);
+    await pool.query('UPDATE appeals SET status = ?, reviewed_by = ?, review_note = ?, reviewed_at = NOW() WHERE id = ?', [accept ? 'accepted' : 'denied', req.user.id, note || null, id]);
+    require('../services/notify').systemNotice(a.user_id,
+      accept ? 'تم قبول اعتراضك' : 'تم رفض اعتراضك',
+      note || (accept ? 'راجعنا القرار وتم تعديله لصالحك.' : 'راجعنا القرار وبقي كما هو.'), { appeal: accept ? 'accepted' : 'denied' });
+    res.json({ success: true });
+  } catch { res.status(500).json({ message: 'Could not save the appeal decision' }); }
+});
+
+// ---------- Alerts ----------
+router.get('/alerts', async (req, res) => {
+  try {
+    const alerts = require('../services/alerts');
+    const [rows] = await pool.query('SELECT id, kind, message, value, created_at FROM admin_alerts ORDER BY id DESC LIMIT 50');
+    res.json({ metrics: require('../services/metrics').snapshot(), thresholds: alerts.thresholds(), webhook: !!process.env.ALERT_WEBHOOK_URL, items: rows });
+  } catch { res.status(500).json({ message: 'Could not load alerts' }); }
 });
 
 // --- reports from users ---
@@ -600,7 +666,11 @@ router.post('/reports/:id/resolve', async (req, res) => {
         await pool.query(`DELETE FROM ${t} WHERE id = ?`, [r.target_id]);
       }
     }
-    await pool.query('UPDATE reports SET status = ? WHERE id = ?', [req.body.status === 'dismissed' ? 'dismissed' : 'resolved', r.id]);
+    const decision = req.body.status === 'dismissed' ? 'dismissed' : 'resolved';
+    await pool.query('UPDATE reports SET status = ? WHERE id = ?', [decision, r.id]);
+    const action = req.body.delete_content === true ? 'deleted_content' : (req.body.banned_user ? 'banned_user' : 'none');
+    pool.query('INSERT INTO report_decisions (report_id, admin_id, decision, action, note) VALUES (?, ?, ?, ?, ?)',
+      [r.id, req.user.id, decision, action, String(req.body.note || '').trim().slice(0, 300) || null]).catch(() => {});
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: 'Could not update report' });
@@ -622,6 +692,84 @@ router.post('/users/:id/sessions/revoke', async (req, res) => {
 });
 
 // Toggles the ban state (or sets it with { banned: true|false })
+// ---------- Verification (blue check) ----------
+router.get('/verifications', async (req, res) => {
+  try {
+    const { limit, offset } = pageParams(req, 30);
+    const status = ['pending', 'approved', 'rejected'].includes(req.query.status) ? req.query.status : null;
+    const where = status ? 'WHERE v.status = ?' : '';
+    const params = status ? [status] : [];
+    const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM verification_requests v ${where}`, params);
+    const [rows] = await pool.query(
+      `SELECT v.id, v.user_id, v.category, v.reason, v.link, v.status, v.review_note, v.created_at, v.reviewed_at,
+              u.name, u.username, u.avatar, u.verified,
+              (SELECT COUNT(*) FROM follows f WHERE f.following_id = u.id) AS followers,
+              (SELECT COUNT(*) FROM posts p WHERE p.user_id = u.id) AS posts
+       FROM verification_requests v JOIN users u ON u.id = v.user_id ${where}
+       ORDER BY (v.status = 'pending') DESC, v.created_at DESC LIMIT ? OFFSET ?`, [...params, limit, offset]);
+    sendList(res, rows, total);
+  } catch { res.status(500).json({ message: 'Could not load verification requests' }); }
+});
+
+async function setVerified(userId, value, adminId, note, requestId) {
+  await pool.query('UPDATE users SET verified = ?, verified_at = ? WHERE id = ?', [value ? 1 : 0, value ? new Date() : null, userId]);
+  require('../services/verified').set(userId, value);
+  if (requestId) {
+    await pool.query('UPDATE verification_requests SET status = ?, reviewed_by = ?, review_note = ?, reviewed_at = NOW() WHERE id = ?',
+      [value ? 'approved' : 'rejected', adminId, note || null, requestId]);
+  }
+}
+
+router.post('/verifications/:id/decide', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const approve = req.body.approve === true;
+    const note = String(req.body.note || '').trim().slice(0, 250);
+    const [rows] = await pool.query("SELECT id, user_id FROM verification_requests WHERE id = ? AND status = 'pending'", [id]);
+    if (!rows.length) return res.status(404).json({ message: 'Pending request not found' });
+    const userId = rows[0].user_id;
+    if (approve) await setVerified(userId, true, req.user.id, note, id);
+    else {
+      await pool.query("UPDATE verification_requests SET status = 'rejected', reviewed_by = ?, review_note = ?, reviewed_at = NOW() WHERE id = ?", [req.user.id, note || null, id]);
+    }
+    require('../services/notify').systemNotice(userId,
+      approve ? 'تم توثيق حسابك' : 'تعذر توثيق حسابك',
+      approve ? 'تهانينا! أصبح حسابك يحمل علامة التحقق.' : (note || 'لم نتمكن من الموافقة على طلب التوثيق هذه المرة.'),
+      { verification: approve ? 'approved' : 'rejected' });
+    res.json({ success: true });
+  } catch { res.status(500).json({ message: 'Could not save the decision' }); }
+});
+
+// Grant or remove the badge directly (no request needed)
+router.post('/verifications/user/:userId', async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+    const value = req.body.verified === true;
+    const [u] = await pool.query('SELECT id FROM users WHERE id = ?', [userId]);
+    if (!u.length) return res.status(404).json({ message: 'User not found' });
+    await setVerified(userId, value, req.user.id, null, null);
+    res.json({ success: true, verified: value });
+  } catch { res.status(500).json({ message: 'Could not update verification' }); }
+});
+
+router.get('/ai/usage', async (req, res) => {
+  try {
+    const quota = require('../services/aiQuota');
+    const [daily] = await pool.query('SELECT day, SUM(requests) AS requests, SUM(tokens) AS tokens, COUNT(*) AS users FROM ai_usage WHERE day >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY day ORDER BY day');
+    const [top] = await pool.query(
+      `SELECT a.user_id, u.name, u.username, SUM(a.requests) AS requests, SUM(a.tokens) AS tokens
+       FROM ai_usage a JOIN users u ON u.id = a.user_id WHERE a.day >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+       GROUP BY a.user_id, u.name, u.username ORDER BY tokens DESC, requests DESC LIMIT 10`);
+    const tokens = daily.reduce((n, d) => n + Number(d.tokens), 0);
+    res.json({
+      limits: quota.limits(), configured: !!(process.env.AI_API_KEY && process.env.AI_MODEL),
+      totals: { requests: daily.reduce((n, d) => n + Number(d.requests), 0), tokens, estimatedCost: quota.estimateCost(tokens), costPer1k: quota.costPer1k() },
+      daily: daily.map((d) => ({ day: d.day, requests: Number(d.requests), tokens: Number(d.tokens), users: Number(d.users) })),
+      top,
+    });
+  } catch { res.status(500).json({ message: 'Could not load AI usage' }); }
+});
+
 router.post('/users/:id/warn', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -753,8 +901,24 @@ router.delete('/campaigns/:id', async (req, res) => {
   } catch { res.status(500).json({ message: 'Could not delete campaign' }); }
 });
 router.get('/backups', async (req, res) => {
-  try { res.json(await adminBackups.list()); }
-  catch (error) { res.status(503).json({ message: error.message || 'Backups are not configured' }); }
+  try {
+    const files = await adminBackups.list();
+    let runs = [];
+    try { [runs] = await pool.query('SELECT id, kind, file, ok, detail, created_at FROM backup_runs ORDER BY id DESC LIMIT 30'); } catch { /* table missing */ }
+    res.json({ files, runs: runs.map((r) => ({ ...r, ok: !!r.ok })), offhost: require('../services/offhost').isConfigured(), autoHours: Number(process.env.BACKUP_AUTO_HOURS) || 0 });
+  } catch (error) { res.status(503).json({ message: error.message || 'Backups are not configured' }); }
+});
+router.post('/backups/run', async (req, res) => {
+  try { const r = await require('../services/backupJob').runOnce(); res.status(r.ok ? 201 : 502).json(r); }
+  catch (error) { res.status(503).json({ message: error.message || 'Backup job failed' }); }
+});
+router.post('/backups/:file/verify', async (req, res) => {
+  try { res.json(await require('../services/backupJob').verifyLocal(req.params.file)); }
+  catch (error) { res.status(503).json({ message: error.message || 'Could not verify backup' }); }
+});
+router.post('/backups/:file/upload', async (req, res) => {
+  try { await require('../services/backupJob').uploadAndCheck(req.params.file); res.json({ success: true }); }
+  catch (error) { res.status(503).json({ message: error.message || 'Could not upload backup' }); }
 });
 router.post('/backups', async (req, res) => {
   try { res.status(201).json(await adminBackups.create()); }

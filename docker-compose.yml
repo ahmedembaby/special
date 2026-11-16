@@ -1,0 +1,32 @@
+# docker compose up --build   → API on :5000 with MySQL and Redis.
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-change-me}
+      MYSQL_DATABASE: ${DB_NAME:-echat}
+    volumes: [dbdata:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${DB_PASSWORD:-change-me}"]
+      interval: 10s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+  api:
+    build: ./server
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["5000:5000"]
+    environment:
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      CLIENT_URLS: ${CLIENT_URLS:?set CLIENT_URLS}
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      DB_NAME: ${DB_NAME:-echat}
+      REDIS_URL: redis://redis:6379
+      ADMIN_PHONES: ${ADMIN_PHONES:-}
+      WHATSAPP_ENABLED: ${WHATSAPP_ENABLED:-false}
+    volumes: [uploads:/app/uploads, wa:/app/.wwebjs_auth]
+volumes: { dbdata: {}, uploads: {}, wa: {} }

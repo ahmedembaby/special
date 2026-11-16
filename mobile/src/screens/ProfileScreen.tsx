@@ -1,3 +1,4 @@
+import { VerifiedBadge } from '../components/VerifiedBadge';
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -55,7 +56,7 @@ export default function ProfileScreen() {
             <Text style={{ color: c.text, fontWeight: '800', fontSize: 14 }}>Edit profile</Text>
           </TouchableOpacity>
         </View>
-        <Text style={[styles.name, { color: c.text }]}>{me.name}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}><Text style={[styles.name, { color: c.text }]}>{me.name}</Text>{me.verified ? <VerifiedBadge size={18} /> : null}</View>
         <Text style={{ color: c.textSecondary, fontSize: 15 }}>@{me.username}</Text>
         {(user as any)?.bio ? <Text style={{ color: c.text, fontSize: 15, marginTop: 10, lineHeight: 21 }}>{(user as any).bio}</Text> : null}
         <View style={styles.metaRow}>

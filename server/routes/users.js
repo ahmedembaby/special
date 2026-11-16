@@ -217,6 +217,33 @@ router.put('/avatar', upload.avatar.single('avatar'), async (req, res) => {
   }
 });
 
+// Verification (blue check): my status and a request
+router.get('/me/verification', async (req, res) => {
+  try {
+    const [[u]] = await pool.query('SELECT verified FROM users WHERE id = ?', [req.user.id]);
+    const [rows] = await pool.query('SELECT id, status, review_note, created_at, reviewed_at FROM verification_requests WHERE user_id = ? ORDER BY id DESC LIMIT 1', [req.user.id]);
+    res.json({ verified: !!(u && u.verified), request: rows[0] || null });
+  } catch { res.status(500).json({ message: 'Could not load verification status' }); }
+});
+
+router.post('/me/verification', async (req, res) => {
+  try {
+    const category = ['person', 'creator', 'business', 'organization'].includes(req.body.category) ? req.body.category : 'person';
+    const reason = String(req.body.reason || '').trim().slice(0, 1000);
+    const link = String(req.body.link || '').trim().slice(0, 255);
+    if (reason.length < 10) return res.status(400).json({ message: 'Please explain why your account should be verified' });
+    if (link && !/^https?:\/\//i.test(link)) return res.status(400).json({ message: 'Link must start with http(s)://' });
+    const [[u]] = await pool.query('SELECT verified FROM users WHERE id = ?', [req.user.id]);
+    if (u && u.verified) return res.status(409).json({ message: 'Your account is already verified' });
+    const [open] = await pool.query("SELECT id FROM verification_requests WHERE user_id = ? AND status = 'pending'", [req.user.id]);
+    if (open.length) return res.status(409).json({ message: 'You already have a pending request' });
+    const [recent] = await pool.query("SELECT id FROM verification_requests WHERE user_id = ? AND status = 'rejected' AND reviewed_at > DATE_SUB(NOW(), INTERVAL 30 DAY)", [req.user.id]);
+    if (recent.length) return res.status(429).json({ message: 'You can submit a new request 30 days after a rejection' });
+    await pool.query('INSERT INTO verification_requests (user_id, category, reason, link) VALUES (?, ?, ?, ?)', [req.user.id, category, reason, link || null]);
+    res.status(201).json({ success: true });
+  } catch { res.status(500).json({ message: 'Could not submit the request' }); }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(

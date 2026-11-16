@@ -20,6 +20,7 @@ import { getChatName } from '../components/ChatItem';
 import { VoiceBubble, RecordingDot } from '../components/VoiceBubble';
 import { SwipeToReply } from '../components/SwipeToReply';
 import { LinkPreview, firstUrl } from '../components/LinkPreview';
+import { cacheGet, cacheSet } from '../services/cache';
 import { PollBubble } from '../components/PollBubble';
 import { enqueue, newClientId, isRetryable, outboxFor, subscribeOutbox, removeFromOutbox, retryItem, flushOutbox } from '../services/outbox';
 import { getDraft, setDraft, getTheme, saveTheme, ChatTheme, NO_THEME, WALLPAPERS, BUBBLE_COLORS, isDarkColor } from '../services/chatPrefs';
@@ -332,6 +333,8 @@ export default function ChatScreen() {
         const loaded = msgRes.data?.messages || [];
         setHasMoreMessages(msgRes.data?.hasMore || false);
         setMsgOffset(loaded.length);
+        // keep the latest messages (as served, E2EE text stays encrypted) so the chat can be read offline
+        cacheSet(`msgs:${conversationId}`, loaded.slice(-40));
         // unsent messages waiting in the offline outbox are shown at the end, marked "Not sent"
         const pending = await outboxFor(conversationId!);
         const queued = pending.map((it): api.Message => ({
@@ -356,7 +359,22 @@ export default function ChatScreen() {
         }
         api.messages.markAllRead(conversationId!).catch(() => {});
       } catch {
-        if (!cancelled) { loadedConversationRef.current = null; Alert.alert('Error', 'Could not load the conversation'); }
+        if (!cancelled) {
+          loadedConversationRef.current = null; // retry on the next focus / reconnect
+          const cached = await cacheGet<api.Message[]>(`msgs:${conversationId}`);
+          if (cached && cached.length) {
+            const pending = await outboxFor(conversationId!).catch(() => []);
+            const queued = pending.map((it): api.Message => ({
+              id: `temp_${it.clientId}`, client_id: it.clientId, conversation_id: conversationId!, sender_id: currentUserId,
+              content: it.kind === 'text' ? it.content || '' : '', type: it.kind === 'text' ? 'text' : (it.file?.type || '').startsWith('audio') ? 'voice' : 'image',
+              file_url: it.file?.uri, status: it.failed ? 'failed' : 'queued', created_at: it.createdAt,
+            }));
+            setMessages([...cached, ...queued]);
+            completed = true;
+          } else {
+            Alert.alert('Error', 'Could not load the conversation');
+          }
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -1335,6 +1353,10 @@ export default function ChatScreen() {
           <FlatList
             ref={listRef}
             data={visibleMessages}
+            initialNumToRender={18}
+            maxToRenderPerBatch={12}
+            windowSize={9}
+            removeClippedSubviews={Platform.OS === 'android'}
             onScrollToIndexFailed={() => {}}
             keyExtractor={(item, index) => String(item.id ?? index)}
             contentContainerStyle={[styles.listContent, { backgroundColor: wall }]}
@@ -1785,7 +1807,7 @@ export default function ChatScreen() {
       <OptionSheet
         visible={menu === 'mute'}
         title="Mute notifications"
-        options={[['For 1 hour', 1], ['For 1 day', 24], ['For 1 week', 168], ['Until I turn it back on', -1]].map(([label, h]) => ({ label: label as string, onPress: () => setMute(h as number) }))}
+        options={[['For 1 hour', 1], ['For 1 day', 24], ['For 1 week', 168], ['Until I turn it back on', -1], ['Mentions and replies only', -2]].map(([label, h]) => ({ label: label as string, onPress: () => setMute(h as number) }))}
         onClose={() => setMenu(null)}
       />
       <OptionSheet

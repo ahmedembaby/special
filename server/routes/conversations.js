@@ -15,7 +15,7 @@ async function loadConversations(viewerId, onlyId = null) {
   let where = 'WHERE cp.user_id = ?';
   if (onlyId) { where += ' AND c.id = ?'; params.push(onlyId); }
   const [convs] = await pool.query(
-    `SELECT c.id, c.name, c.avatar, c.type, c.group_id, c.created_by, c.created_at, cp.pinned, cp.archived, cp.muted_until, c.pinned_message_id, c.disappear_after,
+    `SELECT c.id, c.name, c.avatar, c.type, c.group_id, c.created_by, c.created_at, cp.pinned, cp.archived, cp.muted_until, cp.mentions_only, c.pinned_message_id, c.disappear_after,
        lm.content AS last_message, lm.type AS last_message_type, lm.created_at AS last_message_at, lm.sender_id AS last_message_sender_id,
        (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.sender_id <> ? AND m.status <> 'read' AND ${vis}) AS unread_count
      FROM conversations c
@@ -35,7 +35,7 @@ async function loadConversations(viewerId, onlyId = null) {
   );
   const map = {};
   for (const p of ps) (map[p.conversation_id] = map[p.conversation_id] || []).push({
-    id: p.id, name: p.name, username: p.username, avatar: p.avatar, status: p.status, last_seen: p.last_seen, public_key: p.public_key,
+    id: p.id, name: p.name, username: p.username, avatar: p.avatar, status: p.status, last_seen: p.last_seen, public_key: p.public_key, verified: require('../services/verified').isVerified(p.id),
   });
   const pinIds = convs.map((c) => c.pinned_message_id).filter(Boolean);
   const pinMap = {};
@@ -49,6 +49,7 @@ async function loadConversations(viewerId, onlyId = null) {
     pinned: !!c.pinned,
     archived: !!c.archived,
     muted: !!(c.muted_until && new Date(c.muted_until) > new Date()),
+    mentions_only: !!c.mentions_only,
     unread_count: Number(c.unread_count) || 0,
     participants: map[c.id] || [],
   }));
@@ -285,15 +286,16 @@ router.get('/:id/search', async (req, res) => {
   }
 });
 
-// PUT /api/conversations/:id/mute  { hours: number | null }  (-1 = until turned off, null/0 = unmute)
+// PUT /api/conversations/:id/mute  { hours: number | null }  (-1 = until turned off, -2 = mentions and replies only, null/0 = unmute)
 router.put('/:id/mute', async (req, res) => {
   try {
     if (!(await isParticipant(req.params.id, req.user.id))) return res.status(404).json({ message: 'Conversation not found' });
     const h = Number(req.body.hours);
     let sql = 'NULL'; const p = [];
+    const mentionsOnly = h === -2; // -2 = keep notifications but only for @mentions and replies
     if (h === -1) sql = "'2099-01-01 00:00:00'";
     else if (h > 0) { sql = 'DATE_ADD(NOW(), INTERVAL ? HOUR)'; p.push(Math.min(h, 24 * 365)); }
-    await pool.query(`UPDATE conversation_participants SET muted_until = ${sql} WHERE conversation_id = ? AND user_id = ?`, [...p, req.params.id, req.user.id]);
+    await pool.query(`UPDATE conversation_participants SET muted_until = ${sql}, mentions_only = ${mentionsOnly ? 1 : 0} WHERE conversation_id = ? AND user_id = ?`, [...p, req.params.id, req.user.id]);
     const [conv] = await loadConversations(req.user.id, req.params.id);
     res.json(conv);
   } catch (err) {
