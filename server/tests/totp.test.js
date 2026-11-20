@@ -22,3 +22,26 @@ test('totp: base32 roundtrip and secret shape', () => {
   assert.strictEqual(t.base32Encode(t.base32Decode(s)), s);
   assert.match(t.otpauthUrl(s, 'a@b.c'), /^otpauth:\/\/totp\/Special:/);
 });
+
+
+const encryption = require('../utils/totpEncryption');
+test('totp encryption: AES-256-GCM roundtrip, random nonce and authenticated tamper detection', () => {
+  const key = Buffer.alloc(32, 7);
+  const one = encryption.encrypt(RFC_SECRET, key);
+  const two = encryption.encrypt(RFC_SECRET, key);
+  assert.ok(encryption.isEncrypted(one));
+  assert.notStrictEqual(one, two, 'each encryption uses a fresh nonce');
+  assert.strictEqual(encryption.decrypt(one, key), RFC_SECRET);
+  const payload = Buffer.from(one.slice(encryption.PREFIX.length), 'base64');
+  payload[payload.length - 1] ^= 1;
+  assert.throws(() => encryption.decrypt(encryption.PREFIX + payload.toString('base64'), key));
+  assert.throws(() => encryption.decrypt(one, Buffer.alloc(32, 8)));
+});
+test('totp encryption: legacy plaintext remains readable for gradual migration', () => {
+  assert.strictEqual(encryption.decrypt(RFC_SECRET, Buffer.alloc(32, 1)), RFC_SECRET);
+  assert.strictEqual(encryption.isEncrypted(RFC_SECRET), false);
+});
+test('totp encryption: rejects missing and incorrectly sized keys', () => {
+  assert.throws(() => encryption.encrypt(RFC_SECRET, null), /required/);
+  assert.throws(() => encryption.keyFromEnv('too-short'), /32 bytes/);
+});
