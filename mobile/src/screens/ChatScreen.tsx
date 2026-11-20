@@ -700,7 +700,8 @@ export default function ChatScreen() {
     setSending(true);
     try {
       const msgId = selectedMessageForReaction.id;
-      const res = await api.messages.editMessage(msgId, text);
+      const editedWire = encryptionOn && peerKey ? e2ee.encrypt(peerKey, text) : text;
+      const res = await api.messages.editMessage(msgId, editedWire);
       setMessages((prev) => prev.map((m) => (String(m.id) === String(msgId) ? { ...m, ...res.data, reactions: m.reactions } : m)));
       closeOptions();
     } catch (err: any) {
