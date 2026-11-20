@@ -59,8 +59,16 @@ async function twoFactorGate(userId, code) {
     await kv.incr(attemptsKey, 900);
     return { status: 401, body: { message: 'Invalid verification code', twoFactorRequired: true } };
   }
+  // Atomic compare-and-set prevents two concurrent logins from reusing the same TOTP step.
+  const [updated] = await pool.query(
+    'UPDATE users SET totp_last_step = ? WHERE id = ? AND (totp_last_step IS NULL OR totp_last_step < ?)',
+    [step, userId, step]
+  );
+  if (!updated.affectedRows) {
+    await kv.incr(attemptsKey, 900);
+    return { status: 401, body: { message: 'Invalid verification code', twoFactorRequired: true } };
+  }
   await kv.del(attemptsKey);
-  await pool.query('UPDATE users SET totp_last_step = ? WHERE id = ?', [step, userId]);
   return null;
 }
 const publicUserOf = (u) => toUser({ ...u, is_admin: isAdminUser(u) });
