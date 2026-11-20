@@ -81,41 +81,47 @@ async function safeFile(name) {
   if (typeof name !== 'string' || !FILE_RE.test(name)) throw new Error('Invalid backup file name');
   const c = config();
   const file = path.join(c.dir, name);
-  const stat = await fsp.stat(file);
-  if (!stat.isFile() || stat.size < HEADER_SIZE + TAG_SIZE) throw new Error('Backup file is invalid');
+  const stat = await fsp.lstat(file);
+  if (stat.isSymbolicLink() || !stat.isFile() || stat.size < HEADER_SIZE + TAG_SIZE) throw new Error('Backup file is invalid');
   return { c, file, stat };
 }
 async function restore(name) {
-  const { c, file, stat } = await safeFile(name);
-  // Authenticate the complete GCM stream before starting mysql. Streaming an
-  // unauthenticated plaintext prefix directly to mysql could execute a corrupt backup.
-  const integrity = await verify(name);
-  if (!integrity.ok) throw new Error('Backup integrity check failed: ' + integrity.detail);
-  const handle = await fsp.open(file, 'r');
-  const header = Buffer.alloc(HEADER_SIZE);
-  const tag = Buffer.alloc(TAG_SIZE);
+  const { c, file } = await safeFile(name);
+  // Open once and authenticate/decrypt the same inode. This avoids a verify-then-reopen
+  // race where a file could be replaced after verification but before MySQL consumes it.
+  const handle = await fsp.open(file, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0));
+  let child = null;
   try {
+    const stat = await handle.stat();
+    if (!stat.isFile() || stat.size < HEADER_SIZE + TAG_SIZE) throw new Error('Backup file is invalid');
+    const integrity = await verifyHandle(handle, stat, c);
+    if (!integrity.ok) throw new Error('Backup integrity check failed: ' + integrity.detail);
+    const header = Buffer.alloc(HEADER_SIZE);
+    const tag = Buffer.alloc(TAG_SIZE);
     await handle.read(header, 0, HEADER_SIZE, 0);
     await handle.read(tag, 0, TAG_SIZE, stat.size - TAG_SIZE);
-  } finally { await handle.close(); }
-  if (!header.subarray(0, MAGIC.length).equals(MAGIC)) throw new Error('Backup format is not recognized');
-  const decipher = crypto.createDecipheriv('aes-256-gcm', c.key, header.subarray(MAGIC.length));
-  decipher.setAuthTag(tag);
-  const child = spawn('mysql', mysqlArgs(c, false), {
-    env: { ...process.env, MYSQL_PWD: c.password }, stdio: ['pipe', 'ignore', 'pipe'],
-  });
-  let stderr = '';
-  child.stderr.on('data', (chunk) => { stderr = (stderr + chunk.toString()).slice(-3000); });
-  try {
-    await Promise.all([
-      pipeline(fs.createReadStream(file, { start: HEADER_SIZE, end: stat.size - TAG_SIZE - 1 }), decipher, child.stdin),
-      waitForExit(child),
-    ]);
-  } catch (error) {
-    child.kill();
-    if (error.code === 'ENOENT') throw new Error('mysql client is not installed on this host');
-    if (stderr) throw new Error('Restore failed: ' + stderr.slice(-700));
-    throw error;
+    if (!header.subarray(0, MAGIC.length).equals(MAGIC)) throw new Error('Backup format is not recognized');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', c.key, header.subarray(MAGIC.length));
+    decipher.setAuthTag(tag);
+    child = spawn('mysql', mysqlArgs(c, false), {
+      env: { ...process.env, MYSQL_PWD: c.password }, stdio: ['pipe', 'ignore', 'pipe'],
+    });
+    let stderr = '';
+    child.stderr.on('data', (chunk) => { stderr = (stderr + chunk.toString()).slice(-3000); });
+    try {
+      await Promise.all([
+        pipeline(fs.createReadStream(null, { fd: handle.fd, autoClose: false, start: HEADER_SIZE, end: stat.size - TAG_SIZE - 1 }), decipher, child.stdin),
+        waitForExit(child),
+      ]);
+    } catch (error) {
+      child.kill();
+      if (error.code === 'ENOENT') throw new Error('mysql client is not installed on this host');
+      if (stderr) throw new Error('Restore failed: ' + stderr.slice(-700));
+      throw error;
+    }
+  } finally {
+    if (child && child.exitCode === null) child.kill();
+    await handle.close().catch(() => {});
   }
 }
 async function remove(name) {
@@ -125,21 +131,17 @@ async function remove(name) {
 
 // Integrity check without touching the live database: decrypts the whole file (GCM tag
 // authenticates every byte) and confirms the dump finished and contains the core tables.
-async function verify(name) {
-  const { c, file, stat } = await safeFile(name);
-  const handle = await fsp.open(file, 'r');
+async function verifyHandle(handle, stat, c) {
   const header = Buffer.alloc(HEADER_SIZE);
   const tag = Buffer.alloc(TAG_SIZE);
-  try {
-    await handle.read(header, 0, HEADER_SIZE, 0);
-    await handle.read(tag, 0, TAG_SIZE, stat.size - TAG_SIZE);
-  } finally { await handle.close(); }
+  await handle.read(header, 0, HEADER_SIZE, 0);
+  await handle.read(tag, 0, TAG_SIZE, stat.size - TAG_SIZE);
   if (!header.subarray(0, MAGIC.length).equals(MAGIC)) return { ok: false, detail: 'unknown format' };
   const decipher = crypto.createDecipheriv('aes-256-gcm', c.key, header.subarray(MAGIC.length));
   decipher.setAuthTag(tag);
   let tail = '', sawUsers = false, bytes = 0;
   try {
-    await pipeline(fs.createReadStream(file, { start: HEADER_SIZE, end: stat.size - TAG_SIZE - 1 }), decipher, async function (source) {
+    await pipeline(fs.createReadStream(null, { fd: handle.fd, autoClose: false, start: HEADER_SIZE, end: stat.size - TAG_SIZE - 1 }), decipher, async function (source) {
       for await (const chunk of source) {
         bytes += chunk.length;
         const text = tail + chunk.toString('utf8');
@@ -151,6 +153,15 @@ async function verify(name) {
   if (!/Dump completed/.test(tail)) return { ok: false, detail: 'dump is incomplete (no completion marker)' };
   if (!sawUsers) return { ok: false, detail: 'users table not found in dump' };
   return { ok: true, detail: `decrypted ${bytes} bytes, dump complete` };
+}
+async function verify(name) {
+  const { c, file } = await safeFile(name);
+  const handle = await fsp.open(file, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0));
+  try {
+    const stat = await handle.stat();
+    if (!stat.isFile() || stat.size < HEADER_SIZE + TAG_SIZE) return { ok: false, detail: 'backup file is invalid' };
+    return await verifyHandle(handle, stat, c);
+  } finally { await handle.close().catch(() => {}); }
 }
 
 module.exports = { list, create, restore, remove, verify, config };
