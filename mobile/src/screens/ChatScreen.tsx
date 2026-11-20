@@ -957,7 +957,8 @@ export default function ChatScreen() {
     if (!text) return Alert.alert('Write a message first', 'Type the message in the box, then choose when to send it.');
     if (when.getTime() < Date.now() + 60000) return Alert.alert('Pick a later time');
     try {
-      await api.messages.schedule(conversationId!, text, when.toISOString());
+      const scheduledWire = encryptionOn && peerKey ? e2ee.encrypt(peerKey, text) : text;
+      await api.messages.schedule(conversationId!, scheduledWire, when.toISOString());
       setInput('');
       Alert.alert('Scheduled', `Will be sent ${when.toLocaleString()}.`);
     } catch (e: any) { Alert.alert('Error', e?.response?.data?.message || 'Could not schedule'); }
