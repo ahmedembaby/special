@@ -88,6 +88,7 @@ jobs:
       DB_USER: root
       DB_PASSWORD: root
       DB_NAME: special_test_ci
+      TOTP_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
     defaults:
       run:
         working-directory: server
