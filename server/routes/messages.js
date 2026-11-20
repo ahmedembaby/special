@@ -81,8 +81,22 @@ const pushAllowedIds = (ids, kind = 'message') => pushAllowed(ids, kind);
 
 // direct conversations: no messages when either side blocked the other, or the receiver limited who can write to them
 async function requiresEncryptedDirect(conversationId, content) {
-  const [rows] = await pool.query('SELECT type FROM conversations WHERE id = ?', [conversationId]);
-  return requiresEncryption(rows[0]?.type, content);
+  const [rows] = await pool.query(
+    `SELECT c.type,
+            COUNT(DISTINCT cp.user_id) AS participant_count,
+            COUNT(DISTINCT CASE WHEN NULLIF(TRIM(u.public_key), '') IS NOT NULL THEN cp.user_id END) AS keyed_participants
+     FROM conversations c
+     LEFT JOIN conversation_participants cp ON cp.conversation_id = c.id
+     LEFT JOIN users u ON u.id = cp.user_id
+     WHERE c.id = ?
+     GROUP BY c.id, c.type`,
+    [conversationId]
+  );
+  const conversation = rows[0];
+  const keysReady = !!conversation
+    && Number(conversation.participant_count) === 2
+    && Number(conversation.keyed_participants) === 2;
+  return requiresEncryption(conversation?.type, content, keysReady);
 }
 
 async function blockedInDirect(conversationId, userId) {
