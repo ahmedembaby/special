@@ -12,7 +12,7 @@ if (REDIS_URL) {
   client.on('error', (err) => {
     if (Date.now() - lastLog > 30000) {
       lastLog = Date.now();
-      console.warn('⚠️  Redis unavailable:', err.message, '(falling back to in-memory)');
+      console.warn('⚠️  Redis unavailable:', err.message, '(shared security state will fail closed)');
     }
   });
 }

@@ -100,12 +100,21 @@ test('offhost: SigV4 signing key matches the AWS documentation example', () => {
     'f4780e2d9f65fa895f9c67b32ce1baf0b0d8a43505a000a1a9e090d414db404d');
 });
 
-test('offhost: signed headers are deterministic and well-formed', () => {
-  const args = { method: 'PUT', host: 'bucket.example.com', path: '/a/b.sdbak', region: 'auto', accessKey: 'AK', secretKey: 'SK', now: new Date('2026-01-02T03:04:05Z') };
+test('offhost: signed headers are deterministic and include object digest metadata', () => {
+  const args = { method: 'PUT', host: 'bucket.example.com', path: '/a/b.sdbak', region: 'auto', accessKey: 'AK', secretKey: 'SK', now: new Date('2026-01-02T03:04:05Z'), extraHeaders: { 'x-amz-meta-sha256': 'a'.repeat(64) } };
   const h = offhost.sign(args);
   assert.strictEqual(h['x-amz-date'], '20260102T030405Z');
-  assert.match(h.authorization, /^AWS4-HMAC-SHA256 Credential=AK\/20260102\/auto\/s3\/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=[a-f0-9]{64}$/);
+  assert.match(h.authorization, /^AWS4-HMAC-SHA256 Credential=AK\/20260102\/auto\/s3\/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date;x-amz-meta-sha256, Signature=[a-f0-9]{64}$/);
   assert.strictEqual(offhost.sign(args).authorization, h.authorization);
+  assert.notStrictEqual(offhost.sign(args).authorization, offhost.sign({ ...args, extraHeaders: { 'x-amz-meta-sha256': 'b'.repeat(64) } }).authorization);
+});
+
+test('offhost: fileDigest hashes a file without loading it all into memory', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'offhost-'));
+  const file = path.join(dir, 'backup.sdbak');
+  fs.writeFileSync(file, 'encrypted-backup');
+  assert.strictEqual(await offhost.fileDigest(file), require('crypto').createHash('sha256').update('encrypted-backup').digest('hex'));
+  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 const { mentionsUser } = require('../utils/mentionsFilter');
@@ -116,4 +125,57 @@ test('mentionsUser: whole-handle, case-insensitive, not inside emails/longer nam
   assert.ok(!mentionsUser('hi @ahmed2', 'ahmed'));
   assert.ok(mentionsUser('x @a.b!', 'a.b'));
   assert.ok(!mentionsUser('', 'ahmed') && !mentionsUser('hi', ''));
+});
+
+
+const e2ee = require('../utils/e2ee');
+test('E2EE policy: direct text is required to be ciphertext only after both keys exist', () => {
+  assert.equal(e2ee.requiresEncryption('group', 'plain text', true), false);
+  assert.equal(e2ee.requiresEncryption('direct', 'plain text', false), false);
+  assert.equal(e2ee.requiresEncryption('direct', 'plain text', true), true);
+  assert.equal(e2ee.requiresEncryption('direct', e2ee.PREFIX + 'A'.repeat(56), true), false);
+  assert.equal(e2ee.requiresEncryption('direct', 'malformed e2ee:v1:', true), true);
+});
+
+
+test('KV: configured Redis outage fails closed instead of using process-local memory', async () => {
+  const kvPath = require.resolve('../services/kv');
+  const originalLoad = Module._load;
+  try {
+    delete require.cache[kvPath];
+    Module._load = function (request, ...rest) {
+      if (request === './redis') return { client: { status: 'reconnecting' }, isReady: () => false };
+      return originalLoad.call(this, request, ...rest);
+    };
+    const kvFailClosed = require('../services/kv');
+    await assert.rejects(kvFailClosed.set('test', '1', 60), /Redis is configured but unavailable/);
+    await assert.rejects(kvFailClosed.get('test'), /Redis is configured but unavailable/);
+    await assert.rejects(kvFailClosed.incr('test', 60), /Redis is configured but unavailable/);
+    await assert.rejects(kvFailClosed.del('test'), /Redis is configured but unavailable/);
+  } finally {
+    Module._load = originalLoad;
+    delete require.cache[kvPath];
+  }
+});
+
+
+test('backups: refuses symbolic links in the backup directory', async () => {
+  const backups = require('../services/adminBackups');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'backup-safe-'));
+  const target = path.join(dir, 'target.bin');
+  const linkName = 'special-20261120T131500Z-abcdef12.sdbak';
+  const link = path.join(dir, linkName);
+  const previousDir = process.env.BACKUP_DIR;
+  const previousKey = process.env.BACKUP_ENCRYPTION_KEY;
+  try {
+    fs.writeFileSync(target, Buffer.alloc(128));
+    fs.symlinkSync(target, link);
+    process.env.BACKUP_DIR = dir;
+    process.env.BACKUP_ENCRYPTION_KEY = 'a'.repeat(64);
+    await assert.rejects(backups.verify(linkName), /invalid/);
+  } finally {
+    if (previousDir === undefined) delete process.env.BACKUP_DIR; else process.env.BACKUP_DIR = previousDir;
+    if (previousKey === undefined) delete process.env.BACKUP_ENCRYPTION_KEY; else process.env.BACKUP_ENCRYPTION_KEY = previousKey;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

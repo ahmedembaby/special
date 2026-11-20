@@ -26,7 +26,8 @@ module.exports = {
   ADMIN_IDS: (process.env.ADMIN_IDS || '').split(',').map((s) => Number(s.trim())).filter(Boolean),
   // When true the OTP is returned in the API response (development only, when WhatsApp is not linked)
   OTP_DEV_MODE: process.env.OTP_DEV_MODE === 'true' && !isProd,
-  WHATSAPP_ENABLED: process.env.WHATSAPP_ENABLED !== 'false',
+  // Browser automation is opt-in because its transitive Puppeteer stack has unresolved advisories.
+  WHATSAPP_ENABLED: process.env.WHATSAPP_ENABLED === 'true',
   CHROME_PATH: process.env.CHROME_PATH || undefined,
   // lets you open /api/whatsapp/setup from another device to scan the QR code
   WHATSAPP_SETUP_KEY: process.env.WHATSAPP_SETUP_KEY || '',

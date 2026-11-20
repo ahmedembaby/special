@@ -98,10 +98,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // One realtime connection per session
   useEffect(() => {
-    if (token) { connectSocket(token); startOutbox(); }
-    else { disconnectSocket(); stopOutbox(); }
+    if (token) {
+      connectSocket(token);
+      if (user?.id !== undefined && user?.id !== null) startOutbox(user.id);
+      else stopOutbox();
+    } else { disconnectSocket(); stopOutbox(); }
     return () => { /* kept alive across re-renders; closed on logout */ };
-  }, [token]);
+  }, [token, user?.id]);
 
   const updateUser = useCallback((patch: Partial<User>) => {
     setUser((prev) => {

@@ -100,7 +100,7 @@ app.get('/privacy', (req, res) => {
 <style>body{font-family:system-ui,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;line-height:1.6;color:#0f1419}h1{font-size:26px}h2{font-size:18px;margin-top:24px}</style></head><body>
 <h1>${name} Privacy Policy</h1><p><i>Template: have it reviewed for your country/store before publishing.</i></p>
 <h2>What we collect</h2><p>Phone number (and email if provided), name, username, profile photo, bio, the posts, comments, stories and messages you send, contacts' phone numbers only when you tap "Find friends" (used to match registered users and not stored), device push token, and technical logs.</p>
-<h2>End-to-end encrypted chats</h2><p>Text messages in one-to-one chats are encrypted on your device. We cannot read them. Media files are not end-to-end encrypted.</p>
+<h2>End-to-end encrypted chats</h2><p>Direct text messages are end-to-end encrypted only after both participants have registered encryption keys. If either participant has no key configured, direct text messages are not end-to-end encrypted. Group messages and media files are not end-to-end encrypted.</p>
 <h2>How we use it</h2><p>To run the service: deliver messages and calls, show your profile and posts to the audience you choose (private accounts), send notifications, keep the service safe and handle reports.</p>
 <h2>Sharing</h2><p>We do not sell your data. Content you post is visible to others according to your privacy settings. Push notifications use Expo's push service. Verification codes may be sent through WhatsApp.</p>
 <h2>Your controls</h2><p>You can make your account private, block and report users, download your data and delete your account from Settings. Deleting removes your profile and content.</p>

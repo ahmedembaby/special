@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
+import { CommonActions } from '@react-navigation/native';
 import { navigationRef } from '../navigation/ref';
 import { syncPushToken } from '../services/notifications';
 
@@ -8,7 +9,7 @@ type PushData = Record<string, any> | undefined;
 /** Maps the data of a received push to a screen. Calls are handled by their own contexts. */
 const routeFor = (data: PushData): (() => void) | null => {
   if (!data || data.type === 'call' || data.type === 'group_call') return null;
-  const go = (name: string, params?: any) => () => navigationRef.navigate(name as never, params as never);
+  const go = (name: string, params?: any) => () => navigationRef.dispatch(CommonActions.navigate(name, params));
   const openChat = (conversationId: any) => go('Messages', { screen: 'Chat', params: { conversationId } });
 
   if (data.type === 'notification') {

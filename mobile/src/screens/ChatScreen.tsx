@@ -583,8 +583,10 @@ export default function ChatScreen() {
     setDraft(conversationId!, '');
     emitTyping(conversationId!, false);
 
-    const wire = content;
+    // Encrypt direct-chat text whenever both device keys are available; queued retries keep ciphertext.
+    let wire = content;
     try {
+      if (encryptionOn && peerKey) wire = e2ee.encrypt(peerKey, content);
       const res = await api.messages.send({ conversation_id: conversationId!, content: wire, reply_to: replying?.id, client_id: clientId });
       setMessages((prev) => {
         // the socket echo may already have added the real message: keep a single copy
@@ -699,7 +701,8 @@ export default function ChatScreen() {
     setSending(true);
     try {
       const msgId = selectedMessageForReaction.id;
-      const res = await api.messages.editMessage(msgId, text);
+      const editedWire = encryptionOn && peerKey ? e2ee.encrypt(peerKey, text) : text;
+      const res = await api.messages.editMessage(msgId, editedWire);
       setMessages((prev) => prev.map((m) => (String(m.id) === String(msgId) ? { ...m, ...res.data, reactions: m.reactions } : m)));
       closeOptions();
     } catch (err: any) {
@@ -854,7 +857,20 @@ export default function ChatScreen() {
         let content: string | undefined;
         if (msg.type === 'text' || !msg.type) {
           const plain = textOf(msg);
-          content = plain;
+          if (e2ee.isEncrypted(msg.content) && plain.startsWith('🔒 Message can\'t be decrypted')) {
+            throw new Error('This encrypted message cannot be decrypted on this device');
+          }
+          if (target.type === 'direct') {
+            const recipient = target.participants?.find((participant) => String(participant.id) !== String(currentUserId));
+            if (recipient?.public_key) {
+              if (!myKey) throw new Error('Your encryption key is not ready');
+              content = e2ee.encrypt(recipient.public_key, plain);
+            } else {
+              content = plain;
+            }
+          } else {
+            content = plain;
+          }
         }
         await api.messages.forward(msg.id, [{ conversation_id: target.id, content }]);
         sent += 1;
@@ -956,7 +972,8 @@ export default function ChatScreen() {
     if (!text) return Alert.alert('Write a message first', 'Type the message in the box, then choose when to send it.');
     if (when.getTime() < Date.now() + 60000) return Alert.alert('Pick a later time');
     try {
-      await api.messages.schedule(conversationId!, text, when.toISOString());
+      const scheduledWire = encryptionOn && peerKey ? e2ee.encrypt(peerKey, text) : text;
+      await api.messages.schedule(conversationId!, scheduledWire, when.toISOString());
       setInput('');
       Alert.alert('Scheduled', `Will be sent ${when.toLocaleString()}.`);
     } catch (e: any) { Alert.alert('Error', e?.response?.data?.message || 'Could not schedule'); }

@@ -11,6 +11,7 @@ const { authMiddleware, adminMiddleware, getToken, isAdminUser } = require('../m
 const { JWT_SECRET, JWT_EXPIRES_IN, OTP_DEV_MODE, isProd } = require('../config');
 const { toUser, normalizePhone } = require('../utils/format');
 const totpLib = require('../utils/totp');
+const totpEncryption = require('../utils/totpEncryption');
 const { systemNotice } = require('../services/notify');
 const { generateUsername } = require('../utils/username');
 
@@ -54,13 +55,26 @@ async function twoFactorGate(userId, code) {
   if (!code) return { status: 401, body: { message: 'Two-step verification code required', twoFactorRequired: true } };
   const attemptsKey = `totp_attempts:${userId}`;
   if ((Number(await kv.get(attemptsKey)) || 0) >= 5) return { status: 429, body: { message: 'Too many attempts. Try again in 15 minutes.' } };
-  const step = totpLib.verify(u.totp_secret, code);
+  const secret = totpEncryption.decrypt(u.totp_secret);
+  const step = totpLib.verify(secret, code);
   if (step === null || (u.totp_last_step !== null && step <= Number(u.totp_last_step))) {
     await kv.incr(attemptsKey, 900);
     return { status: 401, body: { message: 'Invalid verification code', twoFactorRequired: true } };
   }
+  // Atomic compare-and-set prevents two concurrent logins from reusing the same TOTP step.
+  const storedSecret = u.totp_secret;
+  const nextSecret = totpEncryption.isEncrypted(storedSecret) || !totpEncryption.keyFromEnv()
+    ? storedSecret
+    : totpEncryption.encrypt(secret);
+  const [updated] = await pool.query(
+    'UPDATE users SET totp_last_step = ?, totp_secret = ? WHERE id = ? AND (totp_last_step IS NULL OR totp_last_step < ?) AND totp_secret = ?',
+    [step, nextSecret, userId, step, storedSecret]
+  );
+  if (!updated.affectedRows) {
+    await kv.incr(attemptsKey, 900);
+    return { status: 401, body: { message: 'Invalid verification code', twoFactorRequired: true } };
+  }
   await kv.del(attemptsKey);
-  await pool.query('UPDATE users SET totp_last_step = ? WHERE id = ?', [step, userId]);
   return null;
 }
 const publicUserOf = (u) => toUser({ ...u, is_admin: isAdminUser(u) });
@@ -251,7 +265,8 @@ router.post('/2fa/setup', authMiddleware, async (req, res) => {
     const [r] = await pool.query('SELECT email, phone, username, totp_enabled FROM users WHERE id = ?', [req.user.id]);
     if (r[0] && r[0].totp_enabled) return res.status(409).json({ message: 'Two-step verification is already enabled' });
     const secret = totpLib.generateSecret();
-    await pool.query('UPDATE users SET totp_secret = ?, totp_enabled = 0, totp_last_step = NULL WHERE id = ?', [secret, req.user.id]);
+    const encryptedSecret = totpEncryption.encrypt(secret);
+    await pool.query('UPDATE users SET totp_secret = ?, totp_enabled = 0, totp_last_step = NULL WHERE id = ?', [encryptedSecret, req.user.id]);
     const account = (r[0] && (r[0].email || r[0].phone || r[0].username)) || `user${req.user.id}`;
     res.json({ secret, otpauthUrl: totpLib.otpauthUrl(secret, account) });
   } catch { res.status(500).json({ message: 'Could not start setup' }); }
@@ -260,7 +275,8 @@ router.post('/2fa/enable', authMiddleware, async (req, res) => {
   try {
     const [r] = await pool.query('SELECT totp_secret FROM users WHERE id = ?', [req.user.id]);
     if (!r[0] || !r[0].totp_secret) return res.status(400).json({ message: 'Start setup first' });
-    const step = totpLib.verify(r[0].totp_secret, req.body.code);
+    const secret = totpEncryption.decrypt(r[0].totp_secret);
+    const step = totpLib.verify(secret, req.body.code);
     if (step === null) return res.status(400).json({ message: 'Invalid verification code' });
     await pool.query('UPDATE users SET totp_enabled = 1, totp_last_step = ? WHERE id = ?', [step, req.user.id]);
     await systemNotice(req.user.id, 'تم تفعيل التحقق بخطوتين', 'سيُطلب منك رمز التطبيق عند كل تسجيل دخول جديد.', { security: '2fa_enabled' });
@@ -271,7 +287,7 @@ router.post('/2fa/disable', authMiddleware, async (req, res) => {
   try {
     const [r] = await pool.query('SELECT totp_secret, totp_enabled FROM users WHERE id = ?', [req.user.id]);
     if (!r[0] || !r[0].totp_enabled) return res.json({ enabled: false });
-    if (totpLib.verify(r[0].totp_secret, req.body.code) === null) return res.status(400).json({ message: 'Invalid verification code' });
+    if (totpLib.verify(totpEncryption.decrypt(r[0].totp_secret), req.body.code) === null) return res.status(400).json({ message: 'Invalid verification code' });
     await pool.query('UPDATE users SET totp_enabled = 0, totp_secret = NULL, totp_last_step = NULL WHERE id = ?', [req.user.id]);
     await systemNotice(req.user.id, 'تم إيقاف التحقق بخطوتين', 'إن لم تكن أنت من فعل ذلك فغيّر طريقة الدخول فوراً.', { security: '2fa_disabled' });
     res.json({ enabled: false });

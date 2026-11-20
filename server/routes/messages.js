@@ -81,8 +81,22 @@ const pushAllowedIds = (ids, kind = 'message') => pushAllowed(ids, kind);
 
 // direct conversations: no messages when either side blocked the other, or the receiver limited who can write to them
 async function requiresEncryptedDirect(conversationId, content) {
-  const [rows] = await pool.query('SELECT type FROM conversations WHERE id = ?', [conversationId]);
-  return requiresEncryption(rows[0]?.type, content);
+  const [rows] = await pool.query(
+    `SELECT c.type,
+            COUNT(DISTINCT cp.user_id) AS participant_count,
+            COUNT(DISTINCT CASE WHEN NULLIF(TRIM(u.public_key), '') IS NOT NULL THEN cp.user_id END) AS keyed_participants
+     FROM conversations c
+     LEFT JOIN conversation_participants cp ON cp.conversation_id = c.id
+     LEFT JOIN users u ON u.id = cp.user_id
+     WHERE c.id = ?
+     GROUP BY c.id, c.type`,
+    [conversationId]
+  );
+  const conversation = rows[0];
+  const keysReady = !!conversation
+    && Number(conversation.participant_count) === 2
+    && Number(conversation.keyed_participants) === 2;
+  return requiresEncryption(conversation?.type, content, keysReady);
 }
 
 async function blockedInDirect(conversationId, userId) {
@@ -145,7 +159,7 @@ router.post('/', async (req, res) => {
     const clientId = cleanClientId(req.body.client_id);
     if (clientId) {
       const dup = await existingByClient(req.user.id, clientId);
-      if (dup) { await fs.unlink(req.file.path).catch(() => {}); return res.status(200).json(dup); }
+      if (dup) { if (req.file?.path) await fs.unlink(req.file.path).catch(() => {}); return res.status(200).json(dup); }
     }
     let r;
     try {
@@ -225,7 +239,12 @@ router.post('/upload', async (req, res, next) => {
 
 // Loads a message the caller may access (is a participant of its conversation)
 async function accessibleMessage(messageId, userId) {
-  const [rows] = await pool.query('SELECT id, conversation_id, sender_id, type, status FROM messages WHERE id = ?', [messageId]);
+  const [rows] = await pool.query(
+    `SELECT m.id, m.conversation_id, m.sender_id, m.type, m.status
+     FROM messages m
+     WHERE m.id = ? AND ${visible('m')}`,
+    [messageId, userId]
+  );
   const m = rows[0];
   if (!m) return { error: 404 };
   if (!(await isParticipant(m.conversation_id, userId))) return { error: 403 };
@@ -536,7 +555,13 @@ router.post('/:id/open', async (req, res) => {
     if (!m || !m.view_once) return res.status(400).json({ message: 'Not a view-once message' });
     if (m.sender_id === req.user.id) return res.status(403).json({ message: 'You cannot open your own view-once photo' });
     if (m.opened_at || !m.file_url) return res.status(410).json({ message: 'Already opened' });
-    await pool.query('UPDATE messages SET opened_at = NOW() WHERE id = ? AND opened_at IS NULL', [message.id]);
+    // Claim the one-time open atomically. A prior read followed by an unconditional
+    // response allowed two concurrent requests to receive the same private file URL.
+    const [claimed] = await pool.query(
+      'UPDATE messages SET opened_at = NOW() WHERE id = ? AND view_once = 1 AND opened_at IS NULL AND file_url IS NOT NULL',
+      [message.id]
+    );
+    if (!claimed.affectedRows) return res.status(410).json({ message: 'Already opened' });
     rt.emitToConversation(message.conversation_id, 'message_edited', await getMessage(message.id, req.user.id));
     res.json({ file_url: m.file_url });
   } catch (err) {
@@ -634,8 +659,9 @@ router.post('/:id/forward', async (req, res) => {
   try {
     const { message, error } = await accessibleMessage(req.params.id, req.user.id);
     if (error) return fail(res, error);
-    const [rows] = await pool.query('SELECT content, type, file_url, file_name, file_size, voice_duration, voice_waveform FROM messages WHERE id = ?', [message.id]);
+    const [rows] = await pool.query('SELECT content, type, file_url, file_name, file_size, voice_duration, voice_waveform, view_once FROM messages WHERE id = ?', [message.id]);
     const src = rows[0];
+    if (src.view_once) return res.status(403).json({ message: 'View-once media cannot be forwarded' });
     const targets = (Array.isArray(req.body.targets) ? req.body.targets : []).slice(0, 10);
     if (!targets.length) return res.status(400).json({ message: 'No target conversations' });
     const prepared = [];

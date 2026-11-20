@@ -708,17 +708,19 @@ async function initDatabase() {
     try {
       validateIdentifier(DB_NAME, 'database name');
 
-      // Create database if it does not exist
-      boot = await mysql.createConnection(baseConfig);
-
-      await boot.query(
-        `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`
-         CHARACTER SET utf8mb4
-         COLLATE utf8mb4_unicode_ci`
-      );
-
-      await boot.end();
-      boot = null;
+      // Database containers (and managed database services) should provision the
+      // database separately so the runtime account does not need global CREATE privileges.
+      // Keep auto-creation enabled by default for existing self-hosted installations.
+      if (process.env.DB_AUTO_CREATE_DATABASE !== 'false') {
+        boot = await mysql.createConnection(baseConfig);
+        await boot.query(
+          `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`
+           CHARACTER SET utf8mb4
+           COLLATE utf8mb4_unicode_ci`
+        );
+        await boot.end();
+        boot = null;
+      }
 
       // Create connection pool
       newPool = mysql.createPool({

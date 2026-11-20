@@ -77,6 +77,7 @@ export interface Me {
   name: string;
   username: string;
   avatar?: string | null;
+  verified?: boolean;
 }
 
 
@@ -86,12 +87,13 @@ export const makeUsername = (name?: string, id?: string | number) => {
 };
 
 export const toMe = (
-  u: { id?: string | number; name?: string; username?: string | null; avatar?: string | null } | null | undefined
+  u: { id?: string | number; name?: string; username?: string | null; avatar?: string | null; verified?: boolean } | null | undefined
 ): Me => ({
   id: String(u?.id ?? 'me'),
   name: u?.name || 'Me',
   username: u?.username || makeUsername(u?.name, u?.id),
   avatar: u?.avatar,
+  verified: !!u?.verified,
 });
 
 export const TRENDING = [

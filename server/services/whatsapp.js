@@ -143,7 +143,7 @@ const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeo
  */
 async function sendOTP(phoneNumber, code) {
   if (!client || status !== STATUS.READY) {
-    console.log(`WhatsApp not ready (${status}). OTP for ${phoneNumber}: ${code}`);
+    console.warn(`WhatsApp not ready (${status}); OTP delivery skipped for destination ending ${String(phoneNumber).replace(/\D/g, '').slice(-2) || '**'}`);
     return { success: false, code: 'NOT_READY', message: 'WhatsApp is not connected. Open /api/whatsapp/setup and scan the QR code.' };
   }
   const digits = String(phoneNumber).replace(/\D/g, '');

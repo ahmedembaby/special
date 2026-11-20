@@ -13,9 +13,9 @@ const fail = (message) => require('./alerts').fire({ kind: 'backup', value: null
 async function uploadAndCheck(name) {
   const cfg = backups.config();
   const full = path.join(cfg.dir, name);
-  const { size } = await offhost.upload(full, name);
-  await log('upload', name, true, `${size} bytes`);
-  const c = await offhost.check(name, size);
+  const { size, sha256 } = await offhost.upload(full, name);
+  await log('upload', name, true, `${size} bytes; sha256 ${sha256}`);
+  const c = await offhost.check(name, size, sha256);
   await log('verify', name, c.ok, 'off-host: ' + c.detail);
   if (!c.ok) throw new Error('off-host check failed: ' + c.detail);
 }
@@ -35,11 +35,12 @@ async function runOnce() {
     await log('create', name, true, `${made.size} bytes`);
   } catch (e) { await log('create', null, false, e.message); await fail('فشل إنشاء النسخة الاحتياطية: ' + e.message); return { ok: false, step: 'create', detail: e.message }; }
   const v = await verifyLocal(name);
+  if (!v.ok) return { ok: false, step: 'verify', detail: v.detail, name };
   if (offhost.isConfigured()) {
     try { await uploadAndCheck(name); } catch (e) { await log('upload', name, false, e.message); await fail('فشل رفع النسخة خارج الخادم: ' + e.message); return { ok: false, step: 'upload', detail: e.message, name }; }
   }
   await prune().catch(() => {});
-  return { ok: v.ok, name, detail: v.detail, offhost: offhost.isConfigured() };
+  return { ok: true, name, detail: v.detail, offhost: offhost.isConfigured() };
 }
 
 async function prune() {

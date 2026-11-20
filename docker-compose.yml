@@ -1,30 +1,40 @@
 # docker compose up --build   → API on :5000 with MySQL and Redis.
+# The API uses a database-scoped account; DB_ROOT_PASSWORD is only for MySQL bootstrap/admin.
 services:
   db:
     image: mysql:8.4
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-change-me}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME:-echat}
+      MYSQL_USER: special_app
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
     volumes: [dbdata:/var/lib/mysql]
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${DB_PASSWORD:-change-me}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${DB_ROOT_PASSWORD}"]
       interval: 10s
       retries: 10
   redis:
     image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
   api:
     build: ./server
     depends_on:
       db: { condition: service_healthy }
+      redis: { condition: service_healthy }
     ports: ["5000:5000"]
     environment:
       NODE_ENV: production
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
       CLIENT_URLS: ${CLIENT_URLS:?set CLIENT_URLS}
       DB_HOST: db
-      DB_USER: root
-      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      DB_USER: special_app
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
       DB_NAME: ${DB_NAME:-echat}
+      DB_AUTO_CREATE_DATABASE: "false"
       REDIS_URL: redis://redis:6379
       ADMIN_PHONES: ${ADMIN_PHONES:-}
       WHATSAPP_ENABLED: ${WHATSAPP_ENABLED:-false}
