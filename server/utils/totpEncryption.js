@@ -9,6 +9,8 @@ function keyFromEnv(value = process.env.TOTP_ENCRYPTION_KEY) {
   if (/^[a-f0-9]{64}$/i.test(raw)) key = Buffer.from(raw, 'hex');
   else {
     try { key = Buffer.from(raw, 'base64'); } catch { key = null; }
+    const normalized = raw.replace(/=+$/, '');
+    if (!key || key.toString('base64').replace(/=+$/, '') !== normalized) key = null;
   }
   if (!key || key.length !== 32) throw new Error('TOTP_ENCRYPTION_KEY must be exactly 32 bytes (64 hex characters or base64)');
   return key;
