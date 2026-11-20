@@ -136,3 +136,24 @@ test('E2EE policy: direct text is required to be ciphertext only after both keys
   assert.equal(e2ee.requiresEncryption('direct', e2ee.PREFIX + 'A'.repeat(56), true), false);
   assert.equal(e2ee.requiresEncryption('direct', 'malformed e2ee:v1:', true), true);
 });
+
+
+test('KV: configured Redis outage fails closed instead of using process-local memory', async () => {
+  const kvPath = require.resolve('../services/kv');
+  const originalLoad = Module._load;
+  try {
+    delete require.cache[kvPath];
+    Module._load = function (request, ...rest) {
+      if (request === './redis') return { client: { status: 'reconnecting' }, isReady: () => false };
+      return originalLoad.call(this, request, ...rest);
+    };
+    const kvFailClosed = require('../services/kv');
+    await assert.rejects(kvFailClosed.set('test', '1', 60), /Redis is configured but unavailable/);
+    await assert.rejects(kvFailClosed.get('test'), /Redis is configured but unavailable/);
+    await assert.rejects(kvFailClosed.incr('test', 60), /Redis is configured but unavailable/);
+    await assert.rejects(kvFailClosed.del('test'), /Redis is configured but unavailable/);
+  } finally {
+    Module._load = originalLoad;
+    delete require.cache[kvPath];
+  }
+});
