@@ -87,6 +87,10 @@ async function safeFile(name) {
 }
 async function restore(name) {
   const { c, file, stat } = await safeFile(name);
+  // Authenticate the complete GCM stream before starting mysql. Streaming an
+  // unauthenticated plaintext prefix directly to mysql could execute a corrupt backup.
+  const integrity = await verify(name);
+  if (!integrity.ok) throw new Error('Backup integrity check failed: ' + integrity.detail);
   const handle = await fsp.open(file, 'r');
   const header = Buffer.alloc(HEADER_SIZE);
   const tag = Buffer.alloc(TAG_SIZE);
