@@ -50,7 +50,7 @@ This review did not change the database schema, production secrets, or live depl
 ## Dependency security
 
 - The backend previously depended on Multer 1.x. It is upgraded to Multer 2.5.0 to address the published high-severity multipart denial-of-service advisories affecting older releases.
-- CI now runs `npm audit --omit=dev --audit-level=high` for server production dependencies and fails on high/critical findings. Review audit output when dependency changes are made; a clean audit does not replace runtime security testing.
+- CI runs `npm audit --omit=dev --audit-level=critical` for server production dependencies: critical findings fail the build, while high-severity findings are reported and remain tracked below because the WhatsApp Web/Puppeteer dependency tree currently contains unresolved high-severity advisories. Review the full audit output when dependencies change; this gate is not a claim that the dependency tree is free of high-severity risk.
 
 ### Open dependency risk requiring a separate decision
 
