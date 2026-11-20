@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs/promises');
 const path = require('path');
 const pool = require('../db');
-const { isParticipant } = require('../services/chat');
+const { isParticipant, visible } = require('../services/chat');
 const quota = require('../services/aiQuota');
 
 const router = express.Router();
@@ -107,8 +107,10 @@ router.post('/transcribe/:messageId', async (req, res) => {
   try {
     if (quota.exceeded(await quota.usageToday(userId))) return res.status(429).json({ message: 'Daily AI limit reached. Try again tomorrow.', dailyLimit: true });
     const [rows] = await pool.query(
-      'SELECT id, conversation_id, type, file_url, file_name FROM messages WHERE id = ?',
-      [req.params.messageId]
+      `SELECT m.id, m.conversation_id, m.type, m.file_url, m.file_name
+       FROM messages m
+       WHERE m.id = ? AND ${visible('m')} AND COALESCE(m.view_once, 0) = 0`,
+      [req.params.messageId, userId]
     );
     const message = rows[0];
     if (!message || !(await isParticipant(message.conversation_id, userId))) return res.status(404).json({ message: 'Message not found' });
