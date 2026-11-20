@@ -6,9 +6,9 @@ Reviewed against the repository state on 2026-11-13. This is a source review, no
 
 ### 1. Direct-message encryption is optional, not guaranteed
 
-The reviewed client previously fell back to plaintext when either peer key was unavailable, and the server accepted plaintext on direct message, edit, schedule and forward routes. The current change makes the client fail closed for direct text, validates the E2EE envelope on the server for send/edit/schedule/forward, and disables direct-chat polls until structured-message encryption exists. Historical plaintext messages remain plaintext; this does not retroactively encrypt them.
+The mobile client encrypts direct text when both participants have registered public keys. The server now independently counts the two participants and requires a valid E2EE envelope on send, edit, schedule and forward routes once both keys exist; direct-chat polls are disabled under that same condition because structured-message encryption is not implemented. If either participant has no key registered, direct text remains plaintext for compatibility and must not be described as E2EE. Historical plaintext messages remain plaintext; this does not retroactively encrypt them.
 
-The strict fail-closed policy is implemented for direct text routes. Remaining work before claiming production-grade E2EE includes key authenticity and key-change handling, multi-device key management, backup KDF review, cryptographic test vectors, and integration tests against staging MySQL.
+This is a conditional downgrade-resistant policy after both keys are registered, not universal E2EE. Remaining work before claiming production-grade E2EE includes key authenticity and key-change handling, multi-device key management, backup KDF review, cryptographic test vectors, group encryption, media encryption, and integration tests against staging MySQL.
 
 Also review public-key authenticity and key-change handling, multi-device behavior, backup KDF strength, recovery, and downgrade resistance. Do not rely on a client-only badge as proof of encryption.
 
