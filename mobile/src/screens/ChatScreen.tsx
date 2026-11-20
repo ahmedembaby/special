@@ -584,8 +584,9 @@ export default function ChatScreen() {
     emitTyping(conversationId!, false);
 
     // Encrypt direct-chat text whenever both device keys are available; queued retries keep ciphertext.
-    const wire = encryptionOn && peerKey ? e2ee.encrypt(peerKey, content) : content;
+    let wire = content;
     try {
+      if (encryptionOn && peerKey) wire = e2ee.encrypt(peerKey, content);
       const res = await api.messages.send({ conversation_id: conversationId!, content: wire, reply_to: replying?.id, client_id: clientId });
       setMessages((prev) => {
         // the socket echo may already have added the real message: keep a single copy
