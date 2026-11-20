@@ -536,7 +536,13 @@ router.post('/:id/open', async (req, res) => {
     if (!m || !m.view_once) return res.status(400).json({ message: 'Not a view-once message' });
     if (m.sender_id === req.user.id) return res.status(403).json({ message: 'You cannot open your own view-once photo' });
     if (m.opened_at || !m.file_url) return res.status(410).json({ message: 'Already opened' });
-    await pool.query('UPDATE messages SET opened_at = NOW() WHERE id = ? AND opened_at IS NULL', [message.id]);
+    // Claim the one-time open atomically. A prior read followed by an unconditional
+    // response allowed two concurrent requests to receive the same private file URL.
+    const [claimed] = await pool.query(
+      'UPDATE messages SET opened_at = NOW() WHERE id = ? AND view_once = 1 AND opened_at IS NULL AND file_url IS NOT NULL',
+      [message.id]
+    );
+    if (!claimed.affectedRows) return res.status(410).json({ message: 'Already opened' });
     rt.emitToConversation(message.conversation_id, 'message_edited', await getMessage(message.id, req.user.id));
     res.json({ file_url: m.file_url });
   } catch (err) {
