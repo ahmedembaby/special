@@ -120,6 +120,9 @@ export const flushOutbox = async () => {
     }
   } finally {
     flushing = false;
+    // If the account changed while a request was in flight, let the new account's
+    // isolated queue start as soon as the old request settles.
+    if (activeOwnerId && activeOwnerId !== ownerAtStart) scheduleRetry(0);
   }
 };
 
