@@ -583,7 +583,8 @@ export default function ChatScreen() {
     setDraft(conversationId!, '');
     emitTyping(conversationId!, false);
 
-    const wire = content;
+    // Encrypt direct-chat text whenever both device keys are available; queued retries keep ciphertext.
+    const wire = encryptionOn && peerKey ? e2ee.encrypt(peerKey, content) : content;
     try {
       const res = await api.messages.send({ conversation_id: conversationId!, content: wire, reply_to: replying?.id, client_id: clientId });
       setMessages((prev) => {
