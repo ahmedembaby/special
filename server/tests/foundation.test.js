@@ -126,3 +126,13 @@ test('mentionsUser: whole-handle, case-insensitive, not inside emails/longer nam
   assert.ok(mentionsUser('x @a.b!', 'a.b'));
   assert.ok(!mentionsUser('', 'ahmed') && !mentionsUser('hi', ''));
 });
+
+
+const e2ee = require('../utils/e2ee');
+test('E2EE policy: direct text is required to be ciphertext only after both keys exist', () => {
+  assert.equal(e2ee.requiresEncryption('group', 'plain text', true), false);
+  assert.equal(e2ee.requiresEncryption('direct', 'plain text', false), false);
+  assert.equal(e2ee.requiresEncryption('direct', 'plain text', true), true);
+  assert.equal(e2ee.requiresEncryption('direct', e2ee.PREFIX + 'A'.repeat(56), true), false);
+  assert.equal(e2ee.requiresEncryption('direct', 'malformed e2ee:v1:', true), true);
+});
