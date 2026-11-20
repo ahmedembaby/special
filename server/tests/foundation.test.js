@@ -100,12 +100,21 @@ test('offhost: SigV4 signing key matches the AWS documentation example', () => {
     'f4780e2d9f65fa895f9c67b32ce1baf0b0d8a43505a000a1a9e090d414db404d');
 });
 
-test('offhost: signed headers are deterministic and well-formed', () => {
-  const args = { method: 'PUT', host: 'bucket.example.com', path: '/a/b.sdbak', region: 'auto', accessKey: 'AK', secretKey: 'SK', now: new Date('2026-01-02T03:04:05Z') };
+test('offhost: signed headers are deterministic and include object digest metadata', () => {
+  const args = { method: 'PUT', host: 'bucket.example.com', path: '/a/b.sdbak', region: 'auto', accessKey: 'AK', secretKey: 'SK', now: new Date('2026-01-02T03:04:05Z'), extraHeaders: { 'x-amz-meta-sha256': 'a'.repeat(64) } };
   const h = offhost.sign(args);
   assert.strictEqual(h['x-amz-date'], '20260102T030405Z');
-  assert.match(h.authorization, /^AWS4-HMAC-SHA256 Credential=AK\/20260102\/auto\/s3\/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=[a-f0-9]{64}$/);
+  assert.match(h.authorization, /^AWS4-HMAC-SHA256 Credential=AK\/20260102\/auto\/s3\/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date;x-amz-meta-sha256, Signature=[a-f0-9]{64}$/);
   assert.strictEqual(offhost.sign(args).authorization, h.authorization);
+  assert.notStrictEqual(offhost.sign(args).authorization, offhost.sign({ ...args, extraHeaders: { 'x-amz-meta-sha256': 'b'.repeat(64) } }).authorization);
+});
+
+test('offhost: fileDigest hashes a file without loading it all into memory', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'offhost-'));
+  const file = path.join(dir, 'backup.sdbak');
+  fs.writeFileSync(file, 'encrypted-backup');
+  assert.strictEqual(await offhost.fileDigest(file), require('crypto').createHash('sha256').update('encrypted-backup').digest('hex'));
+  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 const { mentionsUser } = require('../utils/mentionsFilter');
