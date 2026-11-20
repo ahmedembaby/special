@@ -145,7 +145,7 @@ router.post('/', async (req, res) => {
     const clientId = cleanClientId(req.body.client_id);
     if (clientId) {
       const dup = await existingByClient(req.user.id, clientId);
-      if (dup) { await fs.unlink(req.file.path).catch(() => {}); return res.status(200).json(dup); }
+      if (dup) { if (req.file?.path) await fs.unlink(req.file.path).catch(() => {}); return res.status(200).json(dup); }
     }
     let r;
     try {
