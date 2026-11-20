@@ -14,6 +14,7 @@ test('MySQL schema, foreign keys and private-media authorization', { skip: !enab
 
   const db = require('../db');
   const { canAccessChatMedia, canAccessStoryMedia } = require('../services/mediaAccess');
+  const { visible } = require('../services/chat');
   const suffix = require('crypto').randomBytes(8).toString('hex');
   const email = (label) => `${label}-${suffix}@integration.invalid`;
   const userIds = [];
@@ -73,6 +74,8 @@ test('MySQL schema, foreign keys and private-media authorization', { skip: !enab
     assert.equal(await canAccessChatMedia(onceFilename, memberId), true, 'opened view-once media can be fetched');
     await db.query('INSERT INTO message_deletions (message_id, user_id) VALUES (?, ?)', [onceMessage.insertId, memberId]);
     assert.equal(await canAccessChatMedia(onceFilename, memberId), false, 'per-user deletion revokes media access');
+    const [hiddenMessage] = await db.query(`SELECT m.id FROM messages m WHERE m.id = ? AND ${visible('m')}`, [onceMessage.insertId, memberId]);
+    assert.equal(hiddenMessage.length, 0, 'per-user deletion also hides message actions');
 
     const storyFilename = `integration-${suffix}.jpg`;
     await db.query(
