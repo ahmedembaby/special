@@ -12,7 +12,7 @@ export default function WelcomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#0D1222' : '#F7F8FF', paddingTop: insets.top + 18, paddingBottom: insets.bottom + 18 }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0D1222' : '#F7F8FF'} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <View style={styles.topRow}>
         <View style={styles.brand}>
           <Image source={require('../../assets/adaptive-icon.png')} style={styles.miniLogo} resizeMode="contain" />
