@@ -857,7 +857,20 @@ export default function ChatScreen() {
         let content: string | undefined;
         if (msg.type === 'text' || !msg.type) {
           const plain = textOf(msg);
-          content = plain;
+          if (e2ee.isEncrypted(msg.content) && plain.startsWith('🔒 Message can\'t be decrypted')) {
+            throw new Error('This encrypted message cannot be decrypted on this device');
+          }
+          if (target.type === 'direct') {
+            const recipient = target.participants?.find((participant) => String(participant.id) !== String(currentUserId));
+            if (recipient?.public_key) {
+              if (!myKey) throw new Error('Your encryption key is not ready');
+              content = e2ee.encrypt(recipient.public_key, plain);
+            } else {
+              content = plain;
+            }
+          } else {
+            content = plain;
+          }
         }
         await api.messages.forward(msg.id, [{ conversation_id: target.id, content }]);
         sent += 1;
