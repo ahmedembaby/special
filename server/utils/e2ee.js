@@ -6,8 +6,9 @@ const isEncrypted = (content) => typeof content === 'string'
   && /^[A-Za-z0-9+/]+={0,2}$/.test(content.slice(PREFIX.length))
   && content.length - PREFIX.length >= 56;
 
-// End-to-end encryption is optional. Direct conversations accept ordinary text messages.
-// isEncrypted remains available so clients can still decrypt messages created by older app versions.
-const requiresEncryption = () => false;
+// Require ciphertext for direct messages once both participants have registered keys.
+// Chats without two registered keys remain explicitly unencrypted for compatibility.
+const requiresEncryption = (type, content, keysReady = false) =>
+  type === 'direct' && keysReady && !isEncrypted(content);
 
 module.exports = { PREFIX, isEncrypted, requiresEncryption };
