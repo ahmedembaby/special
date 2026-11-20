@@ -239,7 +239,12 @@ router.post('/upload', async (req, res, next) => {
 
 // Loads a message the caller may access (is a participant of its conversation)
 async function accessibleMessage(messageId, userId) {
-  const [rows] = await pool.query('SELECT id, conversation_id, sender_id, type, status FROM messages WHERE id = ?', [messageId]);
+  const [rows] = await pool.query(
+    `SELECT m.id, m.conversation_id, m.sender_id, m.type, m.status
+     FROM messages m
+     WHERE m.id = ? AND ${visible('m')}`,
+    [messageId, userId]
+  );
   const m = rows[0];
   if (!m) return { error: 404 };
   if (!(await isParticipant(m.conversation_id, userId))) return { error: 403 };
@@ -654,8 +659,9 @@ router.post('/:id/forward', async (req, res) => {
   try {
     const { message, error } = await accessibleMessage(req.params.id, req.user.id);
     if (error) return fail(res, error);
-    const [rows] = await pool.query('SELECT content, type, file_url, file_name, file_size, voice_duration, voice_waveform FROM messages WHERE id = ?', [message.id]);
+    const [rows] = await pool.query('SELECT content, type, file_url, file_name, file_size, voice_duration, voice_waveform, view_once FROM messages WHERE id = ?', [message.id]);
     const src = rows[0];
+    if (src.view_once) return res.status(403).json({ message: 'View-once media cannot be forwarded' });
     const targets = (Array.isArray(req.body.targets) ? req.body.targets : []).slice(0, 10);
     if (!targets.length) return res.status(400).json({ message: 'No target conversations' });
     const prepared = [];
