@@ -20,6 +20,10 @@ The integration guide states that photos, files and voice messages are not E2EE.
 
 The integration guide says calls require a native development build and WebRTC, but the current mobile dependency manifest does not include `react-native-webrtc` and the guide also says calls are disabled in Expo Go. No working call flow was verified in this source review. Voice/video calling is explicitly hidden and incoming calls are rejected when the native WebRTC module is absent. Treat calling as unavailable until the native dependency, platform configuration, signaling, permissions, TURN behavior, incoming-call behavior and real-device tests are implemented and verified.
 
+### 2. TOTP authenticator secrets at rest
+
+New authenticator setups encrypt TOTP secrets with AES-256-GCM using a dedicated 32-byte `TOTP_ENCRYPTION_KEY`. The key must be provisioned as a deployment secret (64 hex characters or canonical base64), never committed to source control, and backed up separately with restricted access. Existing legacy plaintext TOTP secrets remain readable during rollout and are re-encrypted after a successful TOTP login when the key is configured; accounts that have not successfully authenticated yet may still have legacy plaintext values until migrated. Do not remove or rotate the key without a tested re-encryption procedure, or encrypted 2FA accounts will be unable to authenticate. New 2FA setup fails if the key is missing or invalid.
+
 ## Required staging tests
 
 - Authentication, OTP rate limits, token expiry/revocation and administrator authorization.
