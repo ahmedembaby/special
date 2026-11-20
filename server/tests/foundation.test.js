@@ -157,3 +157,25 @@ test('KV: configured Redis outage fails closed instead of using process-local me
     delete require.cache[kvPath];
   }
 });
+
+
+test('backups: refuses symbolic links in the backup directory', async () => {
+  const backups = require('../services/adminBackups');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'backup-safe-'));
+  const target = path.join(dir, 'target.bin');
+  const linkName = 'special-20261120T131500Z-abcdef12.sdbak';
+  const link = path.join(dir, linkName);
+  const previousDir = process.env.BACKUP_DIR;
+  const previousKey = process.env.BACKUP_ENCRYPTION_KEY;
+  try {
+    fs.writeFileSync(target, Buffer.alloc(128));
+    fs.symlinkSync(target, link);
+    process.env.BACKUP_DIR = dir;
+    process.env.BACKUP_ENCRYPTION_KEY = 'a'.repeat(64);
+    await assert.rejects(backups.verify(linkName), /invalid/);
+  } finally {
+    if (previousDir === undefined) delete process.env.BACKUP_DIR; else process.env.BACKUP_DIR = previousDir;
+    if (previousKey === undefined) delete process.env.BACKUP_ENCRYPTION_KEY; else process.env.BACKUP_ENCRYPTION_KEY = previousKey;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
