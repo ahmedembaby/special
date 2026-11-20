@@ -1,6 +1,6 @@
 # Security and release-readiness review
 
-Reviewed against the repository state on 2026-11-13. This is a source review, not a penetration test or production runtime certification.
+Reviewed against the maintenance branch on 2026-11-20. This is a source review, not a penetration test or production runtime certification.
 
 ## Release blockers
 
@@ -18,9 +18,9 @@ The integration guide states that photos, files and voice messages are not E2EE.
 
 ### 3. Calling is not ready for release
 
-The integration guide says calls require a native development build and WebRTC, but the current mobile dependency manifest does not include `react-native-webrtc` and the guide also says calls are disabled in Expo Go. No working call flow was verified in this source review. Voice/video calling is explicitly hidden and incoming calls are rejected when the native WebRTC module is absent. Treat calling as unavailable until the native dependency, platform configuration, signaling, permissions, TURN behavior, incoming-call behavior and real-device tests are implemented and verified.
+The mobile dependency manifest already includes `react-native-webrtc` and its Expo config plugin, and the individual and group call contexts implement signaling/media flows. The native module is not available in Expo Go; a custom Android/iOS development build is required. Static checks and Android JS bundle export do not prove native linking, microphone/camera permissions, incoming-call lifecycle, ICE/TURN connectivity, background behavior, or real-device interoperability. Treat calls as unverified until EAS/native builds and physical-device tests pass on both platforms, including a TURN relay test.
 
-### 2. TOTP authenticator secrets at rest
+### 4. TOTP authenticator secrets at rest
 
 New authenticator setups encrypt TOTP secrets with AES-256-GCM using a dedicated 32-byte `TOTP_ENCRYPTION_KEY`. The key must be provisioned as a deployment secret (64 hex characters or canonical base64), never committed to source control, and backed up separately with restricted access. Existing legacy plaintext TOTP secrets remain readable during rollout and are re-encrypted after a successful TOTP login when the key is configured; accounts that have not successfully authenticated yet may still have legacy plaintext values until migrated. Do not remove or rotate the key without a tested re-encryption procedure, or encrypted 2FA accounts will be unable to authenticate. New 2FA setup fails if the key is missing or invalid.
 
@@ -38,7 +38,7 @@ New authenticator setups encrypt TOTP secrets with AES-256-GCM using a dedicated
 
 ## Scope and limitations
 
-This review did not change the database schema, production secrets, or live deployment configuration. CI tests and static checks do not replace a security assessment, dependency audit, penetration test, or device testing.
+This review did not change the database schema, production secrets, or live deployment configuration. WhatsApp browser automation now defaults to disabled; explicitly set `WHATSAPP_ENABLED=true` only where that integration is intentionally used. CI tests and static checks do not replace a security assessment, dependency audit, penetration test, or device testing.
 
 ## Follow-up hardening and automated MySQL coverage
 
@@ -54,9 +54,9 @@ This review did not change the database schema, production secrets, or live depl
 
 ### Open dependency risk requiring a separate decision
 
-The production dependency audit currently reports high-severity transitive advisories in the WhatsApp Web/Puppeteer browser stack, including `basic-ftp`, `extract-zip`, and `zod`. The installed WhatsApp Web dependency range resolves to the 1.34.8 line; forcing a downgrade to make `npm audit fix --force` green would be a breaking change and was not applied.
+The production dependency audit has reported high-severity transitive advisories in the WhatsApp Web/Puppeteer browser stack, including `basic-ftp`, `extract-zip`, and `zod`. The installed WhatsApp Web dependency range resolves to the 1.34.8 line; forcing a downgrade to make `npm audit fix --force` green would be a breaking change and was not applied. To reduce exposure, WhatsApp browser automation is now opt-in: it starts only when `WHATSAPP_ENABLED=true`. Keep it disabled unless OTP delivery through the linked WhatsApp account is explicitly required.
 
 - `extract-zip` versions through 2.0.1 have published high-severity symlink/path-traversal advisories; the GitHub-reviewed advisories list no patched release.
 - `basic-ftp` findings affect the older 5.x dependency pulled through Puppeteer proxy tooling; newer releases have changing advisories, so a blind major override is not considered safe.
-- These packages are transitive to the WhatsApp Web/Puppeteer browser automation stack, not the chat upload parser. Their presence still represents an unresolved supply-chain risk and must be addressed before public launch, preferably by isolating/replacing the browser automation integration or applying a reviewed vendor patch and validating WhatsApp login/send behavior.
+- These packages are transitive to the WhatsApp Web/Puppeteer browser automation stack, not the chat upload parser. The opt-in default reduces exposure but does not remove the vulnerable packages from the dependency graph. Before enabling WhatsApp in production, isolate/replace the browser automation integration or apply a reviewed vendor patch and validate WhatsApp login/send behavior.
 - CI reports all production advisories and blocks critical-severity findings. High-severity findings remain visible in the audit output and are explicitly tracked here rather than silently suppressed.
