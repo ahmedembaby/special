@@ -8,6 +8,7 @@ import { setUnauthorizedHandler } from '../services/api';
 import { connectSocket, disconnectSocket } from '../services/socket';
 import { startOutbox, stopOutbox } from '../services/outbox';
 import { queryClient } from '../providers/QueryProvider';
+import { offlineQueue } from '../utils/offlineQueue';
 
 export interface User {
   id?: string | number;
@@ -86,6 +87,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const logout = useCallback(async () => {
+    // Stop offline replay and wipe this account's queued mutations before the session goes away
+    await offlineQueue.deactivate({ clearStored: true });
     // Invalidate the token on the server (best effort) before dropping it locally
     try { await api.auth.logout(); } catch { /* offline or already invalid */ }
     await Promise.all([SecureStore.deleteItemAsync('echat_token'), AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token'])]);
@@ -100,9 +103,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (token) {
       connectSocket(token);
-      if (user?.id !== undefined && user?.id !== null) startOutbox(user.id);
-      else stopOutbox();
-    } else { disconnectSocket(); stopOutbox(); }
+      if (user?.id !== undefined && user?.id !== null) { startOutbox(user.id); offlineQueue.setOwner(String(user.id)).catch(() => {}); }
+      else { stopOutbox(); offlineQueue.deactivate().catch(() => {}); }
+    } else { disconnectSocket(); stopOutbox(); offlineQueue.deactivate().catch(() => {}); }
     return () => { /* kept alive across re-renders; closed on logout */ };
   }, [token, user?.id]);
 
@@ -117,6 +120,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // On 401 the token is already invalid: just drop the local session (no server call)
     const handler = () => {
+      offlineQueue.deactivate().catch(() => {}); // stop replay; the account's stored queue stays for its next login
       Promise.all([SecureStore.deleteItemAsync('echat_token'), AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token'])]).catch(() => {});
       setMediaToken(null);
       cacheClear();
