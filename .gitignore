@@ -2,15 +2,12 @@ node_modules/
 .expo/
 .wwebjs_auth/
 .wwebjs_cache/
-<<<<<<< HEAD
-=======
 .env
 .env.*
 !.env.example
 **/.env
 **/.env.*
 !**/.env.example
->>>>>>> 8428d7fb19f75dea3fae0149e087bb356d7898c4
 *.zip
 *.log
 server/chromedriver.exe
