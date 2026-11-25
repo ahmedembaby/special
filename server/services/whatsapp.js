@@ -158,8 +158,9 @@ async function sendOTP(phoneNumber, code) {
       console.log(`WhatsApp: OTP sent to +${digits}`);
       return { success: true, message: 'OTP sent via WhatsApp' };
     } catch (err) {
-      console.error(`WhatsApp send failed (attempt ${attempt}):`, err.message);
-      if (attempt === 2) return { success: false, code: 'SEND_FAILED', message: err.message };
+      const detail = err instanceof Error ? (err.stack || err.message) : (typeof err === 'string' ? err : JSON.stringify(err));
+      console.error(`WhatsApp send failed (attempt ${attempt}, client status=${status}, state=${await client?.getState?.().catch((e) => `getState error: ${e && e.message}`)}):`, detail);
+      if (attempt === 2) return { success: false, code: 'SEND_FAILED', message: String(err && err.message || err) };
       await new Promise((r) => setTimeout(r, 1500));
     }
   }
