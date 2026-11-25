@@ -50,6 +50,25 @@ function scheduleRestart(ms, reason) {
   restartTimer = setTimeout(() => { restartTimer = null; start(); }, ms);
 }
 
+// WhatsApp Web changes its internal code often. When the newest build breaks whatsapp-web.js
+// (sends fail with the minified "t: t" error even though the client is "ready"), pin a build
+// that is known to work. Set WA_WEB_VERSION in .env to try another one, or to "latest" to disable the pin.
+// Builds come from https://github.com/wppconnect-team/wa-version/tree/main/html
+const DEFAULT_WA_WEB_VERSION = '2.3000.1055790926-alpha';
+function webVersionOptions() {
+  const version = (process.env.WA_WEB_VERSION || DEFAULT_WA_WEB_VERSION).trim();
+  if (!version || version.toLowerCase() === 'latest') return {};
+  console.log(`WhatsApp: pinning WhatsApp Web build ${version}`);
+  return {
+    webVersion: version,
+    webVersionCache: {
+      type: 'remote',
+      remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/{version}.html',
+      strict: false,
+    },
+  };
+}
+
 async function destroyClient() {
   const c = client;
   client = null;
@@ -77,6 +96,7 @@ async function start() {
     await destroyClient();
     client = new Client({
       authStrategy: new LocalAuth({ clientId: 'echat-whatsapp' }),
+      ...webVersionOptions(),
       puppeteer: {
         headless: true,
         executablePath: browser,
