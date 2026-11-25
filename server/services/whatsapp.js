@@ -151,10 +151,22 @@ async function sendOTP(phoneNumber, code) {
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      // Resolves the real WhatsApp id (and tells us if the number has WhatsApp at all)
-      const id = await withTimeout(client.getNumberId(digits), 20000);
-      if (!id) return { success: false, code: 'NOT_ON_WHATSAPP', message: 'This number is not registered on WhatsApp' };
-      await withTimeout(client.sendMessage(id._serialized, text), 20000);
+      // Resolves the real WhatsApp id (and tells us if the number has WhatsApp at all).
+      // WhatsApp Web updates sometimes break this lookup inside the page (an opaque "t: t" error, e.g. when the
+      // `_serialized` property is renamed). A thrown lookup error is not proof that the number is unregistered,
+      // so in that case fall back to addressing the chat directly instead of failing the whole OTP.
+      let id = null;
+      let lookupFailed = false;
+      try {
+        id = await withTimeout(client.getNumberId(digits), 20000);
+      } catch (lookupErr) {
+        lookupFailed = true;
+        console.warn(`WhatsApp: getNumberId failed (${String(lookupErr && lookupErr.message || lookupErr).split('\n')[0]}); sending to ${'*'.repeat(Math.max(digits.length - 2, 0))}${digits.slice(-2)}@c.us directly`);
+      }
+      if (!lookupFailed && !id) return { success: false, code: 'NOT_ON_WHATSAPP', message: 'This number is not registered on WhatsApp' };
+      // `_serialized` may have been renamed to `$1` by WhatsApp Web
+      const chatId = (id && (id._serialized || id.$1)) || `${digits}@c.us`;
+      await withTimeout(client.sendMessage(chatId, text), 20000);
       console.log(`WhatsApp: OTP sent to +${digits}`);
       return { success: true, message: 'OTP sent via WhatsApp' };
     } catch (err) {
