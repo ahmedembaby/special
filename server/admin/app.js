@@ -585,14 +585,15 @@ $('#otpForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const b = e.submitter; b.disabled = true; $('#loginMessage').textContent = 'جارٍ التحقق…';
   try {
-    const r = await fetch('/api/auth/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: state.loginPhone, code: $('#otp').value.trim() }) });
+    const r = await fetch('/api/auth/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: state.loginPhone, code: $('#otp').value.trim(), ...($('#totp').value.trim() ? { totp: $('#totp').value.trim() } : {}) }) });
     const d = await r.json().catch(() => ({}));
+    if (d.twoFactorRequired) { $('#totpWrap').classList.remove('hidden'); $('#totp').focus(); }
     if (!r.ok) throw new Error(d.message || 'رمز غير صحيح');
     if (!d.userExists || !d.token) throw new Error('هذا الرقم غير مرتبط بحساب مسجل.');
     state.token = d.token;
     await api('/admin/me'); // proves the account has an admin role before storing the token
     sessionStorage.setItem('special_admin_token', state.token);
-    $('#otp').value = ''; $('#loginMessage').textContent = '';
+    $('#otp').value = ''; $('#totp').value = ''; $('#totpWrap').classList.add('hidden'); $('#loginMessage').textContent = '';
     await showApp(d.user);
   } catch (err) { state.token = ''; $('#loginMessage').textContent = err.message === 'Admin access required' ? 'هذا الحساب لا يملك صلاحية الدخول للوحة.' : err.message; } finally { b.disabled = false; }
 });
