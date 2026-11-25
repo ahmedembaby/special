@@ -36,7 +36,11 @@ if (redis.client) {
   redis.client.on('ready', () => {
     if (attached) return;
     attached = true;
-    io.adapter(createAdapter(redis.client, redis.client.duplicate()));
+    // The shared client sets enableOfflineQueue:false, and duplicate() inherits it. A fresh duplicate is not
+    // connected yet, so the adapter's subscribe/psubscribe calls were rejected. The subscriber needs the queue on.
+    const subClient = redis.client.duplicate({ enableOfflineQueue: true, maxRetriesPerRequest: null });
+    subClient.on('error', () => {});
+    io.adapter(createAdapter(redis.client, subClient));
     console.log('✅ Redis connected');
   });
 }
