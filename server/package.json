@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Special backend server with MySQL and Socket.io",
   "main": "index.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node index.js",
     "test": "node --test tests/*.test.js",
