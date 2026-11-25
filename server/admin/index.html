@@ -16,6 +16,7 @@
     </form>
     <form id="otpForm" class="hidden">
       <label for="otp">رمز التحقق</label><input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="أدخل الرمز" required>
+      <div id="totpWrap" class="hidden"><label for="totp">رمز تطبيق المصادقة (6 أرقام)</label><input id="totp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></div>
       <button class="btn primary full" type="submit">تأكيد الدخول</button>
       <button class="btn ghost full" id="backToPhone" type="button">تغيير رقم الهاتف</button>
     </form>
