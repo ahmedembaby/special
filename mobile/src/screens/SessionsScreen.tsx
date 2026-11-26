@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity,
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useAppColors } from '../theme/useAppColors';
+import { EmptyState } from '../components/EmptyState';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { Icon } from '../components/Icon';
 import * as api from '../services/api';
@@ -13,11 +14,13 @@ export default function SessionsScreen() {
   const { logout } = useAuth();
   const [sessions, setSessions] = useState<api.DeviceSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const load = useCallback(async () => {
     setLoading(true);
+    setFailed(false);
     try { const result = await api.auth.sessions(); setSessions(result.data || []); }
-    catch { Alert.alert('Error', 'Could not load connected devices. Please try again.'); }
+    catch { setFailed(true); }
     finally { setLoading(false); }
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -35,8 +38,10 @@ export default function SessionsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <ScreenHeader title="Devices and sessions" onBack={() => navigation.goBack()} />
-      {loading ? <ActivityIndicator color={c.primary} style={{ marginTop: 32 }} /> : (
-        <FlatList data={sessions} keyExtractor={(item) => item.id} contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+      {loading ? <ActivityIndicator color={c.primary} style={{ marginTop: 32 }} /> : failed ? (
+        <EmptyState icon="phone" title="Could not load devices" subtitle="Check your connection and try again." actionLabel="Try again" onAction={load} />
+      ) : (
+        <FlatList data={sessions} keyExtractor={(item) => item.id} contentContainerStyle={{ padding: 14, paddingBottom: 32 }}
           ListEmptyComponent={<Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 44, paddingHorizontal: 28, lineHeight: 22 }}>No other devices are currently connected to your account.</Text>}
           ListHeaderComponent={<Text style={{ color: c.textSecondary, marginBottom: 16, lineHeight: 20 }}>Review devices that can access your account. Sign out any session you do not recognize.</Text>}
           renderItem={({ item }) => (
