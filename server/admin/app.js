@@ -451,8 +451,24 @@ async function errorsPage() {
 async function adminsPage() {
   const d = await api('/admin/admins');
   const rows = (d.admins || []).map((a) => `<tr><td>${esc(a.name)} <small class="muted">@${esc(a.username || '')}</small></td><td><span class="text-ltr">${esc(a.phone || '—')}</span></td><td>${pill(ROLE_LABEL[a.role] || a.role, a.role === 'admin' ? 'green' : a.role === 'moderator' ? 'amber' : '')}</td><td>${wl(a.created_at)}</td><td>${btn('admin-remove', a.user_id, 'إزالة الصلاحية', 'danger')}</td></tr>`).join('');
-  shell(toolbar('إدارة صلاحيات المشرفين') + `<section class="panel panel-narrow"><div class="panel-head"><div><h2>إضافة مشرف</h2><p>أدخل رقم المستخدم من قاعدة الحسابات واختر أقل صلاحية لازمة.</p></div></div><form id="adminRoleForm"><div class="field"><label>معرّف المستخدم</label><input name="userId" type="number" min="1" required placeholder="User ID"></div><div class="field"><label>الدور</label><select name="role" required><option value="support">الدعم الفني — قراءة فقط</option><option value="moderator">مشرف محتوى وبلاغات</option><option value="admin">مدير — إدارة كاملة دون إدارة المالكين</option></select></div><button class="btn primary">حفظ الصلاحية</button></form></section><section class="panel"><div class="panel-head"><h2>المشرفون الحاليون</h2></div>${rows ? table(['المستخدم', 'الهاتف', 'الدور', 'تاريخ الإضافة', 'الإجراء'], rows) : empty('لا يوجد مشرفون إضافيون.')}</section>`);
-  $('#adminRoleForm').onsubmit = async (e) => { e.preventDefault(); const f = new FormData(e.target); try { await post('/admin/admins', { userId: Number(f.get('userId')), role: f.get('role') }); toast('تم حفظ الصلاحية'); adminsPage(); } catch (err) { toast(err.message, true); } };
+  shell(toolbar('إدارة صلاحيات المشرفين') + `<section class="panel panel-narrow"><div class="panel-head"><div><h2>إضافة مشرف</h2><p>ابحث عن المستخدم بالاسم أو الهاتف واختره من النتائج، ثم اختر أقل صلاحية لازمة.</p></div></div><form id="adminRoleForm"><div class="field"><label>المستخدم</label><input id="adminUserSearch" class="search-input" placeholder="اكتب الاسم أو رقم الهاتف…" autocomplete="off"><input type="hidden" name="userId" id="adminUserId"><div id="adminUserResults" class="user-pick-list"></div><div id="adminUserChosen" class="muted"></div></div><div class="field"><label>الدور</label><select name="role" required><option value="support">الدعم الفني — قراءة فقط</option><option value="moderator">مشرف محتوى وبلاغات</option><option value="admin">مدير — إدارة كاملة دون إدارة المالكين</option></select></div><button class="btn primary">حفظ الصلاحية</button></form></section><section class="panel"><div class="panel-head"><h2>المشرفون الحاليون</h2></div>${rows ? table(['المستخدم', 'الهاتف', 'الدور', 'تاريخ الإضافة', 'الإجراء'], rows) : empty('لا يوجد مشرفون إضافيون.')}</section>`);
+  const searchBox = $('#adminUserSearch'), results = $('#adminUserResults'), chosen = $('#adminUserChosen'), idField = $('#adminUserId');
+  const pick = (u) => { idField.value = u.id; results.innerHTML = ''; searchBox.value = ''; chosen.innerHTML = `المحدد: <b>${esc(u.name)}</b> <span class="text-ltr">${esc(u.phone || '')}</span> <small>(#${u.id})</small>`; };
+  searchBox.addEventListener('input', debounce(async () => {
+    const q = searchBox.value.trim();
+    if (q.length < 2) { results.innerHTML = ''; return; }
+    try {
+      const d = await api(`/admin/users?q=${encodeURIComponent(q)}&limit=8`);
+      results.innerHTML = (d.users || []).map((u) => `<button type="button" class="user-pick" data-uid="${u.id}"><div class="avatar">${esc((u.name || '?').slice(0, 1))}</div><div><b>${esc(u.name)}</b> <small>@${esc(u.username || '—')} · #${u.id}</small><br><small class="text-ltr">${esc(u.phone || u.email || '')}</small></div></button>`).join('') || '<div class="muted">لا نتائج مطابقة.</div>';
+      $$('.user-pick', results).forEach((b) => { b.onclick = () => { const u = d.users.find((x) => String(x.id) === b.dataset.uid); if (u) pick(u); }; });
+    } catch { results.innerHTML = ''; }
+  }, 300));
+  $('#adminRoleForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    if (!idField.value) { toast('اختر المستخدم من نتائج البحث أولاً', true); searchBox.focus(); return; }
+    try { await post('/admin/admins', { userId: Number(f.get('userId')), role: f.get('role') }); toast('تم حفظ الصلاحية'); adminsPage(); } catch (err) { toast(err.message, true); }
+  };
 }
 
 async function releasePage() {
