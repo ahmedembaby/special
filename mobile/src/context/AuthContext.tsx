@@ -9,7 +9,7 @@ import { connectSocket, disconnectSocket } from '../services/socket';
 import { startOutbox, stopOutbox } from '../services/outbox';
 import { queryClient } from '../providers/QueryProvider';
 import { offlineQueue } from '../utils/offlineQueue';
-import { clearChatPrefs } from '../services/chatPrefs';
+import { clearChatPrefs, enableChatPrefs } from '../services/chatPrefs';
 
 export interface User {
   id?: string | number;
@@ -99,6 +99,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Fresh login: force the device token to be sent again for this account (see PushNavigationHandler)
     await AsyncStorage.removeItem('push_token').catch(() => {});
     queryClient.clear();
+    enableChatPrefs();
     await SecureStore.deleteItemAsync(MEDIA_KEY).catch(() => {});
     await refreshMediaToken(newToken, true);
     setUser(userData || null);
