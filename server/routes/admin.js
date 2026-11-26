@@ -912,6 +912,25 @@ router.delete('/sessions/:id', async (req, res) => {
   }
 });
 
+// Non-secret configuration status for the settings page: booleans and labels only, never values.
+router.get('/settings', async (req, res) => {
+  try {
+    const wa = require('../services/whatsapp');
+    const st = typeof wa.getState === 'function' ? await wa.getState().catch(() => null) : null;
+    let backupsConfigured = false;
+    try { require('../services/adminBackups').config(); backupsConfigured = true; } catch { /* not configured */ }
+    res.json({
+      environment: process.env.NODE_ENV || 'development',
+      otpDevMode: !!require('../config').OTP_DEV_MODE,
+      whatsapp: st ? { status: st.status, ready: !!st.ready, account: st.account || null } : { status: 'unknown', ready: false },
+      backups: { configured: backupsConfigured, offhost: require('../services/offhost').isConfigured(), autoHours: Number(process.env.BACKUP_AUTO_HOURS) || 0 },
+      alertWebhook: !!process.env.ALERT_WEBHOOK_URL,
+      ai: { configured: !!(process.env.AI_API_KEY && process.env.AI_MODEL) },
+      redis: require('../services/redis').client ? 'configured' : 'not_configured',
+    });
+  } catch { res.status(500).json({ message: 'Could not load settings' }); }
+});
+
 // Advertising campaign management; mobile placements are a separate rollout.
 router.get('/campaigns', async (req, res) => {
   try { const [rows] = await pool.query('SELECT * FROM ad_campaigns ORDER BY created_at DESC LIMIT 200'); res.json(rows); }
