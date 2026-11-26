@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Animated, PanResponder, View, Text, StyleSheet } from 'react-native';
 import { useAppColors } from '../theme/useAppColors';
+import { Icon } from './Icon';
 
 const TRIGGER = 56;
 
@@ -34,7 +35,7 @@ export const SwipeToReply = ({ enabled = true, onReply, children }: { enabled?: 
   return (
     <View {...pan.panHandlers}>
       <Animated.View pointerEvents="none" style={[styles.icon, { backgroundColor: c.primaryLight, opacity, transform: [{ scale }] }]}>
-        <Text style={{ color: c.primary, fontSize: 17, fontWeight: '800' }}>↩</Text>
+        <Icon name="reply" size={18} color={c.primary} />
       </Animated.View>
       <Animated.View style={{ transform: [{ translateX: x }] }}>{children}</Animated.View>
     </View>
