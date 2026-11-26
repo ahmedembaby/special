@@ -273,7 +273,7 @@ router.get('/users', async (req, res) => {
     const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const [[t]] = await pool.query(`SELECT COUNT(*) AS c FROM users ${w}`, args);
     const [users] = await pool.query(
-      `SELECT id, name, username, email, phone, avatar, status, banned, last_seen, created_at FROM users ${w}
+      `SELECT id, name, username, email, phone, avatar, status, banned, banned_until, last_seen, created_at FROM users ${w}
        ORDER BY created_at DESC LIMIT ? OFFSET ?`,
       [...args, limit, offset]
     );
@@ -287,7 +287,7 @@ router.get('/users/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
     const [rows] = await pool.query(
-      'SELECT id, name, username, email, phone, avatar, bio, status, banned, verified, last_seen, created_at FROM users WHERE id = ?', [id]
+      'SELECT id, name, username, email, phone, avatar, bio, status, banned, banned_until, verified, last_seen, created_at FROM users WHERE id = ?', [id]
     );
     if (!rows.length) return res.status(404).json({ message: 'User not found' });
     const one = async (sql) => (await pool.query(sql, [id]))[0][0].c;
@@ -840,9 +840,17 @@ router.post('/users/:id/ban', async (req, res) => {
     const [rows] = await pool.query('SELECT banned FROM users WHERE id = ?', [id]);
     if (!rows.length) return res.status(404).json({ message: 'User not found' });
     const banned = typeof req.body.banned === 'boolean' ? req.body.banned : !rows[0].banned;
-    await pool.query('UPDATE users SET banned = ?, push_token = IF(?, NULL, push_token) WHERE id = ?', [banned ? 1 : 0, banned ? 1 : 0, id]);
+    let until = null;
+    if (banned && req.body.until) {
+      until = new Date(req.body.until);
+      const max = new Date(Date.now() + 365 * 864e5);
+      if (Number.isNaN(until.getTime()) || until <= new Date() || until > max) {
+        return res.status(400).json({ message: 'Invalid ban duration' });
+      }
+    }
+    await pool.query('UPDATE users SET banned = ?, banned_until = ?, push_token = IF(?, NULL, push_token) WHERE id = ?', [banned ? 1 : 0, until, banned ? 1 : 0, id]);
     if (banned) rt.disconnectUser(id);
-    res.json({ success: true, banned });
+    res.json({ success: true, banned, until });
   } catch (err) {
     res.status(500).json({ message: 'Could not update user' });
   }

@@ -131,6 +131,10 @@ router.post('/login', async (req, res) => {
     if (!row || !row.password || !(await bcrypt.compare(password, row.password))) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+    if (row.banned && row.banned_until && new Date(row.banned_until) <= new Date()) {
+      await pool.query('UPDATE users SET banned = 0, banned_until = NULL WHERE id = ?', [row.id]);
+      row.banned = 0;
+    }
     if (row.banned) return res.status(403).json({ message: 'This account has been suspended' });
     const gate = await twoFactorGate(row.id, req.body.totp);
     if (gate) return res.status(gate.status).json(gate.body);
@@ -202,7 +206,11 @@ router.post('/verify-otp', async (req, res) => {
       logOtp(phone, 'rejected', stored ? 'wrong_code' : 'expired');
       return res.status(400).json({ message: 'Invalid or expired code' });
     }
-    const [rows] = await pool.query('SELECT id, banned FROM users WHERE phone = ?', [phone]);
+    const [rows] = await pool.query('SELECT id, banned, banned_until FROM users WHERE phone = ?', [phone]);
+    if (rows.length && rows[0].banned && rows[0].banned_until && new Date(rows[0].banned_until) <= new Date()) {
+      await pool.query('UPDATE users SET banned = 0, banned_until = NULL WHERE id = ?', [rows[0].id]);
+      rows[0].banned = 0;
+    }
     if (rows.length && !rows[0].banned) {
       // the SMS/WhatsApp code stays valid while the app asks for the authenticator code
       const gate = await twoFactorGate(rows[0].id, req.body.totp);
