@@ -1773,7 +1773,7 @@ export default function ChatScreen() {
                     <View style={styles.liveBars}>
                       {liveLevels.length ? liveLevels.map((l, i) => (
                         <View key={i} style={[styles.liveBar, { height: 4 + l * 22, backgroundColor: cancelHint ? c.danger : c.primary }]} />
-                      )) : holdModeRef.current && !cancelHint ? <IconText icon="chevronLeft" color={TEXT_GRAY_500} size={16} gap={2} textStyle={{ fontSize: 13 }}>Slide to cancel</IconText> : <Text style={{ color: TEXT_GRAY_500, fontSize: 13 }}>{holdModeRef.current ? 'Release to cancel' : 'Recording…'}</Text>}
+                      )) : holdModeRef.current && !cancelHint ? <IconText icon="chevronLeft" mirror={false} color={TEXT_GRAY_500} size={16} gap={2} textStyle={{ fontSize: 13 }}>Slide to cancel</IconText> : <Text style={{ color: TEXT_GRAY_500, fontSize: 13 }}>{holdModeRef.current ? 'Release to cancel' : 'Recording…'}</Text>}
                     </View>
                   </View>
                   {holdModeRef.current ? null : (
