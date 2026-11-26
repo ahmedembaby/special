@@ -141,7 +141,7 @@ export const VoiceBubble = ({ uri, durationLabel, isOwn, seed, waveform, message
   return (
     <View style={[styles.wrap, { backgroundColor: isOwn ? (accent || c.primary) : c.card }]}>
       <TouchableOpacity onPress={toggle} activeOpacity={0.8} style={[styles.play, { backgroundColor: isOwn ? 'rgba(255,255,255,0.2)' : c.primaryLight }]}>
-        <Text style={{ color: fg, fontSize: 15, marginLeft: playing ? 0 : 2 }}>{playing ? '❚❚' : '▶'}</Text>
+        <Icon name={playing ? 'pause' : 'play'} size={18} color={fg} />
       </TouchableOpacity>
       <View style={{ flex: 1 }}>
         <TouchableOpacity activeOpacity={1} onPress={seek} style={styles.bars} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
