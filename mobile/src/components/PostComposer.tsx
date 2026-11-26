@@ -118,7 +118,7 @@ export const PostComposer = ({ me, onPost, quote, autoFocus, placeholder = "What
               <>
                 <TouchableOpacity onPress={() => pick(false)} hitSlop={8}><Icon name="image" size={21} color={c.primary} /></TouchableOpacity>
                 <TouchableOpacity onPress={() => pick(true)} hitSlop={8}><Icon name="camera" size={21} color={c.primary} /></TouchableOpacity>
-                {!quote ? <TouchableOpacity onPress={() => setPoll(poll ? null : ['', ''])} hitSlop={8}><Text style={{ fontSize: 18 }}>📊</Text></TouchableOpacity> : null}
+                {!quote ? <TouchableOpacity onPress={() => setPoll(poll ? null : ['', ''])} hitSlop={8}><Icon name="poll" size={21} color={c.primary} /></TouchableOpacity> : null}
               </>
             ) : null}
           </View>
