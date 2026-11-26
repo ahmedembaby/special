@@ -567,6 +567,7 @@ const COLUMNS = [
   ['conversations', 'created_by', 'INT DEFAULT NULL'],
 
   ['users', 'avatar', 'VARCHAR(255) DEFAULT NULL'],
+  ['users', 'cover_image', 'VARCHAR(255) DEFAULT NULL'],
   ['users', 'status', "VARCHAR(20) DEFAULT 'offline'"],
   ['users', 'last_seen', 'TIMESTAMP NULL DEFAULT NULL'],
 
