@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useAppColors } from '../theme/useAppColors';
+import { Icon } from './Icon';
 
 export interface SheetOption { label: string; onPress: () => void; danger?: boolean; selected?: boolean }
 
@@ -17,7 +18,7 @@ export const OptionSheet = ({ visible, title, options, onClose }: { visible: boo
         {options.map((o) => (
           <TouchableOpacity key={o.label} style={styles.row} activeOpacity={0.7} onPress={() => { onClose(); setTimeout(o.onPress, 0); }}>
             <Text style={[styles.label, { color: o.danger ? c.danger : c.text }]}>{o.label}</Text>
-            {o.selected ? <Text style={{ color: c.primary, fontSize: 16 }}>✓</Text> : null}
+            {o.selected ? <Icon name="check" size={18} color={c.primary} /> : null}
           </TouchableOpacity>
         ))}
         </ScrollView>
