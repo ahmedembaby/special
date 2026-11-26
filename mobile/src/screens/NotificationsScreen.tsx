@@ -107,7 +107,7 @@ export default function NotificationsScreen() {
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
       ) : failed && items.length === 0 ? (
-        <EmptyState icon="bell" title="Could not load notifications" subtitle="Check your connection and try again." actionLabel="Try again" onAction={() => { setLoading(true); load(); }} />
+        <EmptyState icon="bell" title={t('Could not load notifications')} subtitle={t('Check your connection and try again.')} actionLabel={t('Try again')} onAction={() => { setLoading(true); load(); }} />
       ) : (
         <View style={{ flex: 1 }}>
           <View>
