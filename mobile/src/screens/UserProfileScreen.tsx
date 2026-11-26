@@ -137,7 +137,7 @@ export default function UserProfileScreen() {
       {back}
       {profile.id !== String(user?.id) ? (
         <TouchableOpacity style={[styles.circle, { top: insets.top + 8, left: undefined, right: 12 }]} onPress={() => setMenu(true)}>
-          <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>⋯</Text>
+          <Icon name="moreHorizontal" size={22} color="#fff" />
         </TouchableOpacity>
       ) : null}
       <View style={styles.info}>
