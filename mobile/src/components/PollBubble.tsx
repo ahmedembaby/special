@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAppColors } from '../theme/useAppColors';
 import * as api from '../services/api';
+import { IconText } from './IconText';
 
 /** A poll inside a chat message: tap an option to vote, tap it again to take the vote back. */
 export const PollBubble = ({ question, poll, isOwn, onVote, accent }: {
@@ -14,14 +15,14 @@ export const PollBubble = ({ question, poll, isOwn, onVote, accent }: {
   const track = isOwn ? 'rgba(255,255,255,0.15)' : c.inputBg;
   return (
     <View style={[styles.wrap, { backgroundColor: isOwn ? (accent || c.primary) : c.card }]}>
-      <Text style={[styles.tag, { color: sub }]}>📊 POLL</Text>
+      <IconText icon="poll" color={sub} size={13} gap={4} textStyle={styles.tag}>POLL</IconText>
       <Text style={[styles.q, { color: fg }]}>{question}</Text>
       {poll.options.map((o) => {
         const pct = poll.total ? Math.round((o.votes / poll.total) * 100) : 0;
         return (
           <TouchableOpacity key={o.id} activeOpacity={0.8} onPress={() => onVote(o.id)} style={[styles.opt, { backgroundColor: track, borderColor: o.my ? (isOwn ? '#FFFFFF' : c.primary) : 'transparent' }]}>
             <View style={[styles.fill, { width: `${pct}%`, backgroundColor: bar, opacity: isOwn ? 1 : 0.22 }]} />
-            <Text style={[styles.optText, { color: fg }]} numberOfLines={2}>{o.my ? '✓ ' : ''}{o.text}</Text>
+            <Text style={[styles.optText, { color: fg }]} numberOfLines={2}>{o.text}</Text>
             <Text style={[styles.pct, { color: sub }]}>{o.votes > 0 ? `${pct}%` : ''}</Text>
           </TouchableOpacity>
         );
