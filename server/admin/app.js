@@ -3,7 +3,7 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const state = { token: sessionStorage.getItem('special_admin_token') || '', user: null, me: null, page: 'overview', days: 7, pg: {}, auto: false, loginPhone: '', refocus: null };
-const TITLES = { rlog: 'سجل قرارات البلاغات', appeals: 'الاعتراضات', alerts: 'التنبيهات التلقائية', overview: 'نظرة عامة', users: 'إدارة المستخدمين', posts: 'إدارة المنشورات', stories: 'إدارة الحالات والقصص', reports: 'مراجعة البلاغات', groups: 'المجموعات', conversations: 'المحادثات', sessions: 'الجلسات والأجهزة', broadcast: 'إرسال إعلان', campaigns: 'إدارة الحملات الإعلانية', backups: 'النسخ الاحتياطية', words: 'الكلمات المحظورة', audit: 'سجل الإدارة', admins: 'صلاحيات الإدارة', release: 'الإصدارات والتحديثات', errors: 'أخطاء الخادم', verifications: 'توثيق الحسابات', ai: 'الذكاء الاصطناعي' };
+const TITLES = { rlog: 'سجل قرارات البلاغات', appeals: 'الاعتراضات', alerts: 'التنبيهات التلقائية', overview: 'نظرة عامة', users: 'إدارة المستخدمين', posts: 'إدارة المنشورات', stories: 'إدارة الحالات والقصص', reports: 'مراجعة البلاغات', groups: 'المجموعات', conversations: 'المحادثات', sessions: 'الجلسات والأجهزة', broadcast: 'إرسال إعلان', campaigns: 'إدارة الحملات الإعلانية', backups: 'النسخ الاحتياطية', words: 'الكلمات المحظورة', audit: 'سجل الإدارة', otp: 'مراقبة رموز التحقق', admins: 'صلاحيات الإدارة', release: 'الإصدارات والتحديثات', errors: 'أخطاء الخادم', verifications: 'توثيق الحسابات', ai: 'الذكاء الاصطناعي' };
 const ROLE_LABEL = { owner: 'مالك', admin: 'مدير', moderator: 'مشرف محتوى', support: 'دعم فني' };
 
 /* ---------- helpers ---------- */
@@ -149,6 +149,7 @@ async function listView(cfg) {
   const search = cfg.search ? `<input class="search-input" data-search="${cfg.key}" placeholder="${esc(cfg.search)}" value="${esc(st.q)}">` : '';
   const exportBtn = cfg.csv && res.items.length ? `<button class="btn ghost" data-act="export" data-key="${cfg.key}">تصدير CSV</button>` : '';
   shell(toolbar(`${cfg.title} <small class="muted">(${num(res.total)})</small>`, search + filters + exportBtn)
+    + (cfg.above ? (typeof cfg.above === 'function' ? cfg.above(res) : cfg.above) : '')
     + (res.items.length ? table(cfg.headers, res.items.map(cfg.row).join('')) : empty(cfg.empty || 'لا توجد نتائج مطابقة.'))
     + pager(cfg.key, res.total, limit));
   if (state.refocus === cfg.key) {
@@ -498,7 +499,28 @@ async function aiPage() {
     + `<section class="panel"><div class="panel-head"><h2>الأعلى استخداماً</h2></div>${top ? table(['المستخدم', 'الطلبات', 'التوكنات'], top) : empty('—')}</section>`);
 }
 
-const PAGES = { overview, users: usersPage, posts: postsPage, stories: storiesPage, reports: reportsPage, groups: groupsPage, conversations: conversationsPage, sessions: sessionsPage, broadcast: broadcastPage, campaigns: campaignsPage, backups: backupsPage, words: wordsPage, audit: auditPage, admins: adminsPage, release: releasePage, errors: errorsPage, verifications: verificationsPage, ai: aiPage, rlog: rlogPage, appeals: appealsPage, alerts: alertsPage };
+/* ---------- OTP delivery monitor (events only; codes are never stored or shown) ---------- */
+const OTP_EVENT_LABEL = { sent: ['أُرسل بنجاح', 'green'], send_failed: ['فشل الإرسال', 'red'], verified: ['تم التحقق', 'green'], rejected: ['رمز خاطئ/منتهي', 'amber'], blocked: ['محاولات كثيرة', 'red'] };
+const OTP_DETAIL_LABEL = { cooldown: 'طلب إعادة إرسال مبكر', max_attempts: 'تجاوز حد المحاولات', wrong_code: 'رمز غير صحيح', expired: 'رمز منتهي الصلاحية', whatsapp: 'عبر واتساب', login: 'تسجيل دخول', register: 'تسجيل حساب جديد', NOT_ON_WHATSAPP: 'الرقم غير مسجل في واتساب', NOT_READY: 'واتساب غير متصل', SEND_FAILED: 'فشل الإرسال' };
+const otpPage = () => listView({
+  key: 'otp', title: 'سجل أحداث رموز التحقق', search: 'ابحث بالرقم…', csv: true, limit: 50, empty: 'لا توجد أحداث مسجلة بعد. ستظهر هنا عمليات إرسال الرموز والتحقق منها.',
+  filters: [{ name: 'event', label: 'الحدث', options: [['all', 'كل الأحداث'], ['sent', 'أُرسل بنجاح'], ['send_failed', 'فشل الإرسال'], ['verified', 'تم التحقق'], ['rejected', 'رمز خاطئ/منتهي'], ['blocked', 'محاولات كثيرة']] }],
+  fetch: async (qs) => { const { data, total } = await request(`/admin/otp-events?${qs}`); state.otpMeta = data; return { items: data.items || [], total }; },
+  above: () => {
+    const d = state.otpMeta || {}; const t = d.today || {}; const w = d.whatsapp || {};
+    const waCard = w.ready
+      ? ['واتساب متصل', `الحساب ${w.account || ''}`.trim(), 'green']
+      : ['واتساب غير متصل', 'الإرسال متوقف — راجع إعداد واتساب', 'red'];
+    const rate = t.sent ? Math.round((Number(t.verified || 0) / Number(t.sent)) * 100) : 0;
+    return `<div class="grid stats-grid"><div class="stat-card"><div class="stat-head">حالة واتساب</div><div class="stat-value small">${pill(waCard[0], waCard[2])}</div><div class="stat-foot">${esc(waCard[1])}</div></div><div class="stat-card"><div class="stat-head">رموز اليوم</div><div class="stat-value">${num(t.total)}</div><div class="stat-foot">أُرسل ${num(t.sent)} · فشل ${num(t.failed)}</div></div><div class="stat-card"><div class="stat-head">تُحقق منها اليوم</div><div class="stat-value">${num(t.verified)}</div><div class="stat-foot">${rate}% من المرسلة</div></div><div class="stat-card"><div class="stat-head">فشل الإرسال اليوم</div><div class="stat-value">${num(t.failed)}</div><div class="stat-foot">${Number(t.failed) ? 'راجع الأحداث بالأسفل' : 'لا مشاكل'}</div></div></div><div class="notice-box">هذه الصفحة تعرض أحداث الإرسال والتحقق فقط (الرقم والنتيجة والوقت). رموز التحقق نفسها لا تُحفظ ولا تظهر هنا إطلاقاً.</div>`;
+  },
+  headers: ['الرقم', 'الحدث', 'التفاصيل', 'الوقت'],
+  csvHeaders: ['الرقم', 'الحدث', 'التفاصيل', 'الوقت'],
+  csvRow: (e) => [e.phone, e.event, e.detail || '', e.created_at],
+  row: (e) => { const [label, kind] = OTP_EVENT_LABEL[e.event] || [e.event, '']; return `<tr><td><span class="text-ltr">${esc(e.phone)}</span></td><td>${pill(label, kind)}</td><td>${esc(OTP_DETAIL_LABEL[e.detail] || e.detail || '—')}</td><td>${wl(e.created_at)}</td></tr>`; },
+});
+
+const PAGES = { overview, users: usersPage, posts: postsPage, stories: storiesPage, reports: reportsPage, groups: groupsPage, conversations: conversationsPage, sessions: sessionsPage, broadcast: broadcastPage, campaigns: campaignsPage, backups: backupsPage, words: wordsPage, audit: auditPage, admins: adminsPage, release: releasePage, errors: errorsPage, verifications: verificationsPage, ai: aiPage, otp: otpPage, rlog: rlogPage, appeals: appealsPage, alerts: alertsPage };
 const reload = () => loadPage(state.page, { keepScroll: true });
 const ACTIONS = {
   'user-view': (id) => showUser(id),
@@ -621,7 +643,7 @@ async function showApp(user) {
   $('#adminAvatar').textContent = (state.me.name || 'A').slice(0, 1);
   // Hide navigation the role cannot open (the server enforces it as well)
   $$('.nav-item').forEach((x) => x.classList.toggle('hidden', !state.me.pages.includes(x.dataset.page)));
-  $$('.side-label.separated').forEach((x) => x.classList.toggle('hidden', !['broadcast', 'campaigns', 'backups', 'words', 'audit', 'admins', 'errors', 'release'].some((p) => state.me.pages.includes(p))));
+  $$('.side-label.separated').forEach((x) => x.classList.toggle('hidden', !['broadcast', 'campaigns', 'backups', 'words', 'audit', 'admins', 'errors', 'release', 'otp', 'settings'].some((p) => state.me.pages.includes(p))));
   $('#loginView').classList.add('hidden'); $('#appView').classList.remove('hidden');
   const first = location.hash.slice(1);
   loadPage(state.me.pages.includes(first) ? first : 'overview');
