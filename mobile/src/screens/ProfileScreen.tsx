@@ -13,7 +13,7 @@ import { TopTabs } from '../components/Tabs';
 import { PostCard } from '../components/PostCard';
 import { ImageViewer } from '../components/ImageViewer';
 import { resolveUrl } from '../config';
-import { PROFILE } from '../theme/profileLayout';
+import { PROFILE, startText } from '../theme/profileLayout';
 
 const BANNER = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=60';
 
@@ -58,8 +58,8 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Text style={[styles.name, { color: c.text }]}>{me.name}</Text>{me.verified ? <VerifiedBadge size={18} /> : null}</View>
-        <Text style={{ color: c.textSecondary, fontSize: 15 }}>@{me.username}</Text>
-        {(user as any)?.bio ? <Text style={{ color: c.text, fontSize: 15, marginTop: 10, lineHeight: 21 }}>{(user as any).bio}</Text> : null}
+        <Text style={[{ color: c.textSecondary, fontSize: 15 }, startText()]}>@{me.username}</Text>
+        {(user as any)?.bio ? <Text style={[{ color: c.text, fontSize: 15, marginTop: PROFILE.sectionGap, lineHeight: 21 }, startText()]}>{(user as any).bio}</Text> : null}
         <View style={styles.metaRow}>
           {user?.phone ? (
             <View style={styles.meta}><Icon name="phone" size={15} color={c.textSecondary} /><Text style={{ color: c.textSecondary }}>{user.phone}</Text></View>
