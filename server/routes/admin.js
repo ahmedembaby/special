@@ -877,7 +877,7 @@ router.get('/sessions', async (req, res) => {
     const base = `FROM device_sessions ds JOIN users u ON u.id = ds.user_id WHERE ds.revoked_at IS NULL AND ds.expires_at > NOW() ${w}`;
     const [[t]] = await pool.query(`SELECT COUNT(*) AS c ${base}`, args);
     const [rows] = await pool.query(
-      `SELECT ds.id, ds.user_id, ds.device_name, ds.platform, ds.created_at,
+      `SELECT ds.id, ds.user_id, ds.device_name, ds.platform, ds.ip, ds.user_agent, ds.created_at,
               ds.last_active_at, ds.expires_at, u.name AS user_name, u.username, u.phone, u.banned
        ${base} ORDER BY ds.last_active_at DESC LIMIT ? OFFSET ?`, [...args, limit, offset]
     );
