@@ -4,7 +4,8 @@
  *  - the public key is uploaded to the server so the other person can encrypt for us
  *  - messages are sealed with nacl.box (X25519 + XSalsa20-Poly1305) using the shared key of both parties,
  *    so the sender can read their own messages too
- * Limits: one device per account, no key backup (a reinstall means old encrypted messages are unreadable).
+ * Limits: one device per account. An optional passphrase-protected key backup is stored on the server (see backupKey/restoreKey);
+ * without it a reinstall means old encrypted messages are unreadable.
  */
 import nacl from 'tweetnacl';
 import * as SecureStore from 'expo-secure-store';
