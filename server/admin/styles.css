@@ -58,6 +58,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .nav-item:hover{background:var(--surface-2);color:var(--text);transform:translateX(-2px)}
 .nav-item.active{background:var(--primary-soft);border-color:#5268e81a;color:var(--primary);font-weight:900}
 .nav-item.active span{background:var(--primary);color:#fff;box-shadow:0 5px 12px #5268e833}
+.nav-badge.pulse{animation:badgepulse .9s ease 3}
+@keyframes badgepulse{50%{transform:scale(1.35)}}
 .nav-badge{margin-right:auto;background:var(--red-soft);color:var(--red);font-size:10px;border-radius:20px;padding:3px 8px;font-style:normal;font-weight:900}
 .sidebar-bottom{margin-top:auto;border-top:1px solid var(--line);padding-top:15px}
 .admin-chip{display:flex;align-items:center;gap:10px;padding:9px 8px 13px}
