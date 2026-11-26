@@ -3,11 +3,13 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAppColors } from '../theme/useAppColors';
 import { ScreenHeader } from '../components/ScreenHeader';
+import { IconText } from '../components/IconText';
+import type { IconName } from '../components/Icon';
 import * as api from '../services/api';
 
-const label = (m: api.StarredMessage) =>
-  m.type === 'image' ? '📷 Photo' : m.type === 'voice' ? `🎤 Voice message ${m.voice_duration || ''}` : m.type === 'file' ? '📎 File' : m.type === 'poll' ? `📊 ${m.content}`
-  : m.content.startsWith('e2ee:') ? '🔒 Encrypted message (open the chat to read it)' : m.content;
+const label = (m: api.StarredMessage): { icon: IconName | null; text: string } =>
+  m.type === 'image' ? { icon: 'image', text: 'Photo' } : m.type === 'voice' ? { icon: 'mic', text: `Voice message ${m.voice_duration || ''}`.trim() } : m.type === 'file' ? { icon: 'file', text: 'File' } : m.type === 'poll' ? { icon: 'poll', text: m.content }
+  : m.content.startsWith('e2ee:') ? { icon: 'lockFill', text: 'Encrypted message (open the chat to read it)' } : { icon: null, text: m.content };
 
 /** Messages you starred, newest first. Tap one to open its chat; long-press to remove the star. */
 export default function StarredScreen() {
@@ -34,7 +36,7 @@ export default function StarredScreen() {
           data={items}
           keyExtractor={(m) => String(m.id)}
           contentContainerStyle={{ paddingBottom: 40 }}
-          ListEmptyComponent={<Text style={[styles.empty, { color: c.textSecondary }]}>No starred messages yet.{'\n'}Long-press a message in a chat and choose ⭐ Star.</Text>}
+          ListEmptyComponent={<Text style={[styles.empty, { color: c.textSecondary }]}>No starred messages yet.{'\n'}Long-press a message in a chat and choose Star.</Text>}
           renderItem={({ item }) => (
             <TouchableOpacity activeOpacity={0.8} onLongPress={() => unstar(item)}
               onPress={() => nav.navigate('Main', { screen: 'Messages', params: { screen: 'Chat', params: { conversationId: item.conversation_id } } })}
@@ -43,7 +45,7 @@ export default function StarredScreen() {
                 <Text style={{ color: c.primary, fontWeight: '700', fontSize: 13 }} numberOfLines={1}>{item.sender_name}{item.conversation_name ? `  ›  ${item.conversation_name}` : ''}</Text>
                 <Text style={{ color: c.textMuted, fontSize: 12 }}>{new Date(item.created_at).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
               </View>
-              <Text style={{ color: c.text, fontSize: 15, marginTop: 6 }} numberOfLines={4}>{label(item)}</Text>
+              {(() => { const l = label(item); return l.icon ? <IconText icon={l.icon} color={c.text} size={16} style={{ marginTop: 6 }} textStyle={{ fontSize: 15, flexShrink: 1 }} numberOfLines={4}>{l.text}</IconText> : <Text style={{ color: c.text, fontSize: 15, marginTop: 6 }} numberOfLines={4}>{l.text}</Text>; })()}
             </TouchableOpacity>
           )}
         />
