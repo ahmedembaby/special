@@ -25,6 +25,7 @@ export const connectSocket = (token: string): Socket => {
   });
   // Re-join the open conversation rooms after every (re)connect
   socket.on('connect', () => rooms.forEach((id) => socket?.emit('join_conversation', id)));
+  subs.forEach(attachSub); // screens that subscribed before this socket existed
   return socket;
 };
 
@@ -35,6 +36,7 @@ export const disconnectSocket = () => {
   socket = null;
   currentToken = null;
   rooms.clear();
+  subs.forEach((sub) => { sub.attached = null; });
 };
 
 export const getSocket = (): Socket | null => socket;
@@ -53,20 +55,26 @@ export const emitTyping = (conversationId: string | number, isTyping: boolean, k
   socket?.emit('typing', { conversationId, isTyping, kind });
 };
 
+// Every active subscription. When a socket is created they are attached to it right away, so there is no per-subscription
+// polling timer (before, each onSocket call ran a 1 second setInterval for as long as the screen was mounted).
+interface Sub { event: string; handler: (...args: any[]) => void; attached: Socket | null }
+const subs = new Set<Sub>();
+const attachSub = (sub: Sub) => {
+  if (socket && socket !== sub.attached) {
+    sub.attached?.off(sub.event, sub.handler);
+    sub.attached = socket;
+    socket.on(sub.event, sub.handler);
+  }
+};
+
 /** Subscribe to a socket event; returns the unsubscribe function. Safe to call before connecting. */
 export const onSocket = (event: string, handler: (...args: any[]) => void): (() => void) => {
-  let attached: Socket | null = null;
-  const attach = () => {
-    if (socket && socket !== attached) {
-      attached?.off(event, handler);
-      attached = socket;
-      attached.on(event, handler);
-    }
-  };
-  attach();
-  const timer = setInterval(attach, 1000); // picks up a socket created after subscribing
+  const sub: Sub = { event, handler, attached: null };
+  subs.add(sub);
+  attachSub(sub);
   return () => {
-    clearInterval(timer);
-    attached?.off(event, handler);
+    subs.delete(sub);
+    sub.attached?.off(event, handler);
+    sub.attached = null;
   };
 };
