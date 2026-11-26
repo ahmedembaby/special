@@ -28,7 +28,7 @@ export const ChatHeader = ({ name, avatarUri, subtitle, statusIcons, online, act
   return (
     <View style={[styles.header, { backgroundColor: bar, shadowColor: c.shadow, borderBottomColor: c.divider }]}>
       <TouchableOpacity style={styles.back} onPress={onBack} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Back">
-        <Icon name={I18nManager.isRTL ? 'arrowRight' : 'arrowLeft'} size={24} color={iconCol} />
+        <Icon name="arrowLeft" size={24} color={iconCol} />
       </TouchableOpacity>
       <TouchableOpacity style={styles.info} activeOpacity={onProfile ? 0.7 : 1} onPress={onProfile} accessibilityRole={onProfile ? 'button' : undefined}>
         {avatarUri ? (
