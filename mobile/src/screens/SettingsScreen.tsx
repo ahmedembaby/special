@@ -45,20 +45,20 @@ export default function SettingsScreen() {
         <Section t="Your account" />
         <Row icon="user" title={t('Account information')} sub={t('Name, bio and profile photo')} onPress={() => nav.navigate('ProfileEdit')} />
         <Row
-          icon="lock"
+          icon="eyeOff"
           title="Private account"
           sub="Only people you approve can follow you and see your posts and stories"
           right={<Switch value={!!user?.is_private} onValueChange={togglePrivate} accessibilityLabel="Private account" trackColor={{ false: c.inputBorder, true: c.primary }} thumbColor="#FFFFFF" />}
         />
-        <Row icon="bookmark" title={t('Starred messages')} onPress={() => nav.navigate('Starred')} />
-        <Row icon="lock" title={t('Privacy & notifications')} onPress={() => nav.navigate('PrivacySettings')} />
+        <Row icon="star" title={t('Starred messages')} onPress={() => nav.navigate('Starred')} />
+        <Row icon="eye" title={t('Privacy & notifications')} onPress={() => nav.navigate('PrivacySettings')} />
         <Row icon="lock" title={t('Encryption key backup')} sub="Keep your encrypted chats after reinstalling or on a second phone" onPress={() => nav.navigate('KeyBackup')} />
         <Row icon="bookmark" title={t('Saved posts')} onPress={() => nav.navigate('Hashtag', { bookmarks: true })} />
-        <Row icon="user" title={t('Blocked accounts')} onPress={() => nav.navigate('BlockedUsers')} />
-        <Row icon="lock" title={t('Security')} sub="PIN, Face ID and fingerprint" onPress={() => nav.navigate('Security')} />
-        <Row icon="lock" title="Two-step verification" sub="Require an authenticator code when signing in" onPress={() => nav.navigate('TwoFactor')} />
-        <Row icon="user" title="Account verification" sub="Request the verified badge" onPress={() => nav.navigate('Verification')} />
-        <Row icon="user" title="Devices and sessions" sub="Review and sign out devices connected to your account" onPress={() => nav.navigate('Sessions')} />
+        <Row icon="warning" title={t('Blocked accounts')} onPress={() => nav.navigate('BlockedUsers')} />
+        <Row icon="fingerprint" title={t('Security')} sub="PIN, Face ID and fingerprint" onPress={() => nav.navigate('Security')} />
+        <Row icon="checkCircle" title="Two-step verification" sub="Require an authenticator code when signing in" onPress={() => nav.navigate('TwoFactor')} />
+        <Row icon="verified" title="Account verification" sub="Request the verified badge" onPress={() => nav.navigate('Verification')} />
+        <Row icon="phone" title="Devices and sessions" sub="Review and sign out devices connected to your account" onPress={() => nav.navigate('Sessions')} />
 
         {user?.is_admin ? (
           <>
@@ -76,7 +76,7 @@ export default function SettingsScreen() {
         <OptionSheet visible={langSheet} title={t('Language')} onClose={() => setLangSheet(false)} options={[{ label: 'English', selected: lang === 'en', onPress: () => setLang('en') }, { label: 'العربية', selected: lang === 'ar', onPress: () => setLang('ar') }]} />
 
         <Section t="Notifications" />
-        <Row icon="bellOff" title="Notification preferences" sub="Manage message, activity and quiet-hour alerts" onPress={() => nav.navigate('PrivacySettings')} />
+        <Row icon="bell" title="Notification preferences" sub="Manage message, activity and quiet-hour alerts" onPress={() => nav.navigate('PrivacySettings')} />
 
         <Section t="About" />
         <Row
