@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   SafeAreaView, View, FlatList, ActivityIndicator, StatusBar, Platform, AppState, KeyboardAvoidingView, Alert, StyleSheet,
-  TextInput, TouchableOpacity, Text, Modal, PanResponder, ScrollView,
+  TextInput, TouchableOpacity, Text, Modal, PanResponder, ScrollView, I18nManager,
 } from 'react-native';
 import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,6 +12,10 @@ import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
 import * as api from '../services/api';
 import { AIAssistantSheet } from '../components/AIAssistantSheet';
+import { bubbleCorners } from '../utils/bubbleShape';
+import { ChatHeader } from '../components/ChatHeader';
+import { ChatComposerField } from '../components/ChatComposerField';
+import { useI18n } from '../i18n';
 import { resolveUrl } from '../config';
 import { useAuth } from '../context/AuthContext';
 
@@ -78,6 +82,8 @@ export default function ChatScreen() {
   const navigation = useNavigation() as any;
   const route = useRoute() as any;
   const { c, isDark } = useAppColors();
+  const { t, lang } = useI18n();
+  const dateLoc: any = lang === 'ar' ? 'ar-EG' : [];
   const X_BLUE = c.primary;
   const BG_GRAY = c.surface;
   const BORDER_GRAY = c.border;
@@ -1259,24 +1265,24 @@ export default function ChatScreen() {
     const d = new Date(dateStr);
     const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
     const diff = Math.round((startOf(new Date()) - startOf(d)) / 86400000);
-    if (diff === 0) return 'Today';
-    if (diff === 1) return 'Yesterday';
-    return d.toLocaleDateString([], { weekday: diff < 7 ? 'long' : undefined, day: 'numeric', month: 'short', year: diff < 300 ? undefined : 'numeric' });
+    if (diff === 0) return t('Today');
+    if (diff === 1) return t('Yesterday');
+    return d.toLocaleDateString(dateLoc, { weekday: diff < 7 ? 'long' : undefined, day: 'numeric', month: 'short', year: diff < 300 ? undefined : 'numeric' });
   };
   const sameDay = (a?: string, b?: string) => !!a && !!b && new Date(a).toDateString() === new Date(b).toDateString();
   const presenceText = () => {
     if (inGroup || !header.userId) return '';
-    if (header.status === 'online') return 'Online';
+    if (header.status === 'online') return t('Active now');
     if (header.lastSeen) {
       const d = new Date(header.lastSeen);
-      return `Last seen ${sameDay(header.lastSeen, new Date().toISOString()) ? 'today' : d.toLocaleDateString([], { day: 'numeric', month: 'short' })} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `${t('Last seen')} ${sameDay(header.lastSeen, new Date().toISOString()) ? t('today') : d.toLocaleDateString(dateLoc, { day: 'numeric', month: 'short' })} ${d.toLocaleTimeString(dateLoc, { hour: '2-digit', minute: '2-digit' })}`;
     }
     return '';
   };
 
   const timeFormat = (dateStr: string | undefined) => {
     if (!dateStr) return '';
-    return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return new Date(dateStr).toLocaleTimeString(dateLoc, { hour: '2-digit', minute: '2-digit' });
   };
 
   const wall = theme.wallpaper || c.background;
@@ -1319,57 +1325,27 @@ export default function ChatScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: wall }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <View style={[styles.header, { backgroundColor: c.card, shadowColor: c.shadow }]}>
-        <TouchableOpacity style={styles.backWrap} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-          <Icon name="arrowLeft" size={24} color={X_BLUE} />
-        </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <TouchableOpacity
-            style={styles.avatarWrap}
-            activeOpacity={header.userId != null ? 0.7 : 1}
-            onPress={() => header.userId != null && navigation.navigate('UserProfile', { userId: String(header.userId) })}
-          >
-            {header.avatar ? (
-              <CachedImage source={{ uri: resolveUrl(header.avatar) || undefined }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, { backgroundColor: c.primary }]}>
-                <Text style={[styles.avatarInitial, { color: '#FFFFFF' }]}>
-                  {header.name ? header.name.charAt(0).toUpperCase() : 'U'}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          <View style={styles.nameWrap}>
-            <View style={styles.nameRow}>
-              <Text style={[styles.name, { color: TEXT_GRAY_900 }]} numberOfLines={1}>{header.name || ' '}</Text>
-            </View>
-            <Text style={[styles.phone, { color: presenceText() === 'Online' ? c.success : TEXT_GRAY_500 }]} numberOfLines={1}>
-              {encryptionOn ? '🔒 ' : ''}{meta.muted ? '🔕 ' : ''}{meta.disappear ? '⏱ ' : ''}{presenceText() || (inGroup ? header.handle : header.handle ? `@${header.handle}` : '')}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.actions}>
-          {!inGroup && header.userId != null && call.available ? (
-            <>
-              <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8} onPress={() => call.start({ id: header.userId!, name: header.name, avatar: header.avatar }, 'video')}>
-                <Icon name="video" size={20} color={X_BLUE} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8} onPress={() => call.start({ id: header.userId!, name: header.name, avatar: header.avatar }, 'audio')}>
-                <Icon name="phone" size={20} color={X_BLUE} />
-              </TouchableOpacity>
-            </>
-          ) : null}
-          <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8} onPress={() => setMenu('main')}>
-            <Icon name="moreHorizontal" size={20} color={X_BLUE} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <ChatHeader
+        name={header.name || ''}
+        avatarUri={header.avatar ? resolveUrl(header.avatar) : null}
+        online={header.status === 'online' && !inGroup}
+        subtitle={`${encryptionOn ? '🔒 ' : ''}${meta.muted ? '🔕 ' : ''}${meta.disappear ? '⏱ ' : ''}${presenceText() || (inGroup ? header.handle || '' : header.handle ? `@${header.handle}` : '')}`.trim()}
+        onBack={() => navigation.goBack()}
+        onProfile={header.userId != null ? () => navigation.navigate('UserProfile', { userId: String(header.userId) }) : undefined}
+        actions={[
+          ...(!inGroup && header.userId != null && call.available ? [
+            { icon: 'video', label: t('Video call'), onPress: () => call.start({ id: header.userId!, name: header.name, avatar: header.avatar }, 'video') },
+            { icon: 'phone', label: t('Voice call'), onPress: () => call.start({ id: header.userId!, name: header.name, avatar: header.avatar }, 'audio') },
+          ] : []),
+          { icon: 'moreHorizontal', label: t('More'), onPress: () => setMenu('main') },
+        ]}
+      />
 
       {showSearch ? <View style={[styles.searchWrap, { borderBottomColor: BORDER_GRAY }]}>
         <View style={[styles.searchInputWrap, { backgroundColor: BG_GRAY, borderColor: BORDER_GRAY }]}>
           <Icon name="search" size={20} color={TEXT_GRAY_500} />
           <TextInput
-            placeholder="Search in this conversation"
+            placeholder={t('Search in this conversation')}
             placeholderTextColor={TEXT_GRAY_500}
             value={msgSearch}
             onChangeText={setMsgSearch}
@@ -1447,6 +1423,8 @@ export default function ChatScreen() {
               const isOwn = isMine(item.sender_id);
               const prev = index > 0 ? visibleMessages[index - 1] : undefined;
               const newDay = !prev || !sameDay(prev.created_at, item.created_at);
+              const nxt = index < visibleMessages.length - 1 ? visibleMessages[index + 1] : undefined;
+              const groupedWithNext = !!nxt && sameDay(nxt.created_at, item.created_at) && String(nxt.sender_id) === String(item.sender_id) && new Date(nxt.created_at).getTime() - new Date(item.created_at).getTime() < 5 * 60 * 1000;
               const groupedWithPrev = !!prev && !newDay && String(prev.sender_id) === String(item.sender_id) && new Date(item.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60 * 1000;
               const isFile = item.type === 'file';
               const isVoice = item.type === 'voice';
@@ -1462,7 +1440,7 @@ export default function ChatScreen() {
                 <View style={isSel ? { backgroundColor: 'rgba(108,77,246,0.16)' } : undefined}>
                 {String(item.id) === unreadDividerId ? (
                   <View style={styles.dayWrap}>
-                    <Text style={[styles.dayText, { color: '#FFFFFF', backgroundColor: X_BLUE }]}>Unread messages</Text>
+                    <Text style={[styles.dayText, { color: '#FFFFFF', backgroundColor: X_BLUE }]}>{t('Unread messages')}</Text>
                   </View>
                 ) : null}
                 {newDay ? (
@@ -1493,7 +1471,7 @@ export default function ChatScreen() {
                       <TouchableOpacity
                         activeOpacity={0.8}
                         onPress={() => !item.reply?.deleted && scrollToMessage(item.reply!.id)}
-                        style={[styles.quote, { backgroundColor: c.inputBg, borderLeftColor: X_BLUE }]}
+                        style={[styles.quote, { backgroundColor: c.inputBg, borderStartColor: X_BLUE }]}
                       >
                         {item.reply.deleted ? (
                           <Text style={[styles.quoteText, { color: TEXT_GRAY_500 }]}>Original message was deleted</Text>
@@ -1561,7 +1539,7 @@ export default function ChatScreen() {
                         <Text style={{ fontSize: 64 }}>{textOf(item).slice(8)}</Text>
                       </TouchableOpacity>
                     ) : !isVoice ? (
-                      <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.otherBubble, isOwn ? ownBubbleStyle : null]}>
+                      <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.otherBubble, bubbleCorners(isOwn, groupedWithPrev, groupedWithNext, I18nManager.isRTL), isOwn ? ownBubbleStyle : null]}>
                         <Text
                           style={[styles.messageText, { color: isOwn ? '#FFFFFF' : TEXT_GRAY_900 }, textOf(item).startsWith('📍 http') && { textDecorationLine: 'underline' }]}
                           onPress={textOf(item).startsWith('📍 http') ? () => Linking.openURL(textOf(item).slice(2).trim()) : undefined}
@@ -1798,23 +1776,15 @@ export default function ChatScreen() {
                 </>
               ) : (
                 <>
-                  <View style={styles.voiceBtn} {...micPan.panHandlers}>
-                    <Icon name="mic" size={20} color={X_BLUE} />
-                  </View>
-                  <TextInput
+                  <ChatComposerField
                     value={input}
                     onChangeText={onChangeInput}
-                    style={[styles.input, { color: TEXT_GRAY_900, flex: 1 }]}
-                    placeholder="Start a message..."
-                    placeholderTextColor={TEXT_GRAY_500}
-                    multiline
-                    underlineColorAndroid="transparent"
+                    placeholder={t('Start a message...')}
+                    micProps={micPan.panHandlers}
+                    canSend={!!input.trim()}
+                    sending={sending}
+                    onSend={sendMessage}
                   />
-                  {input.trim() ? (
-                    <TouchableOpacity style={[styles.sendBtn, !sending ? styles.sendBtnActive : styles.sendBtnDisabled]} onPress={sendMessage} disabled={sending} activeOpacity={0.8}>
-                      <Icon name="sendFeather" size={20} color={'#FFFFFF'} />
-                    </TouchableOpacity>
-                  ) : null}
                 </>
               )}
             </View>
@@ -1954,12 +1924,18 @@ export default function ChatScreen() {
 }
 
 const makeStyles = (c: any, k: any) => {
+  const rtl = I18nManager.isRTL;
+  // Own messages stay on the physical right in both directions, so the tail corner is the end side in LTR and the start side in RTL
+  const OWN_TAIL = rtl ? 'borderBottomStartRadius' : 'borderBottomEndRadius';
+  const OTHER_TAIL = rtl ? 'borderBottomEndRadius' : 'borderBottomStartRadius';
+  const OWN_ALIGN = rtl ? 'flex-start' : 'flex-end';
+  const OTHER_ALIGN = rtl ? 'flex-end' : 'flex-start';
   const { X_BLUE, BG_GRAY, BORDER_GRAY, TEXT_GRAY_900, TEXT_GRAY_500, TEXT_GRAY_400 } = k;
   return StyleSheet.create({
   selectBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 52, marginHorizontal: 12, marginTop: 6, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
   selectBtn: { paddingHorizontal: 10, paddingVertical: 8 },
-  jumpBtn: { position: 'absolute', right: 16, bottom: 92, width: 46, height: 46, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
-  jumpBadge: { position: 'absolute', top: -8, right: -6, minWidth: 22, height: 22, borderRadius: 8, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
+  jumpBtn: { position: 'absolute', end: 16, bottom: 92, width: 46, height: 46, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
+  jumpBadge: { position: 'absolute', top: -8, end: -6, minWidth: 22, height: 22, borderRadius: 8, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
   sheetBox: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, paddingBottom: 28 },
   sheetTitle: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
   sheetLabel: { fontSize: 13, fontWeight: '700', marginTop: 12, marginBottom: 8 },
@@ -1971,7 +1947,7 @@ const makeStyles = (c: any, k: any) => {
   previewBubble: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18 },
   themeAllRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14 },
   forwardedLabel: { fontSize: 12, fontStyle: 'italic', marginBottom: 2 },
-  quote: { borderLeftWidth: 3, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, marginBottom: 4 },
+  quote: { borderStartWidth: 3, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, marginBottom: 4 },
   quoteName: { fontSize: 12, fontWeight: '700' },
   quoteText: { fontSize: 13 },
   replyBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: 1 },
@@ -2046,13 +2022,13 @@ const makeStyles = (c: any, k: any) => {
   },
   listContent: { paddingVertical: 10, paddingHorizontal: 14, flexGrow: 1 },
   messageWrap: { marginHorizontal: 4, marginVertical: 5 },
-  ownWrap: { alignItems: 'flex-end' },
-  otherWrap: { alignItems: 'flex-start' },
+  ownWrap: { alignItems: OWN_ALIGN },
+  otherWrap: { alignItems: OTHER_ALIGN },
   bubbleContainer: {
     maxWidth: '80%',
   },
-  bubbleContainerOwn: { alignSelf: 'flex-end' },
-  bubbleContainerOther: { alignSelf: 'flex-start' },
+  bubbleContainerOwn: { alignSelf: OWN_ALIGN },
+  bubbleContainerOther: { alignSelf: OTHER_ALIGN },
   bubble: {
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -2060,11 +2036,11 @@ const makeStyles = (c: any, k: any) => {
   },
   ownBubble: {
     backgroundColor: X_BLUE,
-    borderBottomRightRadius: 7,
+    [OWN_TAIL]: 7,
   },
   otherBubble: {
     backgroundColor: c.card,
-    borderBottomLeftRadius: 7,
+    [OTHER_TAIL]: 7,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
   },
@@ -2074,10 +2050,10 @@ const makeStyles = (c: any, k: any) => {
     alignItems: 'baseline',
     marginTop: 5,
   },
-  metaRowOwn: { justifyContent: 'flex-end' },
-  metaRowOther: { justifyContent: 'flex-start' },
+  metaRowOwn: { justifyContent: OWN_ALIGN },
+  metaRowOther: { justifyContent: OTHER_ALIGN },
   time: { ...Typography.caption },
-  statusWrap: { marginLeft: 4 },
+  statusWrap: { marginStart: 4 },
   typingWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2231,7 +2207,7 @@ const makeStyles = (c: any, k: any) => {
   },
   ownVoiceBubble: {
     backgroundColor: X_BLUE,
-    borderBottomRightRadius: 6,
+    [OWN_TAIL]: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -2240,7 +2216,7 @@ const makeStyles = (c: any, k: any) => {
   },
   otherVoiceBubble: {
     backgroundColor: c.card,
-    borderBottomLeftRadius: 6,
+    [OTHER_TAIL]: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -2352,7 +2328,7 @@ const makeStyles = (c: any, k: any) => {
   },
   ownFileBubble: {
     backgroundColor: X_BLUE,
-    borderBottomRightRadius: 6,
+    [OWN_TAIL]: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -2361,7 +2337,7 @@ const makeStyles = (c: any, k: any) => {
   },
   otherFileBubble: {
     backgroundColor: c.card,
-    borderBottomLeftRadius: 6,
+    [OTHER_TAIL]: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,

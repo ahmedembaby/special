@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { SponsoredAdCard } from '../components/SponsoredAdCard';
 import { View, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet, Text, RefreshControl, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -7,17 +7,22 @@ import { useAppColors } from '../theme/useAppColors';
 import { useFeed } from '../hooks/useFeed';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { PostCard } from '../components/PostCard';
+import { PostSkeleton } from '../components/PostSkeleton';
 import { PostComposer } from '../components/PostComposer';
 import { Icon } from '../components/Icon';
 import { StoriesBar } from '../components/StoriesBar';
+import { useI18n } from '../i18n';
 import { useUnreadCounts } from '../context/UnreadCountsContext';
 
 export default function HomeScreen() {
   const nav = useNavigation() as any;
   const { c, isDark } = useAppColors();
+  const { t } = useI18n();
   const { messageCount } = useUnreadCounts();
   const insets = useSafeAreaInsets();
   const { me, posts, loading, refreshing, refresh, like, remove, create } = useFeed();
+
+  const openPost = useCallback((p: { id: string }) => nav.navigate('PostDetail', { postId: p.id }), [nav]);
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
@@ -29,7 +34,7 @@ export default function HomeScreen() {
       />
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+        <View><PostSkeleton /><PostSkeleton /><PostSkeleton /></View>
       ) : (
         <FlatList
           data={posts}
@@ -44,9 +49,9 @@ export default function HomeScreen() {
           ListHeaderComponent={<View><StoriesBar meId={String(me.id)} meAvatar={me.avatar} meName={me.name} /><PostComposer me={me} onPost={create} /><SponsoredAdCard /></View>}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={[styles.emptyTitle, { color: c.text }]}>No posts yet</Text>
+              <Text style={[styles.emptyTitle, { color: c.text }]}>{t('No posts yet')}</Text>
               <Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 6 }}>
-                Follow people from the Search tab or share your first post to start your feed.
+                {t('Follow people from the Search tab or share your first post to start your feed.')}
               </Text>
             </View>
           }
@@ -56,8 +61,8 @@ export default function HomeScreen() {
               meId={me.id}
               onLike={like}
               onDelete={remove}
-              onComment={(p) => nav.navigate('PostDetail', { postId: p.id })}
-              onPress={(p) => nav.navigate('PostDetail', { postId: p.id })}
+              onComment={openPost}
+              onPress={openPost}
             />
           )}
         />
@@ -79,7 +84,7 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 40 },
   emptyTitle: { fontSize: 20, fontWeight: '700' },
   fab: {
-    position: 'absolute', right: 18, width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
+    position: 'absolute', end: 18, width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.18)',
   },
 });
