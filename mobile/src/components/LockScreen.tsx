@@ -5,7 +5,7 @@ import { useAppColors } from '../theme/useAppColors';
 import { useAppLock } from '../context/AppLockContext';
 import { useAuth } from '../context/AuthContext';
 import { Icon } from './Icon';
-import { verifyPin, authenticateBiometric, getPinLockoutSeconds, getPinTriesLeft } from '../services/appLock';
+import { verifyPin, authenticateBiometric, getPinLockoutSeconds, getPinTriesLeft, pinSignOutDue } from '../services/appLock';
 
 /** Full-screen overlay shown while the app is locked. */
 export default function LockScreen() {
@@ -27,7 +27,16 @@ export default function LockScreen() {
   useEffect(() => { tryBiometric(); }, [tryBiometric]);
 
   // A lockout survives app restarts: pick it up from the keystore when the screen opens.
+  // 10 wrong PINs in a row (even across restarts) sign the user out. Encrypted-chat keys stay on the device; signing in again with the phone code restores access.
+  const signOutIfDue = useCallback(async () => {
+    if (!(await pinSignOutDue())) return false;
+    await logout().catch(() => {});
+    Alert.alert('Signed out', 'Too many wrong PIN attempts. Sign in again with your phone number. Your encryption key stays on this device.');
+    return true;
+  }, [logout]);
+
   useEffect(() => {
+    signOutIfDue();
     getPinLockoutSeconds().then((s) => { if (s > 0) setWait(s); }).catch(() => {});
     getPinTriesLeft().then(setTriesLeft).catch(() => {});
   }, []);
@@ -50,6 +59,7 @@ export default function LockScreen() {
     }
     setError(true);
     setPin('');
+    if (await signOutIfDue()) return;
     const left = await getPinLockoutSeconds();
     if (left > 0) setWait(left);
     setTriesLeft(await getPinTriesLeft());
