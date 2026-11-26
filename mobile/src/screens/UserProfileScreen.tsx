@@ -8,9 +8,11 @@ import { useAuth } from '../context/AuthContext';
 import { useAppColors } from '../theme/useAppColors';
 import { Avatar } from '../components/Avatar';
 import { Icon } from '../components/Icon';
+import { VerifiedBadge } from '../components/VerifiedBadge';
 import { PostCard } from '../components/PostCard';
 import { ImageViewer } from '../components/ImageViewer';
 import { resolveUrl } from '../config';
+import { PROFILE } from '../theme/profileLayout';
 import { useMe } from '../hooks/useMe';
 import { useCall } from '../context/CallContext';
 import { StoryViewer } from '../components/StoryViewer';
@@ -133,10 +135,10 @@ export default function UserProfileScreen() {
 
   const header = (
     <View>
-      <Image source={{ uri: BANNER }} style={styles.banner} />
+      <Image source={{ uri: resolveUrl(profile.cover) || BANNER }} style={styles.banner} />
       {back}
       {profile.id !== String(user?.id) ? (
-        <TouchableOpacity style={[styles.circle, { top: insets.top + 8, left: undefined, right: 12 }]} onPress={() => setMenu(true)}>
+        <TouchableOpacity style={[styles.circleRight, { top: insets.top + 8 }]} onPress={() => setMenu(true)}>
           <Icon name="moreHorizontal" size={22} color="#fff" />
         </TouchableOpacity>
       ) : null}
@@ -144,7 +146,7 @@ export default function UserProfileScreen() {
         <View style={styles.avatarRow}>
           <View style={[styles.avatarRing, { borderColor: c.background, backgroundColor: c.background }]}>
             <View style={stories.length ? { borderWidth: 3, borderColor: stories.every((x) => x.seen) ? c.border : c.primary, borderRadius: 46, padding: 2 } : undefined}>
-              <Avatar source={profile.avatar} name={profile.name} size={80} status={profile.status} onPress={stories.length ? () => setStoryOpen(true) : profile.avatar ? () => setAvatarViewer(true) : undefined} />
+              <Avatar source={profile.avatar} name={profile.name} size={PROFILE.avatar} status={profile.status} onPress={stories.length ? () => setStoryOpen(true) : profile.avatar ? () => setAvatarViewer(true) : undefined} />
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -166,12 +168,12 @@ export default function UserProfileScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        <Text style={[styles.name, { color: c.text }]}>{profile.name}{profile.is_private ? '  🔒' : ''}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Text style={[styles.name, { color: c.text }]}>{profile.name}</Text>{(profile as any).verified ? <VerifiedBadge size={18} /> : null}{profile.is_private ? <Icon name="lockFill" size={16} color={c.textSecondary} /> : null}</View>
         <Text style={{ color: c.textSecondary, fontSize: 15 }}>
           @{profile.username}
           {profile.follows_me ? <Text style={{ backgroundColor: c.surface }}>  Follows you  </Text> : null}
         </Text>
-        {profile.bio ? <Text style={{ color: c.text, fontSize: 15, marginTop: 10, lineHeight: 21 }}>{profile.bio}</Text> : null}
+        {profile.bio ? <Text style={{ color: c.text, fontSize: 15, marginTop: PROFILE.sectionGap, lineHeight: 21 }}>{profile.bio}</Text> : null}
         <View style={styles.counts}>
           <Text style={{ color: c.text }}><Text style={{ fontWeight: '800' }}>{compact(profile.following_count)}</Text><Text style={{ color: c.textSecondary }}> Following</Text></Text>
           <Text style={{ color: c.text }}><Text style={{ fontWeight: '800' }}>{compact(profile.followers_count)}</Text><Text style={{ color: c.textSecondary }}> Followers</Text></Text>
@@ -210,9 +212,15 @@ export default function UserProfileScreen() {
         contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={c.primary} colors={[c.primary]} />}
         ListEmptyComponent={
-          <Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 40, paddingHorizontal: 30 }}>
-            {profile.can_view === false ? '🔒 This account is private.\nFollow them to see their posts and stories.' : 'No posts yet.'}
-          </Text>
+          profile.can_view === false ? (
+            <View style={{ alignItems: 'center', marginTop: 40, paddingHorizontal: 30, gap: 8 }}>
+              <Icon name="lockFill" size={22} color={c.textSecondary} />
+              <Text style={{ color: c.text, fontWeight: '700', fontSize: 16 }}>This account is private</Text>
+              <Text style={{ color: c.textSecondary, textAlign: 'center' }}>Follow them to see their posts and stories.</Text>
+            </View>
+          ) : (
+            <Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 40, paddingHorizontal: 30 }}>No posts yet.</Text>
+          )
         }
         renderItem={({ item }) => (
           <PostCard post={item} meId={me.id} onLike={() => {}} onDelete={() => {}} onComment={(p) => openPost(p.id)} onPress={(p) => openPost(p.id)} />
@@ -224,13 +232,14 @@ export default function UserProfileScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  banner: { width: '100%', height: 164, backgroundColor: '#252B45' },
-  circle: { position: 'absolute', left: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
-  info: { paddingHorizontal: 20, paddingBottom: 20 },
-  avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -44, marginBottom: 10 },
+  banner: { width: '100%', height: PROFILE.bannerHeight, backgroundColor: '#252B45' },
+  circleRight: { position: 'absolute', end: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  circle: { position: 'absolute', start: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  info: { paddingHorizontal: PROFILE.padX, paddingBottom: PROFILE.padBottom },
+  avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: PROFILE.avatarOverlap, marginBottom: PROFILE.avatarRowGap },
   avatarRing: { borderWidth: 4, borderRadius: 48 },
-  outBtn: { width: 40, height: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  followBtn: { borderRadius: 14, paddingHorizontal: 20, height: 40, alignItems: 'center', justifyContent: 'center' },
-  name: { fontSize: 25, fontWeight: '800', letterSpacing: -0.6 },
-  counts: { flexDirection: 'row', gap: 18, marginTop: 10 },
+  outBtn: { width: PROFILE.actionHeight, height: PROFILE.actionHeight, borderWidth: StyleSheet.hairlineWidth, borderRadius: PROFILE.actionRadius, alignItems: 'center', justifyContent: 'center' },
+  followBtn: { borderRadius: PROFILE.actionRadius, paddingHorizontal: 20, height: PROFILE.actionHeight, alignItems: 'center', justifyContent: 'center' },
+  name: { fontSize: PROFILE.nameSize, fontWeight: '800', letterSpacing: -0.7 },
+  counts: { flexDirection: 'row', gap: PROFILE.countsGap, marginTop: PROFILE.sectionGap },
 });
