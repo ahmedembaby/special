@@ -40,6 +40,7 @@ export default function UserProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [avatarViewer, setAvatarViewer] = useState(false);
+  const [coverViewer, setCoverViewer] = useState(false);
   const [stories, setStories] = useState<social.Story[]>([]);
   const [storyOpen, setStoryOpen] = useState(false);
   const call = useCall();
@@ -135,7 +136,9 @@ export default function UserProfileScreen() {
 
   const header = (
     <View>
-      <Image source={{ uri: resolveUrl(profile.cover) || BANNER }} style={styles.banner} />
+      <TouchableOpacity activeOpacity={0.95} disabled={!profile.cover} onPress={() => setCoverViewer(true)} accessibilityRole="imagebutton" accessibilityLabel="View cover photo">
+        <Image source={{ uri: resolveUrl(profile.cover) || BANNER }} style={styles.banner} />
+      </TouchableOpacity>
       {back}
       {profile.id !== String(user?.id) ? (
         <TouchableOpacity style={[styles.circleRight, { top: insets.top + 8 }]} onPress={() => setMenu(true)}>
@@ -199,6 +202,7 @@ export default function UserProfileScreen() {
         />
       ) : null}
       {avatarViewer ? <ImageViewer uri={resolveUrl(profile.avatar)} onClose={() => setAvatarViewer(false)} /> : null}
+      {coverViewer ? <ImageViewer uri={resolveUrl(profile.cover)} onClose={() => setCoverViewer(false)} /> : null}
     </View>
   );
 
