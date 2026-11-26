@@ -19,6 +19,8 @@ const permissionRoles = (req) => {
   if (p.startsWith('/admins') || p.startsWith('/backups')) return ['owner'];
   if (p.startsWith('/verifications') || p.startsWith('/appeals')) return ['owner', 'admin', 'moderator'];
   if (p.startsWith('/reports') || p.startsWith('/posts') || p.startsWith('/groups') || p.startsWith('/stories') || p.startsWith('/banned-words')) return ['owner', 'admin', 'moderator'];
+  // Message content is private: only admin/owner may read a conversation's messages
+  if (/^\/conversations\/\d+\/messages/.test(p)) return ['admin', 'owner'];
   if (['/stats', '/system', '/health', '/errors', '/release', '/users', '/sessions', '/conversations'].some((prefix) => p === prefix || p.startsWith(prefix + '/'))) {
     if (!write && ['support', 'moderator', 'admin', 'owner'].includes(req.adminRole)) return ['support', 'moderator', 'admin', 'owner'];
     return ['admin', 'owner'];
@@ -406,6 +408,25 @@ router.get('/conversations', async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: 'Could not load conversations' });
   }
+});
+
+// Message history of one conversation. Admin/owner only (see permissionRoles): private content.
+router.get('/conversations/:id/messages', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ message: 'Invalid conversation id' });
+    const { limit, offset } = pageParams(req, 50, 200);
+    const [[conv]] = await pool.query('SELECT id, name, type FROM conversations WHERE id = ?', [id]);
+    if (!conv) return res.status(404).json({ message: 'Conversation not found' });
+    const [[t]] = await pool.query('SELECT COUNT(*) AS c FROM messages WHERE conversation_id = ?', [id]);
+    const [rows] = await pool.query(
+      `SELECT m.id, m.type, m.content, m.file_name, m.created_at, u.id AS sender_id, u.name AS sender_name, u.username
+       FROM messages m JOIN users u ON u.id = m.sender_id WHERE m.conversation_id = ? ORDER BY m.id DESC LIMIT ? OFFSET ?`,
+      [id, limit, offset]
+    );
+    res.set('X-Total-Count', String(t.c));
+    res.json({ conversation: conv, items: rows });
+  } catch { res.status(500).json({ message: 'Could not load messages' }); }
 });
 
 router.delete('/conversations/:id', async (req, res) => {
