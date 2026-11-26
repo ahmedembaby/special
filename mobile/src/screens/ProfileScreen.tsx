@@ -13,6 +13,7 @@ import { TopTabs } from '../components/Tabs';
 import { PostCard } from '../components/PostCard';
 import { ImageViewer } from '../components/ImageViewer';
 import { resolveUrl } from '../config';
+import { PROFILE } from '../theme/profileLayout';
 
 const BANNER = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=60';
 
@@ -35,7 +36,7 @@ export default function ProfileScreen() {
   const header = (
     <View>
       <View>
-        <Image source={{ uri: BANNER }} style={styles.banner} />
+        <Image source={{ uri: resolveUrl((user as any)?.cover_image) || BANNER }} style={styles.banner} />
         <View style={[styles.topBar, { top: insets.top + 8 }]}>
           <TouchableOpacity style={styles.circle} onPress={() => nav.getParent()?.navigate('Home')}>
             <Icon name="arrowLeft" size={20} color="#FFFFFF" />
@@ -49,14 +50,14 @@ export default function ProfileScreen() {
       <View style={styles.info}>
         <View style={styles.avatarRow}>
           <View style={[styles.avatarRing, { borderColor: c.background, backgroundColor: c.background }]}>
-            <Avatar source={me.avatar} name={me.name} size={80} onPress={me.avatar ? () => setAvatarViewer(true) : undefined} />
+            <Avatar source={me.avatar} name={me.name} size={PROFILE.avatar} onPress={me.avatar ? () => setAvatarViewer(true) : undefined} />
             {avatarViewer ? <ImageViewer uri={resolveUrl(me.avatar)} onClose={() => setAvatarViewer(false)} /> : null}
           </View>
           <TouchableOpacity style={[styles.editBtn, { borderColor: c.inputBorder, backgroundColor: c.card }]} onPress={() => nav.navigate('ProfileEdit')} activeOpacity={0.7}>
             <Text style={{ color: c.text, fontWeight: '800', fontSize: 14 }}>Edit profile</Text>
           </TouchableOpacity>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}><Text style={[styles.name, { color: c.text }]}>{me.name}</Text>{me.verified ? <VerifiedBadge size={18} /> : null}</View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Text style={[styles.name, { color: c.text }]}>{me.name}</Text>{me.verified ? <VerifiedBadge size={18} /> : null}</View>
         <Text style={{ color: c.textSecondary, fontSize: 15 }}>@{me.username}</Text>
         {(user as any)?.bio ? <Text style={{ color: c.text, fontSize: 15, marginTop: 10, lineHeight: 21 }}>{(user as any).bio}</Text> : null}
         <View style={styles.metaRow}>
@@ -96,15 +97,15 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  banner: { width: '100%', height: 172, backgroundColor: '#252B45' },
+  banner: { width: '100%', height: PROFILE.bannerHeight, backgroundColor: '#252B45' },
   topBar: { position: 'absolute', left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between' },
   circle: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
-  info: { paddingHorizontal: 20, paddingBottom: 22 },
-  avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -44, marginBottom: 10 },
+  info: { paddingHorizontal: PROFILE.padX, paddingBottom: PROFILE.padBottom },
+  avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: PROFILE.avatarOverlap, marginBottom: PROFILE.avatarRowGap },
   avatarRing: { borderWidth: 4, borderRadius: 48 },
-  editBtn: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, paddingHorizontal: 20, height: 42, alignItems: 'center', justifyContent: 'center' },
-  name: { fontSize: 26, fontWeight: '800', letterSpacing: -0.7 },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 10 },
+  editBtn: { borderWidth: StyleSheet.hairlineWidth, borderRadius: PROFILE.actionRadius, paddingHorizontal: 20, height: PROFILE.actionHeight, alignItems: 'center', justifyContent: 'center' },
+  name: { fontSize: PROFILE.nameSize, fontWeight: '800', letterSpacing: -0.7 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: PROFILE.sectionGap },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  counts: { flexDirection: 'row', gap: 18, marginTop: 10 },
+  counts: { flexDirection: 'row', gap: PROFILE.countsGap, marginTop: PROFILE.sectionGap },
 });
