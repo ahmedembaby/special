@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
+import { Icon } from './Icon';
 
 /** Blue check shown next to the name of verified accounts. */
 export const VerifiedBadge = ({ size = 16, style }: { size?: number; style?: any }) => (
@@ -9,6 +10,6 @@ export const VerifiedBadge = ({ size = 16, style }: { size?: number; style?: any
     accessibilityLabel="Verified account"
     style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#1D9BF0', alignItems: 'center', justifyContent: 'center', marginHorizontal: 4 }, style]}
   >
-    <Text allowFontScaling={false} style={{ color: '#FFFFFF', fontSize: size * 0.68, fontWeight: '800', lineHeight: size * 0.9 }}>✓</Text>
+    <Icon name="check" size={Math.round(size * 0.7)} color="#FFFFFF" strokeWidth={3.5} />
   </View>
 );
