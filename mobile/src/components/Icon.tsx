@@ -1,5 +1,5 @@
 import React from 'react';
-import { I18nManager } from 'react-native';
+import { I18nManager, View } from 'react-native';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 /**
@@ -125,8 +125,9 @@ export interface IconProps {
   strokeWidth?: number;
 }
 
-export const Icon = ({ name, size = 24, color = '#626B84', strokeWidth = 2, mirror }: IconProps) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={I18nManager.isRTL && (mirror ?? MIRROR_IN_RTL.has(name)) ? { transform: [{ scaleX: -1 }] } : undefined}>
+export const Icon = ({ name, size = 24, color = '#626B84', strokeWidth = 2, mirror }: IconProps) => {
+  const svg = (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     {ICONS[name].map((n, i) => {
       if (n.t === 'c') {
         return <Circle key={i} cx={n.cx} cy={n.cy} r={n.r} stroke={color} strokeWidth={strokeWidth} fill={n.fill ? color : 'none'} />;
@@ -147,6 +148,9 @@ export const Icon = ({ name, size = 24, color = '#626B84', strokeWidth = 2, mirr
       );
     })}
   </Svg>
-);
+  );
+  // Flip with a wrapping View: a plain transform on a View is supported everywhere, unlike relying on the Svg view's own style.
+  return I18nManager.isRTL && (mirror ?? MIRROR_IN_RTL.has(name)) ? <View style={{ width: size, height: size, transform: [{ scaleX: -1 }] }}>{svg}</View> : svg;
+};
 
 export default Icon;
