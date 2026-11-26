@@ -9,7 +9,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { Avatar } from '../components/Avatar';
 import { Icon } from '../components/Icon';
 import { resolveUrl } from '../config';
-import { PROFILE } from '../theme/profileLayout';
+import { PROFILE, startText } from '../theme/profileLayout';
 
 const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=60';
 
@@ -96,13 +96,13 @@ export default function ProfileEditScreen() {
 
   const Field = ({ label, value, onChange, multiline }: { label: string; value: string; onChange: (t: string) => void; multiline?: boolean }) => (
     <View style={[styles.field, { borderColor: c.inputBorder, backgroundColor: c.card }]}>
-      <Text style={{ color: c.textSecondary, fontSize: 13, fontWeight: '600' }}>{label}</Text>
+      <Text style={[{ color: c.textSecondary, fontSize: 13, fontWeight: '600' }, startText()]}>{label}</Text>
       <TextInput
         value={value}
         accessibilityLabel={label}
         onChangeText={onChange}
         multiline={multiline}
-        style={{ color: c.text, fontSize: 17, paddingVertical: 4, minHeight: multiline ? 70 : undefined, textAlignVertical: multiline ? 'top' : 'center' }}
+        style={[{ color: c.text, fontSize: 17, paddingVertical: 4, minHeight: multiline ? 70 : undefined, textAlignVertical: multiline ? 'top' : 'center' }, startText()]}
         placeholderTextColor={c.placeholder}
         maxLength={multiline ? 160 : 50}
       />
