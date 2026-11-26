@@ -7,6 +7,7 @@ import { resolveUrl } from '../config';
 import { useAppColors } from '../theme/useAppColors';
 import type { ThemeColors } from '../theme/colors';
 import { Icon } from '../components/Icon';
+import { EmptyState } from '../components/EmptyState';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { TopTabs } from '../components/Tabs';
 import { SearchBar } from '../components/SearchBar';
@@ -56,6 +57,8 @@ export function GroupsScreen() {
 
       {active.isLoading ? (
         <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 40 }} />
+      ) : active.isError && groups.length === 0 ? (
+        <EmptyState icon="users" title="Could not load groups" subtitle="Check your connection and try again." actionLabel="Try again" onAction={() => active.refetch()} />
       ) : groups.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={styles.emptyIcon}><Icon name="users" size={38} color={c.primary} /></View>
