@@ -267,12 +267,28 @@ const usersPage = () => listView({
 });
 
 /* ---------- content lists ---------- */
+const postImages = {};
+const imgSrc = (u) => (/^(https?:\/\/|\/)/.test(String(u)) ? String(u) : '/' + String(u));
+function postThumbs(p) {
+  const imgs = (p.images && p.images.length ? p.images : p.image ? [p.image] : []).map(imgSrc);
+  if (!imgs.length) return Number(p.image_count) ? '<br>' + pill(`${num(p.image_count)} صورة`) : '';
+  postImages[p.id] = imgs;
+  const shown = imgs.slice(0, 3).map((u, i) => `<button type="button" class="thumb" data-act="post-img" data-id="${esc(p.id)}" data-i="${i}" aria-label="معاينة الصورة ${i + 1}"><img src="${esc(u)}" alt="" loading="lazy"></button>`).join('');
+  return `<div class="thumbs">${shown}${imgs.length > 3 ? `<button type="button" class="thumb more" data-act="post-img" data-id="${esc(p.id)}" data-i="3">+${num(imgs.length - 3)}</button>` : ''}</div>`;
+}
+function showPostImage(id, i) {
+  const imgs = postImages[id] || [];
+  if (!imgs.length) return;
+  i = Math.max(0, Math.min(Number(i) || 0, imgs.length - 1));
+  const strip = imgs.map((u, k) => `<button type="button" class="thumb ${k === i ? 'active' : ''}" data-act="post-img" data-id="${esc(id)}" data-i="${k}"><img src="${esc(u)}" alt=""></button>`).join('');
+  openModal(`صور المنشور #${esc(id)} <small class="muted">(${num(i + 1)} / ${num(imgs.length)})</small>`, `<div class="lightbox"><img class="lightbox-img" src="${esc(imgs[i])}" alt=""></div>${imgs.length > 1 ? `<div class="thumbs center">${strip}</div>` : ''}<p class="muted"><a href="${esc(imgs[i])}" target="_blank" rel="noopener">فتح الصورة في تبويب جديد</a></p>`);
+}
 const postsPage = () => listView({
   key: 'posts', title: 'المنشورات', path: '/admin/posts', search: 'بحث في المنشورات…', csv: true, limit: 30,
   headers: ['المنشور', 'الناشر', 'التفاعل', 'التاريخ', 'الإجراءات'],
   csvHeaders: ['ID', 'المنشور', 'الناشر', 'الإعجابات', 'التعليقات', 'التاريخ'],
   csvRow: (p) => [p.id, p.content, p.user_name, p.likes_count, p.comments_count, p.created_at],
-  row: (p) => `<tr><td class="cell-wrap">${esc((p.content || '').slice(0, 220)) || '<span class="muted">بدون نص</span>'}${p.image || Number(p.image_count) ? '<br>' + pill(`${num(p.image_count || 1)} صورة`) : ''}</td><td>${esc(p.user_name)} <small class="muted">@${esc(p.username || '')}</small></td><td>${num(p.likes_count)} إعجاب · ${num(p.comments_count)} تعليق</td><td>${wl(p.created_at)}</td><td>${btn('post-delete', p.id, 'حذف', 'danger')}</td></tr>`,
+  row: (p) => `<tr><td class="cell-wrap">${esc((p.content || '').slice(0, 220)) || '<span class="muted">بدون نص</span>'}${postThumbs(p)}</td><td>${esc(p.user_name)} <small class="muted">@${esc(p.username || '')}</small></td><td>${num(p.likes_count)} إعجاب · ${num(p.comments_count)} تعليق</td><td>${wl(p.created_at)}</td><td>${btn('post-delete', p.id, 'حذف', 'danger')}</td></tr>`,
 });
 const storiesPage = () => listView({
   key: 'stories', title: 'الحالات والقصص', path: '/admin/stories', search: 'بحث بالناشر أو المحتوى…', csv: true,
@@ -688,6 +704,7 @@ const ACTIONS = {
   },
   'user-delete': async (id) => { if (!(await ask({ title: 'حذف المستخدم نهائياً', message: 'سيُحذف الحساب وكل بياناته المرتبطة ولا يمكن التراجع.', confirm: 'حذف نهائي', danger: true, fields: [{ name: 'c', label: 'اكتب «حذف» للتأكيد', expect: 'حذف', required: true }] }))) return; await del('/admin/users/' + id); toast('تم حذف المستخدم'); reload(); },
   'user-sessions': async (id) => { if (!(await ask({ title: 'تسجيل الخروج من كل الأجهزة', message: 'سيحتاج المستخدم لتسجيل الدخول من جديد على كل أجهزته.', confirm: 'إنهاء الجلسات', danger: true }))) return; const d = await post(`/admin/users/${id}/sessions/revoke`); toast(`تم إنهاء ${num(d.revoked)} جلسة`); },
+  'post-img': (id, el) => showPostImage(id, el.dataset.i),
   'post-delete': async (id) => { if (!(await ask({ title: 'حذف المنشور', message: 'سيُحذف المنشور نهائياً.', confirm: 'حذف', danger: true }))) return; await del('/admin/posts/' + id); toast('تم حذف المنشور'); reload(); },
   'story-delete': async (id) => { if (!(await ask({ title: 'حذف الحالة', message: 'ستُحذف هذه الحالة نهائياً.', confirm: 'حذف', danger: true }))) return; await del('/admin/stories/' + id); toast('تم حذف الحالة'); reload(); },
   'group-delete': async (id) => { if (!(await ask({ title: 'حذف المجموعة', message: 'ستُحذف المجموعة ومحادثتها.', confirm: 'حذف', danger: true }))) return; await del('/admin/groups/' + id); toast('تم حذف المجموعة'); reload(); },

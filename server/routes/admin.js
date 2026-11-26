@@ -339,6 +339,13 @@ router.get('/posts', async (req, res) => {
        ORDER BY p.created_at DESC LIMIT ? OFFSET ?`,
       [...args, limit, offset]
     );
+    // Attach every image URL so the dashboard can show previews (older posts only have image_url).
+    if (rows.length) {
+      const [imgs] = await pool.query('SELECT post_id, url FROM post_images WHERE post_id IN (?) ORDER BY post_id, position, id', [rows.map((r) => r.id)]);
+      const byPost = {};
+      for (const i of imgs) (byPost[i.post_id] ||= []).push(i.url);
+      for (const r of rows) r.images = byPost[r.id] || (r.image ? [r.image] : []);
+    }
     const [[t]] = await pool.query(`SELECT COUNT(*) AS c FROM posts p JOIN users u ON u.id = p.user_id ${w}`, args);
     sendList(res, rows, t.c);
   } catch (err) {
