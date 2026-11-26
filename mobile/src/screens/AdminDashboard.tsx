@@ -8,6 +8,7 @@ import api from '../services/api';
 import { resolveUrl } from '../config';
 import { useAppColors } from '../theme/useAppColors';
 import { Icon } from '../components/Icon';
+import { IconText } from '../components/IconText';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n';
 
@@ -283,7 +284,7 @@ function Users({ c, s }: { c: any; s: any }) {
     return (
       <ScrollView contentContainerStyle={s.scroll}>
         <TouchableOpacity onPress={() => setSelected(null)} style={{ paddingVertical: 8 }}>
-          <Text style={{ color: c.primary, fontWeight: '700' }}>‹ All users</Text>
+          <IconText icon="chevronLeft" color={c.primary} size={18} gap={2} textStyle={{ fontWeight: '700' }}>All users</IconText>
         </TouchableOpacity>
         <View style={[s.card, { backgroundColor: c.surface, alignItems: 'center' }]}>
           <Avatar u={u} c={c} size={72} />
