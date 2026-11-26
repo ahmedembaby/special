@@ -1,4 +1,5 @@
 import React from 'react';
+import { I18nManager } from 'react-native';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 /**
@@ -112,15 +113,20 @@ const ICONS: Record<IconName, Node[]> = {
   translate: [p('M4 5h9M9 3v2M6 5c0 4 3 7 7 8M12 5c0 4-3 7-7 8M13 21l4-10 4 10M14.5 18h5')],
 };
 
+/** Direction icons that point the way the layout reads; they flip in right-to-left layouts. Media (play/pause) and literal-direction icons never flip. */
+const MIRROR_IN_RTL = new Set<IconName>(['arrowLeft', 'arrowRight', 'chevronLeft', 'chevronRight', 'reply', 'forward', 'send', 'sendFeather', 'logout']);
+
 export interface IconProps {
   name: IconName;
+  /** Override the default RTL flip (false keeps a literal direction, e.g. a physical swipe hint). */
+  mirror?: boolean;
   size?: number;
   color?: string;
   strokeWidth?: number;
 }
 
-export const Icon = ({ name, size = 24, color = '#626B84', strokeWidth = 2 }: IconProps) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+export const Icon = ({ name, size = 24, color = '#626B84', strokeWidth = 2, mirror }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={I18nManager.isRTL && (mirror ?? MIRROR_IN_RTL.has(name)) ? { transform: [{ scaleX: -1 }] } : undefined}>
     {ICONS[name].map((n, i) => {
       if (n.t === 'c') {
         return <Circle key={i} cx={n.cx} cy={n.cy} r={n.r} stroke={color} strokeWidth={strokeWidth} fill={n.fill ? color : 'none'} />;
