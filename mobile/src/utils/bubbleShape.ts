@@ -6,9 +6,10 @@
 export const BUBBLE_R = 20;
 export const BUBBLE_TAIL_R = 7;
 
-export function bubbleCorners(isOwn: boolean, groupedWithPrev: boolean, groupedWithNext: boolean) {
+export function bubbleCorners(isOwn: boolean, groupedWithPrev: boolean, groupedWithNext: boolean, rtl = false) {
   const inner = BUBBLE_TAIL_R;
-  const side = isOwn ? 'Right' : 'Left';
+  // Own bubbles sit on the physical right in both directions: end side in LTR, start side in RTL. Other bubbles are the opposite.
+  const side = isOwn !== rtl ? 'End' : 'Start';
   const style: Record<string, number> = {};
   style[`borderTop${side}Radius`] = groupedWithPrev ? inner : BUBBLE_R;
   style[`borderBottom${side}Radius`] = groupedWithNext ? inner : BUBBLE_TAIL_R;
