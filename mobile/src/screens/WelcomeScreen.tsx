@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   actions: { gap: 14 },
   primaryButton: { minHeight: 60, borderRadius: 20, paddingHorizontal: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: '#604AE7', shadowOpacity: 0.28, shadowRadius: 18, shadowOffset: { width: 0, height: 9 }, elevation: 7 },
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 0.1 },
-  buttonArrow: { position: 'absolute', right: 22 },
+  buttonArrow: { position: 'absolute', end: 22 },
   legal: { fontSize: 11, lineHeight: 17, textAlign: 'center', paddingHorizontal: 8 },
   footer: { fontSize: 8, letterSpacing: 2, fontWeight: '800', textAlign: 'center', marginTop: 3 },
 });
