@@ -35,7 +35,7 @@ export const SwipeToReply = ({ enabled = true, onReply, children }: { enabled?: 
   return (
     <View {...pan.panHandlers}>
       <Animated.View pointerEvents="none" style={[styles.icon, { backgroundColor: c.primaryLight, opacity, transform: [{ scale }] }]}>
-        <Icon name="reply" size={18} color={c.primary} />
+        <Icon name="reply" mirror={false} size={18} color={c.primary} />
       </Animated.View>
       <Animated.View style={{ transform: [{ translateX: x }] }}>{children}</Animated.View>
     </View>
