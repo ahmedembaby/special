@@ -11,12 +11,13 @@ interface Props {
   style?: StyleProp<ViewStyle>;
   numberOfLines?: number;
   gap?: number;
+  mirror?: boolean;
 }
 
 /** An icon followed by a label on one line (menu chips, status lines, media previews). */
-export const IconText = ({ icon, color, size = 16, children, textStyle, style, numberOfLines, gap = 6 }: Props) => (
+export const IconText = ({ icon, color, size = 16, children, textStyle, style, numberOfLines, gap = 6, mirror }: Props) => (
   <View style={[{ flexDirection: 'row', alignItems: 'center', gap }, style]}>
-    <Icon name={icon} size={size} color={color} />
+    <Icon name={icon} size={size} color={color} mirror={mirror} />
     <Text style={[{ color }, textStyle]} numberOfLines={numberOfLines}>{children}</Text>
   </View>
 );
