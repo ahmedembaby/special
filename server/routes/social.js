@@ -443,7 +443,7 @@ router.get('/hashtags/:tag/posts', async (req, res) => {
 router.get('/users/:id/profile', async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const [rows] = await pool.query('SELECT id, name, username, avatar, bio, IF(hide_presence = 1, \'offline\', status) AS status, IF(hide_presence = 1, NULL, last_seen) AS last_seen, created_at, is_private FROM users WHERE id = ? AND banned = 0', [id]);
+    const [rows] = await pool.query('SELECT id, name, username, avatar, cover_image, bio, IF(hide_presence = 1, \'offline\', status) AS status, IF(hide_presence = 1, NULL, last_seen) AS last_seen, created_at, is_private FROM users WHERE id = ? AND banned = 0', [id]);
     if (!rows.length) return res.status(404).json({ message: 'User not found' });
     const [bl] = await pool.query('SELECT blocker_id FROM user_blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)', [req.user.id, id, id, req.user.id]);
     if (bl.some((b) => b.blocker_id === id)) return res.status(404).json({ message: 'User not found' });
@@ -461,6 +461,7 @@ router.get('/users/:id/profile', async (req, res) => {
     res.json({
       ...shapeUser(u.id, u.name, u.username, u.avatar),
       bio: u.bio || '',
+      cover: u.cover_image || null,
       status: u.status,
       last_seen: u.last_seen,
       joined: u.created_at,

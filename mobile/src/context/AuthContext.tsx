@@ -23,6 +23,7 @@ export interface User {
   gender?: string;
   birthday?: string;
   avatar?: string | null;
+  cover_image?: string | null;
   status?: string;
   is_private?: boolean;
   public_key?: string | null;

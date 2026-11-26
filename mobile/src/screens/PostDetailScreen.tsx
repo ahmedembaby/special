@@ -5,6 +5,8 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import { useAppColors } from '../theme/useAppColors';
 import { useMe } from '../hooks/useMe';
 import * as social from '../services/social';
+import { useI18n } from '../i18n';
+import { EmptyState } from '../components/EmptyState';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { PostCard } from '../components/PostCard';
 import { PostComposer } from '../components/PostComposer';
@@ -15,18 +17,22 @@ import { ReactionButton, ReactionSummary, ReactionState, applyReaction } from '.
 import { timeAgo } from '../utils/format';
 
 export default function PostDetailScreen() {
+  const { t } = useI18n();
   const nav = useNavigation() as any;
   const { postId } = (useRoute() as any).params as { postId: string };
   const { c } = useAppColors();
   const me = useMe();
   const [post, setPost] = useState<social.Post | null>(null);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setPost(await social.getPost(postId));
-    } catch {
+      setFailed(false);
+    } catch (e: any) {
       setPost(null);
+      setFailed(e?.response?.status !== 404 && e?.status !== 404);
     } finally {
       setLoading(false);
     }
@@ -76,6 +82,8 @@ export default function PostDetailScreen() {
       <ScreenHeader title="Post" onBack={() => nav.goBack()} />
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+      ) : !post && failed ? (
+        <EmptyState icon="bell" title={t('Could not load this post')} subtitle={t('Check your connection and try again.')} actionLabel={t('Try again')} onAction={() => { setLoading(true); load(); }} />
       ) : !post ? (
         <Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 40 }}>This post is no longer available.</Text>
       ) : (

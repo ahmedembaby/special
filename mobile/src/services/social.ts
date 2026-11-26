@@ -248,6 +248,7 @@ export const getStoryViewers = async (id: string): Promise<SocialUser[]> => (awa
 export const deleteStory = async (id: string) => { await api.delete(`/stories/${id}`); };
 
 export interface UserProfile extends SocialUser {
+  cover?: string | null;
   status?: string;
   joined?: string;
   followers_count: number;

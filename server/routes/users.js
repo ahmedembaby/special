@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
 router.get('/me', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, name, email, username, phone, avatar, bio, gender, birthday, status, last_seen, is_private, public_key FROM users WHERE id = ?',
+      'SELECT id, name, email, username, phone, avatar, cover_image, bio, gender, birthday, status, last_seen, is_private, public_key FROM users WHERE id = ?',
       [req.user.id]
     );
     if (!rows.length) return res.status(404).json({ message: 'User not found' });
@@ -87,7 +87,7 @@ router.put('/me', async (req, res) => {
       await pool.query('DELETE FROM follow_requests WHERE target_id = ?', [req.user.id]);
     }
     const [rows] = await pool.query(
-      'SELECT id, name, email, username, phone, avatar, bio, gender, birthday, status, last_seen, is_private, public_key FROM users WHERE id = ?',
+      'SELECT id, name, email, username, phone, avatar, cover_image, bio, gender, birthday, status, last_seen, is_private, public_key FROM users WHERE id = ?',
       [req.user.id]
     );
     res.json(toUser({ ...rows[0], is_admin: isAdminUser(rows[0]) }));
@@ -201,6 +201,30 @@ router.post('/lookup-phones', async (req, res) => {
     res.json(rows.map((u) => ({ ...publicUser(u), phone_tail: u.phone_tail })));
   } catch (err) {
     res.status(500).json({ message: 'Lookup failed' });
+  }
+});
+
+// PUT /api/users/cover  (multipart field "cover")
+router.put('/cover', upload.cover.single('cover'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'Image file required (field "cover")' });
+    const url = `/uploads/covers/${req.file.filename}`;
+    await pool.query('UPDATE users SET cover_image = ? WHERE id = ?', [url, req.user.id]);
+    res.json({ cover_image: url, url });
+  } catch (err) {
+    console.error('cover:', err.message);
+    res.status(500).json({ message: 'Could not update cover' });
+  }
+});
+
+// DELETE /api/users/cover  (back to the default banner)
+router.delete('/cover', async (req, res) => {
+  try {
+    await pool.query('UPDATE users SET cover_image = NULL WHERE id = ?', [req.user.id]);
+    res.json({ cover_image: null });
+  } catch (err) {
+    console.error('cover remove:', err.message);
+    res.status(500).json({ message: 'Could not remove cover' });
   }
 });
 

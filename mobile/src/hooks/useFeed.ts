@@ -9,6 +9,7 @@ export const useFeed = (username?: string) => {
   const me = useMe();
   const [posts, setPosts] = useState<social.Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const cacheKey = `feed:${username || 'main'}`;
@@ -20,10 +21,12 @@ export const useFeed = (username?: string) => {
   const load = useCallback(async () => {
     try {
       const fresh = await social.listPosts(username);
+      setFailed(false);
       setPosts(fresh);
       cacheSet(cacheKey, fresh.slice(0, 30));
     } catch {
       // keep what we have; pull-to-refresh retries
+      setFailed(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -50,5 +53,5 @@ export const useFeed = (username?: string) => {
     setPosts((prev) => [post, ...prev]);
   };
 
-  return { me, posts, loading, refreshing, refresh, like, remove, create, reload: load };
+  return { me, posts, loading, failed, refreshing, refresh, like, remove, create, reload: load };
 };

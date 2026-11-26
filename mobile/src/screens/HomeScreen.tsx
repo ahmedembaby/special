@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '../theme/useAppColors';
 import { useFeed } from '../hooks/useFeed';
+import { EmptyState } from '../components/EmptyState';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { PostCard } from '../components/PostCard';
 import { PostSkeleton } from '../components/PostSkeleton';
@@ -20,7 +21,7 @@ export default function HomeScreen() {
   const { t } = useI18n();
   const { messageCount } = useUnreadCounts();
   const insets = useSafeAreaInsets();
-  const { me, posts, loading, refreshing, refresh, like, remove, create } = useFeed();
+  const { me, posts, loading, failed, refreshing, refresh, like, remove, create } = useFeed();
 
   const openPost = useCallback((p: { id: string }) => nav.navigate('PostDetail', { postId: p.id }), [nav]);
 
@@ -48,6 +49,7 @@ export default function HomeScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={c.primary} colors={[c.primary]} />}
           ListHeaderComponent={<View><StoriesBar meId={String(me.id)} meAvatar={me.avatar} meName={me.name} /><PostComposer me={me} onPost={create} /><SponsoredAdCard /></View>}
           ListEmptyComponent={
+            failed ? <EmptyState icon="bell" title={t('Could not load your feed')} subtitle={t('Check your connection and try again.')} actionLabel={t('Try again')} onAction={refresh} /> :
             <View style={styles.empty}>
               <Text style={[styles.emptyTitle, { color: c.text }]}>{t('No posts yet')}</Text>
               <Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 6 }}>

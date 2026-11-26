@@ -35,6 +35,7 @@ const CHAT_FILES = /image\/|audio\/|video\/|pdf|msword|officedocument|text\/plai
 
 module.exports = {
   avatar: make('avatars', { maxMB: 5, allow: IMAGE }),
+  cover: make('covers', { maxMB: 8, allow: IMAGE }),
   post: make('posts', { maxMB: 10, allow: IMAGE }),
   group: make('groups', { maxMB: 5, allow: IMAGE }),
   story: make('stories', { maxMB: 40, allow: /image\/|video\/|\.(jpe?g|png|gif|webp|heic|heif|mp4|mov|3gp|webm)$/ }),

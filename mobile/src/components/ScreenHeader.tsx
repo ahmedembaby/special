@@ -48,7 +48,7 @@ export const ScreenHeader = (p: Props) => {
             </>
           ) : (
             <>
-              <Text style={[styles.title, { color: c.text }]} numberOfLines={1}>{p.title}</Text>
+              <Text style={[styles.title, { color: c.text }]} numberOfLines={1}>{p.title ? t(p.title) : p.title}</Text>
               {p.subtitle ? <Text style={[styles.sub, { color: c.textSecondary }]} numberOfLines={1}>{p.subtitle}</Text> : null}
             </>
           )}

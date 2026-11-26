@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Linking, SafeAreaView, ScrollView, StatusBar,
 import { useNavigation } from '@react-navigation/native';
 import * as api from '../services/api';
 import { useAppColors } from '../theme/useAppColors';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { Icon } from '../components/Icon';
 
 /** Two-step verification (TOTP): works with Google Authenticator, Authy, 1Password, etc. */
@@ -52,12 +53,8 @@ export default function TwoFactorScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <View style={[styles.header, { borderBottomColor: c.border }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Icon name="arrowLeft" size={24} color={c.text} /></TouchableOpacity>
-        <Text accessibilityRole="header" style={[styles.title, { color: c.text }]}>Two-step verification</Text>
-        <View style={{ width: 40 }} />
-      </View>
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <ScreenHeader title="Two-step verification" onBack={() => navigation.goBack()} />
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
         {enabled === null ? <ActivityIndicator color={c.primary} /> : enabled ? (
           <>
             <Text style={[styles.lead, { color: c.text }]}>Two-step verification is ON</Text>
