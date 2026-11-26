@@ -101,6 +101,17 @@ function setLive(ok) {
   el.classList.toggle('offline', !ok);
 }
 
+/* New-report watcher: toasts when the open-reports count rises while the console is open. */
+function trackReports(n) {
+  n = Number(n) || 0;
+  if (state.lastOpenReports !== null && state.lastOpenReports !== undefined && n > state.lastOpenReports) {
+    toast(`🚩 وصل ${num(n - state.lastOpenReports)} بلاغ جديد — افتح صفحة البلاغات لمراجعته`);
+    const b = $('#reportBadge');
+    if (b) { b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse'); }
+  }
+  state.lastOpenReports = n;
+}
+
 /* ---------- UI building blocks ---------- */
 const shell = (html) => { $('#pageContent').innerHTML = html; stampDataLabels(); };
 /* Stamps each td with its column header text; the mobile layout uses it as the card field label. */
@@ -222,6 +233,7 @@ function chart(series, label) {
 async function overview() {
   const [s, system] = await Promise.all([api(`/admin/stats?days=${state.days}`), api('/admin/system')]);
   $('#reportBadge').textContent = num(s.openReports);
+  trackReports(s.openReports);
   const cards = [
     ['إجمالي المستخدمين', s.totalUsers, 'user', 'users'], ['النشطون يومياً', s.activeUsers?.daily, 'clock', null], ['النشطون أسبوعياً', s.activeUsers?.weekly, 'calendar', null], ['النشطون شهرياً', s.activeUsers?.monthly, 'calendar-check', null],
     ['الرسائل', s.totalMessages, 'mail', null], ['المحادثات', s.totalConversations, 'chat', 'conversations'], ['المكالمات اليوم', s.callsToday, 'phone', null], ['ملفات الوسائط', s.media?.files, 'image', null],
@@ -356,7 +368,7 @@ async function reportsPage() {
   const qs = new URLSearchParams({ status, limit, offset: st.offset });
   if (st.f.type && st.f.type !== 'all') qs.set('type', st.f.type);
   const { items, total } = await apiList(`/admin/reports?${qs}`);
-  if (status === 'open') $('#reportBadge').textContent = num(total);
+  if (status === 'open') { $('#reportBadge').textContent = num(total); trackReports(total); }
   const opt = (cur, list) => list.map((o) => `<option value="${o[0]}" ${cur === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('');
   const cards = items.map((r) => {
     const p = r.preview;
@@ -777,7 +789,7 @@ function startAuto() {
     if (document.hidden || !state.token) return;
     try {
       if (state.page === 'overview' && !$('#modalRoot').innerHTML && !$('#dialogRoot').innerHTML) await loadPage('overview', { keepScroll: true });
-      else { const s = await api('/admin/stats'); $('#reportBadge').textContent = num(s.openReports); }
+      else { const s = await api('/admin/stats'); $('#reportBadge').textContent = num(s.openReports); trackReports(s.openReports); }
     } catch { /* offline indicator already updated */ }
   }, 60000);
 }
