@@ -16,6 +16,12 @@ export const getDrafts = (ids: Array<string | number>) =>
     return out;
   }, {} as Record<string, string>);
 
+/** Logout: drafts are plain text and not tied to an account, so drop them with the session. Chat themes go too. */
+export const clearChatPrefs = () => safe(async () => {
+  const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith('draft:') || k.startsWith('chat_theme:'));
+  if (keys.length) await AsyncStorage.multiRemove(keys);
+}, undefined);
+
 // ---- theme ----
 export interface ChatTheme { wallpaper: string | null; bubble: string | null }
 export const NO_THEME: ChatTheme = { wallpaper: null, bubble: null };
