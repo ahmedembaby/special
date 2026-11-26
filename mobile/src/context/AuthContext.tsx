@@ -10,6 +10,7 @@ import { startOutbox, stopOutbox } from '../services/outbox';
 import { queryClient } from '../providers/QueryProvider';
 import { offlineQueue } from '../utils/offlineQueue';
 import { clearChatPrefs, enableChatPrefs } from '../services/chatPrefs';
+import { resetPinFailState } from '../services/appLock';
 
 export interface User {
   id?: string | number;
@@ -100,6 +101,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await AsyncStorage.removeItem('push_token').catch(() => {});
     queryClient.clear();
     enableChatPrefs();
+    await resetPinFailState(); // a fresh phone-code login proves ownership; do not carry old wrong-PIN counts over
     await SecureStore.deleteItemAsync(MEDIA_KEY).catch(() => {});
     await refreshMediaToken(newToken, true);
     setUser(userData || null);
