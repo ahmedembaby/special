@@ -3,9 +3,16 @@ import { SafeAreaView, View, Text, TouchableOpacity, StatusBar, Switch, StyleShe
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
-import { Icon } from '../components/Icon';
+import { Icon, IconName } from '../components/Icon';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { useAppLock } from '../context/AppLockContext';
 import * as lock from '../services/appLock';
+
+const NAV_ROWS: { screen: string; label: string; icon: IconName }[] = [
+  { screen: 'PINSecurity', label: 'PIN Security', icon: 'pin' },
+  { screen: 'FaceID', label: 'Face Recognition', icon: 'face' },
+  { screen: 'TouchID', label: 'Fingerprint Security', icon: 'fingerprint' },
+];
 
 export default function SecurityScreen() {
   const navigation = useNavigation() as any;
@@ -19,32 +26,17 @@ export default function SecurityScreen() {
     navigation.navigate('PINSecurity', { disable: true });
   };
 
-  const row = {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    backgroundColor: c.background,
-  };
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <View style={[styles.header, { backgroundColor: c.background, borderBottomColor: c.border }]}>
-        <TouchableOpacity style={styles.backWrap} onPress={() => navigation.goBack()} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Back">
-          <Icon name="arrowLeft" size={24} color={c.text} />
-        </TouchableOpacity>
-        <Text accessibilityRole="header" style={[styles.headerTitle, { color: c.text }]}>Security</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="Security" onBack={() => navigation.goBack()} />
       <View style={styles.list}>
-        <View style={[(row as any), { borderBottomWidth: 1, borderBottomColor: c.border }]}>
-          <View style={styles.rowLeft}>
-            <Icon name="lock" size={22} color={c.text} />
-            <Text style={[styles.rowTitle, { color: c.text }]}>App Lock</Text>
-          </View>
-          <View style={styles.rowRight}>
+        <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
+          <View style={[styles.row, { borderBottomColor: c.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+            <View style={styles.rowLeft}>
+              <Icon name="lock" size={22} color={c.text} />
+              <Text style={[styles.rowTitle, { color: c.text }]}>App Lock</Text>
+            </View>
             <Switch
               value={settings.pinEnabled}
               onValueChange={toggleLock}
@@ -53,33 +45,22 @@ export default function SecurityScreen() {
               trackColor={{ false: c.border, true: c.primary }}
             />
           </View>
-        </View>
-        <View style={[(row as any), { borderBottomWidth: 1, borderBottomColor: c.border }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('PINSecurity')} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="PIN Security">
-            <View style={styles.rowLeft}>
-              <Icon name="pin" size={22} color={c.text} />
-              <Text style={[styles.rowTitle, { color: c.text }]}>PIN Security</Text>
-            </View>
-            <Icon name="chevronRight" size={22} color={c.text} />
-          </TouchableOpacity>
-        </View>
-        <View style={[(row as any), { borderBottomWidth: 1, borderBottomColor: c.border }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('FaceID')} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Face Recognition">
-            <View style={styles.rowLeft}>
-              <Icon name="face" size={22} color={c.text} />
-              <Text style={[styles.rowTitle, { color: c.text }]}>Face Recognition</Text>
-            </View>
-            <Icon name="chevronRight" size={22} color={c.text} />
-          </TouchableOpacity>
-        </View>
-        <View style={[(row as any), { borderBottomWidth: 1, borderBottomColor: c.border }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('TouchID')} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Fingerprint Security">
-            <View style={styles.rowLeft}>
-              <Icon name="fingerprint" size={22} color={c.text} />
-              <Text style={[styles.rowTitle, { color: c.text }]}>Fingerprint Security</Text>
-            </View>
-            <Icon name="chevronRight" size={22} color={c.text} />
-          </TouchableOpacity>
+          {NAV_ROWS.map((r, i) => (
+            <TouchableOpacity
+              key={r.screen}
+              style={[styles.row, i < NAV_ROWS.length - 1 ? { borderBottomColor: c.border, borderBottomWidth: StyleSheet.hairlineWidth } : null]}
+              onPress={() => navigation.navigate(r.screen)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={r.label}
+            >
+              <View style={styles.rowLeft}>
+                <Icon name={r.icon} size={22} color={c.text} />
+                <Text style={[styles.rowTitle, { color: c.text }]}>{r.label}</Text>
+              </View>
+              <Icon name="chevronRight" size={20} color={c.textSecondary} />
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
       <TouchableOpacity style={[styles.changePIN, { backgroundColor: c.primary }]} activeOpacity={0.8} onPress={() => navigation.navigate('PINSecurity')} accessibilityRole="button" accessibilityLabel={settings.pinEnabled ? "Change PIN" : "Set PIN"}>
@@ -92,25 +73,12 @@ export default function SecurityScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: 54,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    height: 70,
-  },
-  backWrap: { padding: 8, marginRight: 8 },
-  backIcon: { fontSize: 24 },
-  headerTitle: {
-    fontSize: 23,
-    fontWeight: '800',
-    color: '#1B1730',
-  },
   list: {
     flex: 1,
+    padding: 16,
   },
+  card: { borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 16, minHeight: 56 },
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -121,6 +89,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   rowTitle: {
+    marginStart: 12,
     fontSize: 16,
     fontWeight: '600',
     color: '#1B1730',
@@ -137,7 +106,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.button,
     paddingHorizontal: 20,
     paddingVertical: 14,
-    marginHorizontal: Spacing.lg,
+    marginHorizontal: 16,
     marginVertical: 16,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
