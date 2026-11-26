@@ -62,34 +62,8 @@ app.use('/uploads', (req, res, next) => {
 });
 // Private media requires a valid session and resource-level authorization.
 const { canAccessChatMedia, canAccessStoryMedia } = require('./services/mediaAccess');
-const authorizePrivateUpload = (kind) => async (req, res, next) => {
-  try {
-    const raw = req.query.t || getToken(req);
-    // ?t= carries a media-only token (new apps) or the session JWT (older apps, still accepted so they keep working)
-    const user = (await authenticateMediaToken(raw)) || (await authenticateToken(raw));
-    if (!user) return res.status(401).end();
-    const filename = path.basename(req.path);
-    if (!filename || filename !== req.path.slice(1)) return res.status(404).end();
-    const allowed = kind === 'chat'
-      ? await canAccessChatMedia(filename, user.id)
-      : await canAccessStoryMedia(filename, user.id);
-    if (!allowed) return res.status(404).end();
-    // Serve private assets directly so the public static middleware cannot replace
-    // the no-store policy with a cacheable response.
-    return res.sendFile(path.join(uploadsDir, kind, filename), {
-      headers: {
-        'Cache-Control': 'private, no-store',
-        'X-Content-Type-Options': 'nosniff',
-        'Content-Security-Policy': "default-src 'none'; sandbox",
-        'Cross-Origin-Resource-Policy': 'same-site',
-      },
-    }, (err) => {
-      if (err && !res.headersSent) res.status(404).end();
-    });
-  } catch {
-    res.status(404).end();
-  }
-};
+const { makePrivateUploadAuth } = require('./middleware/privateUpload');
+const authorizePrivateUpload = makePrivateUploadAuth({ authenticateToken, authenticateMediaToken, getToken, canAccessChatMedia, canAccessStoryMedia, uploadsDir });
 app.use('/uploads/chat', authorizePrivateUpload('chat'));
 app.use('/uploads/stories', authorizePrivateUpload('stories'));
 app.use('/uploads', express.static(uploadsDir, { fallthrough: true, index: false }));
