@@ -5,6 +5,7 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import { useAppColors } from '../theme/useAppColors';
 import { useMe } from '../hooks/useMe';
 import * as social from '../services/social';
+import { useI18n } from '../i18n';
 import { EmptyState } from '../components/EmptyState';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { PostCard } from '../components/PostCard';
@@ -16,6 +17,7 @@ import { ReactionButton, ReactionSummary, ReactionState, applyReaction } from '.
 import { timeAgo } from '../utils/format';
 
 export default function PostDetailScreen() {
+  const { t } = useI18n();
   const nav = useNavigation() as any;
   const { postId } = (useRoute() as any).params as { postId: string };
   const { c } = useAppColors();
@@ -81,7 +83,7 @@ export default function PostDetailScreen() {
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
       ) : !post && failed ? (
-        <EmptyState icon="bell" title="Could not load this post" subtitle="Check your connection and try again." actionLabel="Try again" onAction={() => { setLoading(true); load(); }} />
+        <EmptyState icon="bell" title={t('Could not load this post')} subtitle={t('Check your connection and try again.')} actionLabel={t('Try again')} onAction={() => { setLoading(true); load(); }} />
       ) : !post ? (
         <Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 40 }}>This post is no longer available.</Text>
       ) : (
