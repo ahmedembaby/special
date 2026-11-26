@@ -118,7 +118,7 @@ const PAGE_ROLES = {
   posts: ['moderator', 'admin', 'owner'], stories: ['moderator', 'admin', 'owner'], reports: ['moderator', 'admin', 'owner'],
   groups: ['moderator', 'admin', 'owner'], conversations: ['support', 'moderator', 'admin', 'owner'], sessions: ['support', 'moderator', 'admin', 'owner'],
   broadcast: ['admin', 'owner'], campaigns: ['admin', 'owner'], backups: ['owner'], words: ['moderator', 'admin', 'owner'],
-  audit: ['admin', 'owner'], admins: ['owner'], errors: ['support', 'moderator', 'admin', 'owner'], verifications: ['moderator', 'admin', 'owner'], rlog: ['moderator', 'admin', 'owner'], appeals: ['moderator', 'admin', 'owner'], alerts: ['admin', 'owner'], ai: ['admin', 'owner'], release: ['support', 'moderator', 'admin', 'owner'],
+  audit: ['admin', 'owner'], otp: ['admin', 'owner'], settings: ['admin', 'owner'], admins: ['owner'], errors: ['support', 'moderator', 'admin', 'owner'], verifications: ['moderator', 'admin', 'owner'], rlog: ['moderator', 'admin', 'owner'], appeals: ['moderator', 'admin', 'owner'], alerts: ['admin', 'owner'], ai: ['admin', 'owner'], release: ['support', 'moderator', 'admin', 'owner'],
 };
 router.get('/me', (req, res) => {
   res.json({
@@ -601,6 +601,29 @@ router.get('/alerts', async (req, res) => {
     const [rows] = await pool.query('SELECT id, kind, message, value, created_at FROM admin_alerts ORDER BY id DESC LIMIT 50');
     res.json({ metrics: require('../services/metrics').snapshot(), thresholds: alerts.thresholds(), webhook: !!process.env.ALERT_WEBHOOK_URL, items: rows });
   } catch { res.status(500).json({ message: 'Could not load alerts' }); }
+});
+
+// OTP delivery monitor: event log (codes are never stored) + live WhatsApp connection state.
+router.get('/otp-events', async (req, res) => {
+  try {
+    const { limit, offset, q } = pageParams(req, 50, 200);
+    const event = ['sent', 'send_failed', 'verified', 'rejected', 'blocked'].includes(req.query.event) ? req.query.event : '';
+    const where = []; const args = [];
+    if (q) { where.push('phone LIKE ?'); args.push(like(q)); }
+    if (event) { where.push('event = ?'); args.push(event); }
+    const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const [[t]] = await pool.query(`SELECT COUNT(*) AS c FROM otp_events ${w}`, args);
+    const [rows] = await pool.query(`SELECT id, phone, event, detail, created_at FROM otp_events ${w} ORDER BY id DESC LIMIT ? OFFSET ?`, [...args, limit, offset]);
+    const [[today]] = await pool.query("SELECT COUNT(*) AS total, SUM(event = 'sent') AS sent, SUM(event = 'send_failed') AS failed, SUM(event = 'verified') AS verified FROM otp_events WHERE created_at >= CURDATE()");
+    const wa = require('../services/whatsapp');
+    const st = typeof wa.getState === 'function' ? await wa.getState().catch(() => null) : null;
+    res.set('X-Total-Count', String(t.c));
+    res.json({
+      items: rows,
+      today: { total: Number(today.total || 0), sent: Number(today.sent || 0), failed: Number(today.failed || 0), verified: Number(today.verified || 0) },
+      whatsapp: st ? { status: st.status, ready: !!st.ready, account: st.account || null, error: st.error || null } : { status: 'unknown', ready: false },
+    });
+  } catch { res.status(500).json({ message: 'Could not load OTP events' }); }
 });
 
 // --- reports from users ---
