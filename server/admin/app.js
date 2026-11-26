@@ -238,13 +238,53 @@ const sessionsPage = () => listView({
   csvRow: (s) => [s.user_name, s.phone || '', s.device_name, s.platform, s.last_active_at, s.expires_at],
   row: (s) => `<tr><td>${userCell({ name: s.user_name, username: s.username })}${s.is_current ? '<br>' + pill('جلستك الحالية', 'green') : ''}</td><td>${esc(s.device_name)}</td><td>${esc(s.platform)}</td><td>${ago(s.last_active_at)}</td><td>${when(s.expires_at)}</td><td>${W(btn('session-revoke', s.id, 'إنهاء الجلسة', 'danger', s.is_current ? 'disabled' : ''))}</td></tr>`,
 });
+/* Translates an audit row (method + path + JSON details) into a readable Arabic action. */
+const AUDIT_ACTIONS = [
+  [/^\/api\/admin\/users\/(\d+)\/warn$/, (m) => `أرسل تنبيهاً إلى المستخدم #${m[1]}`],
+  [/^\/api\/admin\/users\/(\d+)\/ban$/, (m, d) => (d.banned === false ? `ألغى حظر المستخدم #${m[1]}` : `حظر المستخدم #${m[1]}`)],
+  [/^\/api\/admin\/users\/(\d+)\/sessions\/revoke$/, (m) => `أنهى كل جلسات المستخدم #${m[1]}`],
+  [/^\/api\/admin\/users\/(\d+)$/, (m) => `حذف المستخدم #${m[1]} نهائياً`],
+  [/^\/api\/admin\/posts\/(\d+)$/, (m) => `حذف المنشور #${m[1]}`],
+  [/^\/api\/admin\/stories\/(\d+)$/, (m) => `حذف الحالة #${m[1]}`],
+  [/^\/api\/admin\/groups\/(\d+)$/, (m) => `حذف المجموعة #${m[1]}`],
+  [/^\/api\/admin\/conversations\/(\d+)$/, (m) => `حذف المحادثة #${m[1]}`],
+  [/^\/api\/admin\/sessions\/[0-9a-f-]+$/i, () => 'أنهى جلسة جهاز'],
+  [/^\/api\/admin\/broadcast$/, (m, d) => `أرسل إعلاناً${d.title ? ` «${d.title}»` : ''}`],
+  [/^\/api\/admin\/push\/test$/, () => 'أرسل إشعاراً تجريبياً إلى جهازه'],
+  [/^\/api\/admin\/banned-words$/, (m, d) => `أضاف الكلمة المحظورة «${d.word || ''}»`],
+  [/^\/api\/admin\/banned-words\/(.+)$/, (m) => `حذف الكلمة المحظورة «${decodeURIComponent(m[1])}»`],
+  [/^\/api\/admin\/admins$/, (m, d) => `منح المستخدم #${d.userId || '?'} صلاحية ${ROLE_LABEL[d.role] || d.role || ''}`],
+  [/^\/api\/admin\/admins\/(\d+)$/, (m) => `أزال صلاحية الإدارة عن المستخدم #${m[1]}`],
+  [/^\/api\/admin\/reports\/(\d+)\/resolve$/, (m, d) => `${d.status === 'dismissed' ? 'رفض' : 'حل'} البلاغ #${m[1]}${d.delete_content ? ' وحذف المحتوى' : ''}${d.banned_user ? ' وحظر صاحبه' : ''}`],
+  [/^\/api\/admin\/appeals\/(\d+)\/decide$/, (m, d) => `${d.accept ? 'قبل' : 'رفض'} الاعتراض #${m[1]}`],
+  [/^\/api\/admin\/verifications\/(\d+)\/decide$/, (m, d) => `${d.approve ? 'وثّق الحساب (طلب' : 'رفض طلب التوثيق'} #${m[1]}${d.approve ? ')' : ''}`],
+  [/^\/api\/admin\/verifications\/user\/(\d+)$/, (m, d) => `${d.verified ? 'منح علامة التوثيق للمستخدم' : 'سحب علامة التوثيق من المستخدم'} #${m[1]}`],
+  [/^\/api\/admin\/campaigns$/, (m, d) => `أنشأ الحملة «${d.name || ''}»`],
+  [/^\/api\/admin\/campaigns\/(\d+)\/status$/, (m, d) => `غيّر حالة الحملة #${m[1]} إلى «${({ draft: 'مسودة', active: 'نشطة', paused: 'متوقفة', ended: 'منتهية' })[d.status] || d.status || ''}»`],
+  [/^\/api\/admin\/campaigns\/(\d+)$/, (m) => `حذف الحملة #${m[1]}`],
+  [/^\/api\/admin\/backups$/, () => 'أنشأ نسخة احتياطية مشفرة'],
+  [/^\/api\/admin\/backups\/run$/, () => 'شغّل دورة نسخ كاملة'],
+  [/^\/api\/admin\/backups\/(.+)\/verify$/, (m) => `فحص سلامة النسخة ${m[1]}`],
+  [/^\/api\/admin\/backups\/(.+)\/upload$/, (m) => `رفع النسخة ${m[1]} إلى التخزين الخارجي`],
+  [/^\/api\/admin\/backups\/(.+)\/restore$/, (m) => `⚠️ استعاد قاعدة البيانات من النسخة ${m[1]}`],
+  [/^\/api\/admin\/backups\/(.+)$/, (m) => `حذف النسخة الاحتياطية ${m[1]}`],
+];
+function auditText(a) {
+  let details = {};
+  try { details = a.details ? JSON.parse(a.details) : {}; } catch { details = {}; }
+  for (const [re, fn] of AUDIT_ACTIONS) {
+    const m = re.exec(a.path || '');
+    if (m) { try { return fn(m, details); } catch { break; } }
+  }
+  return `${a.method} ${a.path || ''}`;
+}
 const auditPage = () => listView({
   key: 'audit', title: 'سجل العمليات الإدارية', path: '/admin/audit', search: 'ابحث بالمسؤول أو المسار أو التفاصيل…', csv: true, limit: 50,
   filters: [{ name: 'method', label: 'نوع العملية', options: [['all', 'كل العمليات'], ['POST', 'إضافة/تنفيذ (POST)'], ['PUT', 'تعديل (PUT)'], ['DELETE', 'حذف (DELETE)']] }],
-  headers: ['المسؤول', 'العملية', 'المسار', 'التفاصيل', 'التاريخ'],
-  csvHeaders: ['المسؤول', 'العملية', 'المسار', 'التفاصيل', 'التاريخ'],
-  csvRow: (a) => [a.admin_name, a.method, a.path, a.details || '', a.created_at],
-  row: (a) => `<tr><td>${esc(a.admin_name)}</td><td>${pill(a.method, a.method === 'DELETE' ? 'red' : '')}</td><td class="text-ltr">${esc(a.path)}</td><td class="cell-wide">${esc(a.details || '—')}</td><td>${when(a.created_at)}</td></tr>`,
+  headers: ['المسؤول', 'الإجراء', 'التفاصيل', 'التاريخ'],
+  csvHeaders: ['المسؤول', 'الإجراء', 'العملية', 'المسار', 'التفاصيل', 'التاريخ'],
+  csvRow: (a) => [a.admin_name, auditText(a), a.method, a.path, a.details || '', a.created_at],
+  row: (a) => `<tr><td>${esc(a.admin_name)}</td><td class="cell-wrap"><b>${esc(auditText(a))}</b><br>${pill(a.method, a.method === 'DELETE' ? 'red' : '')} <small class="muted text-ltr">${esc(a.path)}</small></td><td class="cell-wide">${esc(a.details || '—')}</td><td>${when(a.created_at)}</td></tr>`,
 });
 
 /* ---------- reports ---------- */
