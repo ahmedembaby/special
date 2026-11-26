@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { SponsoredAdCard } from '../components/SponsoredAdCard';
 import { View, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet, Text, RefreshControl, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import { useAppColors } from '../theme/useAppColors';
 import { useFeed } from '../hooks/useFeed';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { PostCard } from '../components/PostCard';
+import { PostSkeleton } from '../components/PostSkeleton';
 import { PostComposer } from '../components/PostComposer';
 import { Icon } from '../components/Icon';
 import { StoriesBar } from '../components/StoriesBar';
@@ -19,6 +20,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { me, posts, loading, refreshing, refresh, like, remove, create } = useFeed();
 
+  const openPost = useCallback((p: { id: string }) => nav.navigate('PostDetail', { postId: p.id }), [nav]);
+
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
@@ -29,7 +32,7 @@ export default function HomeScreen() {
       />
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+        <View><PostSkeleton /><PostSkeleton /><PostSkeleton /></View>
       ) : (
         <FlatList
           data={posts}
@@ -56,8 +59,8 @@ export default function HomeScreen() {
               meId={me.id}
               onLike={like}
               onDelete={remove}
-              onComment={(p) => nav.navigate('PostDetail', { postId: p.id })}
-              onPress={(p) => nav.navigate('PostDetail', { postId: p.id })}
+              onComment={openPost}
+              onPress={openPost}
             />
           )}
         />
