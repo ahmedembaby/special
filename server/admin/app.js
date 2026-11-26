@@ -102,7 +102,14 @@ function setLive(ok) {
 }
 
 /* ---------- UI building blocks ---------- */
-const shell = (html) => { $('#pageContent').innerHTML = html; };
+const shell = (html) => { $('#pageContent').innerHTML = html; stampDataLabels(); };
+/* Stamps each td with its column header text; the mobile layout uses it as the card field label. */
+function stampDataLabels() {
+  $$('#pageContent table').forEach((t) => {
+    const labels = $$('thead th', t).map((th) => th.textContent.trim());
+    $$('tbody tr', t).forEach((tr) => Array.from(tr.cells).forEach((td, i) => td.setAttribute('data-label', labels[i] || '')));
+  });
+}
 const table = (headers, rows) => `<div class="table-wrap"><table><thead><tr>${headers.map((x, i) => `<th data-sort="${i}" title="اضغط للترتيب حسب هذا العمود">${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
 const pill = (text, kind = '') => `<span class="pill ${kind}">${esc(text)}</span>`;
 const toolbar = (title, actions = '') => `<div class="toolbar"><h2>${title}</h2><div class="toolbar-actions">${actions}</div></div>`;
