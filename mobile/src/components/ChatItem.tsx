@@ -1,11 +1,11 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Avatar } from './Avatar';
-import { Icon } from './Icon';
+import { Icon, IconName } from './Icon';
 import { useAppColors } from '../theme/useAppColors';
 import { isEncrypted, decrypt } from '../services/e2ee';
 
 const previewText = (t: string) =>
-  t.startsWith('sticker:') ? `Sticker ${t.slice(8)}` : t.startsWith('📍 http') ? '📍 Location' : t;
+  t.startsWith('sticker:') ? `Sticker ${t.slice(8)}` : t.startsWith('📍 http') ? 'Location' : t;
 
 export interface ChatItemProps {
   item: any;
@@ -31,13 +31,21 @@ export const ChatItem = ({ item, onPress, draft }: ChatItemProps) => {
   const participant = item.participants?.[0] || {};
   const name = getChatName(item);
   const lastMessage =
-    item.last_message_type === 'image' ? '📷 Photo'
-    : item.last_message_type === 'voice' ? '🎤 Voice message'
-    : item.last_message_type === 'file' ? '📎 File'
-    : item.last_message_type === 'poll' ? '📊 Poll'
-    : isEncrypted(item.last_message) ? previewText(decrypt(participant.public_key, item.last_message) ?? '🔒 Encrypted message')
+    item.last_message_type === 'image' ? 'Photo'
+    : item.last_message_type === 'voice' ? 'Voice message'
+    : item.last_message_type === 'file' ? 'File'
+    : item.last_message_type === 'poll' ? 'Poll'
+    : isEncrypted(item.last_message) ? previewText(decrypt(participant.public_key, item.last_message) ?? 'Encrypted message')
     : (item.last_message || '').startsWith('sticker:') ? previewText(item.last_message!)
     : item.last_message || 'No messages yet';
+  const previewIcon: IconName | null =
+    item.last_message_type === 'image' ? 'image'
+    : item.last_message_type === 'voice' ? 'mic'
+    : item.last_message_type === 'file' ? 'file'
+    : item.last_message_type === 'poll' ? 'poll'
+    : lastMessage === 'Location' ? 'mapPin'
+    : lastMessage === 'Encrypted message' ? 'lockFill'
+    : null;
   const unread = Number(item.unread_count) || 0;
   const isVerified = item.verified || participant.verified || false;
   const handle = item.type === 'group' ? null : participant.username ? `@${participant.username}` : null;
@@ -70,7 +78,10 @@ export const ChatItem = ({ item, onPress, draft }: ChatItemProps) => {
         <View style={styles.bottom}>
           <View style={styles.previewWrap}>
             {draft ? <Text style={[styles.preview, { color: c.textSecondary }]} numberOfLines={1}><Text style={{ color: c.danger, fontWeight: '800' }}>Draft: </Text>{draft}</Text> : (
-              <Text style={[styles.preview, { color: unread ? c.text : c.textSecondary, fontWeight: unread ? '600' : '400' }]} numberOfLines={1}>{lastMessage}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                {previewIcon ? <Icon name={previewIcon} size={14} color={unread ? c.text : c.textSecondary} /> : null}
+                <Text style={[styles.preview, { flexShrink: 1, color: unread ? c.text : c.textSecondary, fontWeight: unread ? '600' : '400' }]} numberOfLines={1}>{lastMessage}</Text>
+              </View>
             )}
             {handle ? <Text style={[styles.handle, { color: c.textMuted }]} numberOfLines={1}>{handle}</Text> : null}
           </View>
