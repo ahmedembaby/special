@@ -12,7 +12,7 @@ import { VerifiedBadge } from '../components/VerifiedBadge';
 import { PostCard } from '../components/PostCard';
 import { ImageViewer } from '../components/ImageViewer';
 import { resolveUrl } from '../config';
-import { PROFILE } from '../theme/profileLayout';
+import { PROFILE, startText } from '../theme/profileLayout';
 import { useMe } from '../hooks/useMe';
 import { useCall } from '../context/CallContext';
 import { StoryViewer } from '../components/StoryViewer';
@@ -169,11 +169,11 @@ export default function UserProfileScreen() {
           </View>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Text style={[styles.name, { color: c.text }]}>{profile.name}</Text>{(profile as any).verified ? <VerifiedBadge size={18} /> : null}{profile.is_private ? <Icon name="lockFill" size={16} color={c.textSecondary} /> : null}</View>
-        <Text style={{ color: c.textSecondary, fontSize: 15 }}>
+        <Text style={[{ color: c.textSecondary, fontSize: 15 }, startText()]}>
           @{profile.username}
           {profile.follows_me ? <Text style={{ backgroundColor: c.surface }}>  Follows you  </Text> : null}
         </Text>
-        {profile.bio ? <Text style={{ color: c.text, fontSize: 15, marginTop: PROFILE.sectionGap, lineHeight: 21 }}>{profile.bio}</Text> : null}
+        {profile.bio ? <Text style={[{ color: c.text, fontSize: 15, marginTop: PROFILE.sectionGap, lineHeight: 21 }, startText()]}>{profile.bio}</Text> : null}
         <View style={styles.counts}>
           <Text style={{ color: c.text }}><Text style={{ fontWeight: '800' }}>{compact(profile.following_count)}</Text><Text style={{ color: c.textSecondary }}> Following</Text></Text>
           <Text style={{ color: c.text }}><Text style={{ fontWeight: '800' }}>{compact(profile.followers_count)}</Text><Text style={{ color: c.textSecondary }}> Followers</Text></Text>
