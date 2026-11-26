@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity,
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useAppColors } from '../theme/useAppColors';
+import { useI18n } from '../i18n';
 import { EmptyState } from '../components/EmptyState';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { Icon } from '../components/Icon';
@@ -12,6 +13,7 @@ export default function SessionsScreen() {
   const navigation = useNavigation() as any;
   const { c } = useAppColors();
   const { logout } = useAuth();
+  const { t } = useI18n();
   const [sessions, setSessions] = useState<api.DeviceSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -39,7 +41,7 @@ export default function SessionsScreen() {
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <ScreenHeader title="Devices and sessions" onBack={() => navigation.goBack()} />
       {loading ? <ActivityIndicator color={c.primary} style={{ marginTop: 32 }} /> : failed ? (
-        <EmptyState icon="phone" title="Could not load devices" subtitle="Check your connection and try again." actionLabel="Try again" onAction={load} />
+        <EmptyState icon="phone" title={t('Could not load devices')} subtitle={t('Check your connection and try again.')} actionLabel={t('Try again')} onAction={load} />
       ) : (
         <FlatList data={sessions} keyExtractor={(item) => item.id} contentContainerStyle={{ padding: 14, paddingBottom: 32 }}
           ListEmptyComponent={<Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 44, paddingHorizontal: 28, lineHeight: 22 }}>No other devices are currently connected to your account.</Text>}
