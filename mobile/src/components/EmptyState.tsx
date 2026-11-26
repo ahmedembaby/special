@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Typography, Spacing } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
 import { Icon, IconName } from './Icon';
@@ -7,9 +7,11 @@ interface EmptyStateProps {
   title: string;
   subtitle?: string;
   icon?: IconName;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
-export const EmptyState = ({ title, subtitle, icon = 'chat' }: EmptyStateProps) => {
+export const EmptyState = ({ title, subtitle, icon = 'chat', actionLabel, onAction }: EmptyStateProps) => {
   const { c } = useAppColors();
   return (
     <View style={[styles.container, { backgroundColor: c.background }]}>
@@ -18,6 +20,11 @@ export const EmptyState = ({ title, subtitle, icon = 'chat' }: EmptyStateProps) 
       </View>
       <Text accessibilityRole="header" style={[styles.title, { color: c.text }]}>{title}</Text>
       {subtitle ? <Text style={[styles.subtitle, { color: c.textSecondary }]}>{subtitle}</Text> : null}
+      {actionLabel && onAction ? (
+        <TouchableOpacity onPress={onAction} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={actionLabel} style={[styles.action, { backgroundColor: c.primary }]}>
+          <Text style={styles.actionText}>{actionLabel}</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 };
@@ -33,5 +40,7 @@ const styles = StyleSheet.create({
   },
   iconWrap: { width: 88, height: 88, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   title: { ...Typography.h3, color: '#1B1730', textAlign: 'center' },
+  action: { marginTop: 8, minHeight: 44, paddingHorizontal: 22, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  actionText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
   subtitle: { ...Typography.bodySmall, color: '#5E5A78', textAlign: 'center' },
 });
