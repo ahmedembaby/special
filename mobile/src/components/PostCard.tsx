@@ -3,7 +3,7 @@ import { RichText } from './RichText';
 import { ReportSheet, ReportTarget } from './ReportSheet';
 import { OptionSheet } from './OptionSheet';
 import { useNavigation } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, StyleSheet, Share, Modal, TextInput } from 'react-native';
 import { CachedImage } from './CachedImage';
 import { Post } from '../services/social';
@@ -27,7 +27,7 @@ interface Props {
   detail?: boolean;
 }
 
-export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onUserPress, detail }: Props) => {
+const PostCardImpl = ({ post, meId, onLike, onDelete, onComment, onPress, onUserPress, detail }: Props) => {
   const { c } = useAppColors();
   const initialReaction = (): ReactionState => ({
     my: post.my_reaction ?? (post.likes.includes(meId) ? '❤️' : null),
@@ -235,6 +235,9 @@ export const PostCard = ({ post, meId, onLike, onDelete, onComment, onPress, onU
   );
 };
 
+// Re-render only when the post object or the handlers change, so scrolling a long feed stays cheap
+export const PostCard = memo(PostCardImpl);
+
 const styles = StyleSheet.create({
   card: { flexDirection: 'row', marginHorizontal: 18, marginTop: 10, paddingHorizontal: 17, paddingVertical: 17, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, gap: 13 },
   body: { flex: 1 },
@@ -244,7 +247,7 @@ const styles = StyleSheet.create({
   meta: { fontSize: 14, flexShrink: 2 },
   content: { lineHeight: 23, marginTop: 4, fontSize: 15 },
   grid: { marginTop: 12, borderRadius: 20, overflow: 'hidden' },
-  single: { width: '100%', height: 200 },
+  single: { width: '100%', aspectRatio: 1.6, maxHeight: 320 },
   gridRow: { flexDirection: 'row', height: 220, gap: 2 },
   col: { flex: 1, gap: 2 },
   cell: { width: '100%', height: '100%' },
