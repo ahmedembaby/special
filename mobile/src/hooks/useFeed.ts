@@ -34,16 +34,16 @@ export const useFeed = (username?: string) => {
 
   const refresh = () => { setRefreshing(true); load(); };
 
-  const like = (id: string) => {
+  const like = useCallback((id: string) => {
     setPosts((prev) => prev.map((p) =>
       p.id !== id ? p : { ...p, likes: p.likes.includes(me.id) ? p.likes.filter((l) => l !== me.id) : [...p.likes, me.id] }));
     social.toggleLike(me, id).catch(() => load()); // roll back to the server state on failure
-  };
+  }, [me, load]);
 
-  const remove = (id: string) => {
+  const remove = useCallback((id: string) => {
     setPosts((prev) => prev.filter((p) => p.id !== id));
     social.deletePost(id).catch(() => load());
-  };
+  }, [load]);
 
   const create = async (content: string, image: string | string[] | null, extras?: social.PostExtras) => {
     const post = await social.createPost(me, content, image, extras);
