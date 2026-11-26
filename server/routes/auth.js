@@ -17,6 +17,11 @@ const { generateUsername } = require('../utils/username');
 
 const router = express.Router();
 
+// Delivery audit for the admin OTP monitor. Stores the event only - never the code.
+const logOtp = (phone, event, detail) =>
+  pool.query('INSERT INTO otp_events (phone, event, detail) VALUES (?, ?, ?)',
+    [String(phone).slice(0, 32), event, String(detail || '').slice(0, 200) || null]).catch(() => {});
+
 const OTP_TTL = 300; // seconds
 const OTP_MAX_ATTEMPTS = 5;
 const RESEND_COOLDOWN = 30;
@@ -150,9 +155,11 @@ const otpHandler = async (req, res) => {
     if (phone.replace(/\D/g, '').length < 7) return res.status(400).json({ message: 'Valid phone number required' });
 
     if (await kv.get(`otp_cooldown:${phone}`)) {
+      logOtp(phone, 'blocked', 'cooldown');
       return res.status(429).json({ message: `Please wait ${RESEND_COOLDOWN} seconds before requesting another code` });
     }
     const { code, result } = await issueOTP(phone);
+    logOtp(phone, result.success ? 'sent' : 'send_failed', result.success ? 'whatsapp' : (result.code || 'failed'));
 
     if (!result.success && !OTP_DEV_MODE) {
       await kv.del(`otp:${phone}`);
@@ -184,11 +191,13 @@ router.post('/verify-otp', async (req, res) => {
     const attempts = Number(await kv.get(`otp_attempts:${phone}`)) || 0;
     if (attempts >= OTP_MAX_ATTEMPTS) {
       await kv.del(`otp:${phone}`);
+      logOtp(phone, 'blocked', 'max_attempts');
       return res.status(429).json({ message: 'Too many attempts. Request a new code.' });
     }
     const stored = await kv.get(`otp:${phone}`);
     if (!stored || stored.length !== code.length || !crypto.timingSafeEqual(Buffer.from(stored), Buffer.from(code))) {
       await kv.incr(`otp_attempts:${phone}`, OTP_TTL);
+      logOtp(phone, 'rejected', stored ? 'wrong_code' : 'expired');
       return res.status(400).json({ message: 'Invalid or expired code' });
     }
     const [rows] = await pool.query('SELECT id, banned FROM users WHERE phone = ?', [phone]);
@@ -199,6 +208,7 @@ router.post('/verify-otp', async (req, res) => {
     }
     await kv.del(`otp:${phone}`);
     await kv.del(`otp_attempts:${phone}`);
+    logOtp(phone, 'verified', rows.length ? 'login' : 'register');
     if (rows.length) {
       if (rows[0].banned) return res.status(403).json({ message: 'This account has been suspended' });
       const user = await loadUser(rows[0].id);
