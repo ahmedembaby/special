@@ -34,7 +34,9 @@ const createSessionToken = async (req, user) => {
   const deviceName = String(req.get('x-device-name') || 'Unknown device').trim().slice(0, 120) || 'Unknown device';
   const rawPlatform = String(req.get('x-device-platform') || '').toLowerCase();
   const platform = ['ios', 'android', 'web'].includes(rawPlatform) ? rawPlatform : 'unknown';
-  await pool.query('INSERT INTO device_sessions (id, user_id, device_name, platform, expires_at) VALUES (?, ?, ?, ?, FROM_UNIXTIME(?))', [sessionId, user.id, deviceName, platform, decoded.exp]);
+  const ip = String(req.ip || '').slice(0, 45) || null;
+  const userAgent = String(req.get('user-agent') || '').slice(0, 255) || null;
+  await pool.query('INSERT INTO device_sessions (id, user_id, device_name, platform, ip, user_agent, expires_at) VALUES (?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?))', [sessionId, user.id, deviceName, platform, ip, userAgent, decoded.exp]);
   noteDevice(req, user.id, deviceName, platform).catch(() => {});
   return token;
 };
