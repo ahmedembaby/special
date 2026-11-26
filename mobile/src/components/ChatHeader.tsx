@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, I18nManager } from 'react-native';
-import { Icon } from './Icon';
+import { Icon, IconName } from './Icon';
 import { CachedImage } from './CachedImage';
 import { useAppColors } from '../theme/useAppColors';
 
@@ -8,6 +8,8 @@ interface Props {
   name: string;
   avatarUri?: string | null;
   subtitle: string;
+  /** Small status icons shown before the subtitle (encrypted, muted, disappearing). */
+  statusIcons?: IconName[];
   online?: boolean;
   /** Extra actions on the end side. Each is rendered as a round button. */
   actions: { icon: any; label: string; onPress: () => void }[];
@@ -16,7 +18,7 @@ interface Props {
 }
 
 /** Chat top bar: brand-colour bar with white content in light mode, the plain card bar in dark mode. */
-export const ChatHeader = ({ name, avatarUri, subtitle, online, actions, onBack, onProfile }: Props) => {
+export const ChatHeader = ({ name, avatarUri, subtitle, statusIcons, online, actions, onBack, onProfile }: Props) => {
   const { c, isDark } = useAppColors();
   const bar = isDark ? c.card : c.primary;
   const fg = isDark ? c.text : '#FFFFFF';
@@ -26,7 +28,7 @@ export const ChatHeader = ({ name, avatarUri, subtitle, online, actions, onBack,
   return (
     <View style={[styles.header, { backgroundColor: bar, shadowColor: c.shadow, borderBottomColor: c.divider }]}>
       <TouchableOpacity style={styles.back} onPress={onBack} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Back">
-        <Icon name={I18nManager.isRTL ? 'arrowRight' : 'arrowLeft'} size={24} color={iconCol} />
+        <Icon name="arrowLeft" size={24} color={iconCol} />
       </TouchableOpacity>
       <TouchableOpacity style={styles.info} activeOpacity={onProfile ? 0.7 : 1} onPress={onProfile} accessibilityRole={onProfile ? 'button' : undefined}>
         {avatarUri ? (
@@ -38,7 +40,12 @@ export const ChatHeader = ({ name, avatarUri, subtitle, online, actions, onBack,
         )}
         <View style={styles.names}>
           <Text style={[styles.name, { color: fg }]} numberOfLines={1}>{name || ' '}</Text>
-          {subtitle ? <Text style={[styles.sub, { color: sub }]} numberOfLines={1}>{subtitle}</Text> : null}
+          {subtitle || statusIcons?.length ? (
+            <View style={styles.subRow}>
+              {statusIcons?.map((n) => <Icon key={n} name={n} size={12} color={sub} />)}
+              {subtitle ? <Text style={[styles.sub, { color: sub }]} numberOfLines={1}>{subtitle}</Text> : null}
+            </View>
+          ) : null}
         </View>
       </TouchableOpacity>
       <View style={styles.actions}>
@@ -60,7 +67,8 @@ const styles = StyleSheet.create({
   initial: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   names: { flex: 1, minWidth: 0 },
   name: { fontSize: 17, fontWeight: '700' },
-  sub: { fontSize: 13, marginTop: 1 },
+  sub: { fontSize: 13, flexShrink: 1 },
+  subRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
   actions: { flexDirection: 'row', gap: 8 },
   btn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
 });

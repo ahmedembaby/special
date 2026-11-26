@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { Icon } from '../components/Icon';
+import { IconText, MEDIA_PREVIEW } from '../components/IconText';
 import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
 import * as api from '../services/api';
@@ -1329,7 +1330,8 @@ export default function ChatScreen() {
         name={header.name || ''}
         avatarUri={header.avatar ? resolveUrl(header.avatar) : null}
         online={header.status === 'online' && !inGroup}
-        subtitle={`${encryptionOn ? '🔒 ' : ''}${meta.muted ? '🔕 ' : ''}${meta.disappear ? '⏱ ' : ''}${presenceText() || (inGroup ? header.handle || '' : header.handle ? `@${header.handle}` : '')}`.trim()}
+        statusIcons={[...(encryptionOn ? ['lockFill' as const] : []), ...(meta.muted ? ['bellOff' as const] : []), ...(meta.disappear ? ['clock' as const] : [])]}
+        subtitle={presenceText() || (inGroup ? header.handle || '' : header.handle ? `@${header.handle}` : '')}
         onBack={() => navigation.goBack()}
         onProfile={header.userId != null ? () => navigation.navigate('UserProfile', { userId: String(header.userId) }) : undefined}
         actions={[
@@ -1357,10 +1359,10 @@ export default function ChatScreen() {
 
       {selectMode ? (
         <View style={[styles.selectBar, { backgroundColor: c.card, shadowColor: c.shadow }]}>
-          <TouchableOpacity onPress={exitSelect} hitSlop={10}><Text style={{ color: TEXT_GRAY_900, fontSize: 20 }}>✕</Text></TouchableOpacity>
+          <TouchableOpacity onPress={exitSelect} hitSlop={10}><Icon name="close" size={22} color={TEXT_GRAY_900} /></TouchableOpacity>
           <Text style={{ color: TEXT_GRAY_900, fontWeight: '700', fontSize: 16, flex: 1, marginLeft: 14 }}>{selected.length} selected</Text>
-          <TouchableOpacity onPress={forwardSelected} style={styles.selectBtn}><Text style={{ color: X_BLUE, fontWeight: '700' }}>↪ Forward</Text></TouchableOpacity>
-          <TouchableOpacity onPress={deleteSelected} style={styles.selectBtn}><Text style={{ color: c.danger, fontWeight: '700' }}>🗑 Delete</Text></TouchableOpacity>
+          <TouchableOpacity onPress={forwardSelected} style={styles.selectBtn}><IconText icon="forward" color={X_BLUE} size={18} textStyle={{ fontWeight: '700' }}>Forward</IconText></TouchableOpacity>
+          <TouchableOpacity onPress={deleteSelected} style={styles.selectBtn}><IconText icon="trash" color={c.danger} size={18} textStyle={{ fontWeight: '700' }}>Delete</IconText></TouchableOpacity>
         </View>
       ) : null}
 
@@ -1466,7 +1468,7 @@ export default function ChatScreen() {
                     </View>
                   ) : null}
                   <View pointerEvents={selectMode ? 'none' : 'auto'} style={[styles.bubbleContainer, isOwn ? styles.bubbleContainerOwn : styles.bubbleContainerOther]}>
-                    {item.forwarded ? <Text style={[styles.forwardedLabel, { color: TEXT_GRAY_500 }]}>↪ Forwarded</Text> : null}
+                    {item.forwarded ? <IconText icon="forward" color={TEXT_GRAY_500} size={12} gap={4} textStyle={styles.forwardedLabel}>Forwarded</IconText> : null}
                     {item.reply ? (
                       <TouchableOpacity
                         activeOpacity={0.8}
@@ -1480,9 +1482,11 @@ export default function ChatScreen() {
                             <Text style={[styles.quoteName, { color: X_BLUE }]} numberOfLines={1}>
                               {isMine(item.reply.sender_id) ? 'You' : item.reply.sender_name || ''}
                             </Text>
-                            <Text style={[styles.quoteText, { color: TEXT_GRAY_900 }]} numberOfLines={2}>
-                              {item.reply.type === 'image' ? '📷 Photo' : item.reply.type === 'voice' ? '🎤 Voice message' : item.reply.type === 'file' ? '📎 File' : textOf({ content: item.reply.content })}
-                            </Text>
+                            {MEDIA_PREVIEW[item.reply.type] && item.reply.type !== 'poll' ? (
+                              <IconText icon={MEDIA_PREVIEW[item.reply.type].icon} color={TEXT_GRAY_900} size={14} gap={4} textStyle={styles.quoteText} numberOfLines={2}>{MEDIA_PREVIEW[item.reply.type].label}</IconText>
+                            ) : (
+                              <Text style={[styles.quoteText, { color: TEXT_GRAY_900 }]} numberOfLines={2}>{textOf({ content: item.reply.content })}</Text>
+                            )}
                           </>
                         )}
                       </TouchableOpacity>
@@ -1558,14 +1562,14 @@ export default function ChatScreen() {
                       <Text style={[styles.time, { color: TEXT_GRAY_400 }]}>
                         {timeFormat(item.created_at)}
                       </Text>
-                      {item.starred ? <Text style={{ fontSize: 11 }}>⭐</Text> : null}
+                      {item.starred ? <Icon name="starFill" size={12} color={c.warning} /> : null}
                       {item.status === 'queued' ? (
                         <TouchableOpacity onPress={() => retryQueued(item)} hitSlop={8}>
-                          <Text style={{ color: c.warning, fontSize: 11, fontWeight: '700' }}>⏳ Not sent · tap to retry</Text>
+                          <IconText icon="clock" color={c.warning} size={12} gap={4} textStyle={{ fontSize: 11, fontWeight: '700' }}>Not sent · tap to retry</IconText>
                         </TouchableOpacity>
                       ) : item.status === 'failed' ? (
                         <TouchableOpacity onPress={() => discardQueued(item)} hitSlop={8}>
-                          <Text style={{ color: c.danger, fontSize: 11, fontWeight: '700' }}>❗ Not sent · tap to remove</Text>
+                          <IconText icon="alertCircle" color={c.danger} size={12} gap={4} textStyle={{ fontSize: 11, fontWeight: '700' }}>Not sent · tap to remove</IconText>
                         </TouchableOpacity>
                       ) : null}
                       {showStatus && (
@@ -1626,10 +1630,10 @@ export default function ChatScreen() {
               </View>
               <View style={styles.actionRow}>
                 <TouchableOpacity style={styles.actionChip} onPress={startReply} activeOpacity={0.8}>
-                  <Text style={{ color: TEXT_GRAY_900, fontWeight: '600' }}>↩ Reply</Text>
+                  <IconText icon="reply" color={TEXT_GRAY_900} textStyle={{ fontWeight: '600' }}>Reply</IconText>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionChip} onPress={() => { const m = selectedMessageForReaction; closeOptions(); if (m) api.conversations.pinMessage(conversationId!, pinned?.id === m.id ? null : m.id).catch(() => Alert.alert('Error', 'Could not pin')); }} activeOpacity={0.8}>
-                  <Text style={{ color: TEXT_GRAY_900, fontWeight: '600' }}>📌 {pinned?.id === selectedMessageForReaction?.id ? 'Unpin' : 'Pin'}</Text>
+                  <IconText icon="pinned" color={TEXT_GRAY_900} textStyle={{ fontWeight: '600' }}>{pinned?.id === selectedMessageForReaction?.id ? 'Unpin' : 'Pin'}</IconText>
                 </TouchableOpacity>
                 {selectedMessageForReaction?.type === 'voice' ? (
                   <TouchableOpacity style={styles.actionChip} onPress={transcribeVoiceMessage} activeOpacity={0.8}>
@@ -1638,26 +1642,26 @@ export default function ChatScreen() {
                 ) : null}
                 {selectedMessageForReaction && (selectedMessageForReaction.type === 'text' || !selectedMessageForReaction.type) && !textOf(selectedMessageForReaction).startsWith('sticker:') ? (
                   <TouchableOpacity style={styles.actionChip} onPress={translateMessage} activeOpacity={0.8}>
-                    <Text style={{ color: TEXT_GRAY_900, fontWeight: '600' }}>🌐 Translate</Text>
+                    <IconText icon="translate" color={TEXT_GRAY_900} textStyle={{ fontWeight: '600' }}>Translate</IconText>
                   </TouchableOpacity>
                 ) : null}
                 <TouchableOpacity style={styles.actionChip} onPress={toggleStar} activeOpacity={0.8}>
-                  <Text style={{ color: TEXT_GRAY_900, fontWeight: '600' }}>⭐ {selectedMessageForReaction?.starred ? 'Unstar' : 'Star'}</Text>
+                  <IconText icon={selectedMessageForReaction?.starred ? 'starFill' : 'star'} color={TEXT_GRAY_900} textStyle={{ fontWeight: '600' }}>{selectedMessageForReaction?.starred ? 'Unstar' : 'Star'}</IconText>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionChip} onPress={startSelect} activeOpacity={0.8}>
-                  <Text style={{ color: TEXT_GRAY_900, fontWeight: '600' }}>☑ Select</Text>
+                  <IconText icon="checkSquare" color={TEXT_GRAY_900} textStyle={{ fontWeight: '600' }}>Select</IconText>
                 </TouchableOpacity>
                 {inGroup && selectedMessageForReaction && isMine(selectedMessageForReaction.sender_id) ? (
                   <TouchableOpacity style={styles.actionChip} onPress={showReaders} activeOpacity={0.8}>
-                    <Text style={{ color: TEXT_GRAY_900, fontWeight: '600' }}>👁 Seen by</Text>
+                    <IconText icon="eye" color={TEXT_GRAY_900} textStyle={{ fontWeight: '600' }}>Seen by</IconText>
                   </TouchableOpacity>
                 ) : null}
                 <TouchableOpacity style={styles.actionChip} onPress={openForward} activeOpacity={0.8}>
-                  <Text style={{ color: TEXT_GRAY_900, fontWeight: '600' }}>↪ Forward</Text>
+                  <IconText icon="forward" color={TEXT_GRAY_900} textStyle={{ fontWeight: '600' }}>Forward</IconText>
                 </TouchableOpacity>
                 {selectedMessageForReaction && !isMine(selectedMessageForReaction.sender_id) ? (
                   <TouchableOpacity style={styles.actionChip} onPress={() => { const id = selectedMessageForReaction.id; closeOptions(); setReport({ type: 'message', id }); }} activeOpacity={0.8}>
-                    <Text style={{ color: c.danger, fontWeight: '600' }}>⚑ Report</Text>
+                    <IconText icon="flag" color={c.danger} textStyle={{ fontWeight: '600' }}>Report</IconText>
                   </TouchableOpacity>
                 ) : null}
                 <TouchableOpacity style={styles.actionChip} onPress={() => deleteMessage('me')} activeOpacity={0.8} disabled={sending}>
@@ -1724,35 +1728,39 @@ export default function ChatScreen() {
                 <Text style={{ color: X_BLUE, fontWeight: '700', fontSize: 13 }} numberOfLines={1}>
                   Replying to {isMine(replyTo.sender_id) ? 'yourself' : replyTo.sender_name || ''}
                 </Text>
-                <Text style={{ color: TEXT_GRAY_500, fontSize: 13 }} numberOfLines={1}>
-                  {replyTo.type === 'image' ? '📷 Photo' : replyTo.type === 'voice' ? '🎤 Voice message' : replyTo.type === 'file' ? '📎 File' : textOf(replyTo)}
-                </Text>
+                {MEDIA_PREVIEW[replyTo.type || ''] && replyTo.type !== 'poll' ? (
+                  <IconText icon={MEDIA_PREVIEW[replyTo.type || ''].icon} color={TEXT_GRAY_500} size={14} gap={4} textStyle={{ fontSize: 13 }} numberOfLines={1}>{MEDIA_PREVIEW[replyTo.type || ''].label}</IconText>
+                ) : (
+                  <Text style={{ color: TEXT_GRAY_500, fontSize: 13 }} numberOfLines={1}>{textOf(replyTo)}</Text>
+                )}
               </View>
               <TouchableOpacity onPress={() => setReplyTo(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Text style={{ color: TEXT_GRAY_500, fontSize: 18 }}>✕</Text>
+                <Icon name="close" size={20} color={TEXT_GRAY_500} />
               </TouchableOpacity>
             </View>
           ) : null}
 
           {pinned ? (
             <View style={[styles.replyBar, { backgroundColor: BG_GRAY, borderTopColor: BORDER_GRAY }]}>
-              <Text>📌</Text>
-              <Text style={{ flex: 1, color: TEXT_GRAY_900 }} numberOfLines={1}>
-                {pinned.type === 'image' ? '📷 Photo' : pinned.type === 'voice' ? '🎤 Voice message' : pinned.type === 'file' ? '📎 File' : textOf({ content: pinned.content })}
-              </Text>
+              <Icon name="pinned" size={16} color={X_BLUE} />
+              {MEDIA_PREVIEW[pinned.type] && pinned.type !== 'poll' ? (
+                <IconText icon={MEDIA_PREVIEW[pinned.type].icon} color={TEXT_GRAY_900} size={14} gap={4} style={{ flex: 1 }} numberOfLines={1}>{MEDIA_PREVIEW[pinned.type].label}</IconText>
+              ) : (
+                <Text style={{ flex: 1, color: TEXT_GRAY_900 }} numberOfLines={1}>{textOf({ content: pinned.content })}</Text>
+              )}
             </View>
           ) : null}
 
           {meta.disappear ? (
-            <Text style={{ color: TEXT_GRAY_500, fontSize: 12, textAlign: 'center', paddingVertical: 2, backgroundColor: c.background }}>
-              ⏱ New messages disappear after {DISAPPEAR_OPTIONS.find((o) => o[1] === meta.disappear)?.[0] || ''}
-            </Text>
+            <IconText icon="clock" color={TEXT_GRAY_500} size={13} gap={4} style={{ justifyContent: 'center', paddingVertical: 2, backgroundColor: c.background }} textStyle={{ fontSize: 12 }}>
+              New messages disappear after {DISAPPEAR_OPTIONS.find((o) => o[1] === meta.disappear)?.[0] || ''}
+            </IconText>
           ) : null}
 
           <View style={[styles.inputContainer, { backgroundColor: c.background }]}>
             <View style={styles.inputRow}>
               <TouchableOpacity style={styles.attachBtn} onPress={openAttachmentMenu} activeOpacity={0.8}>
-                <Icon name="imageFeather" size={20} color={X_BLUE} />
+                <Icon name="attach" size={21} color={X_BLUE} />
               </TouchableOpacity>
               {recording ? (
                 <>
@@ -1765,7 +1773,7 @@ export default function ChatScreen() {
                     <View style={styles.liveBars}>
                       {liveLevels.length ? liveLevels.map((l, i) => (
                         <View key={i} style={[styles.liveBar, { height: 4 + l * 22, backgroundColor: cancelHint ? c.danger : c.primary }]} />
-                      )) : <Text style={{ color: TEXT_GRAY_500, fontSize: 13 }}>{holdModeRef.current ? (cancelHint ? 'Release to cancel' : '◀ Slide to cancel') : 'Recording…'}</Text>}
+                      )) : holdModeRef.current && !cancelHint ? <IconText icon="chevronLeft" mirror={false} color={TEXT_GRAY_500} size={16} gap={2} textStyle={{ fontSize: 13 }}>Slide to cancel</IconText> : <Text style={{ color: TEXT_GRAY_500, fontSize: 13 }}>{holdModeRef.current ? 'Release to cancel' : 'Recording…'}</Text>}
                     </View>
                   </View>
                   {holdModeRef.current ? null : (
@@ -1856,7 +1864,7 @@ export default function ChatScreen() {
       />
       {showJump ? (
         <TouchableOpacity activeOpacity={0.85} onPress={jumpToLatest} style={[styles.jumpBtn, { backgroundColor: c.card, shadowColor: c.shadow }]}>
-          <Text style={{ color: X_BLUE, fontSize: 18, fontWeight: '800' }}>↓</Text>
+          <Icon name="arrowDown" size={20} color={X_BLUE} />
           {newCount > 0 ? <View style={[styles.jumpBadge, { backgroundColor: X_BLUE }]}><Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800' }}>{newCount > 99 ? '99+' : newCount}</Text></View> : null}
         </TouchableOpacity>
       ) : null}
@@ -1908,7 +1916,7 @@ export default function ChatScreen() {
             <View style={[styles.previewBubble, { backgroundColor: themeDraft.bubble || X_BLUE, alignSelf: 'flex-end' }]}><Text style={{ color: '#FFFFFF' }}>Hi! This is my color</Text></View>
           </View>
           <TouchableOpacity onPress={() => setThemeAll((v) => !v)} style={styles.themeAllRow} activeOpacity={0.8}>
-            <Text style={{ color: X_BLUE, fontSize: 18 }}>{themeAll ? '☑' : '☐'}</Text>
+            <Icon name={themeAll ? 'checkSquare' : 'square'} size={20} color={X_BLUE} />
             <Text style={{ color: TEXT_GRAY_900, marginLeft: 8 }}>Use for all my chats</Text>
           </TouchableOpacity>
           <View style={styles.sheetButtons}>

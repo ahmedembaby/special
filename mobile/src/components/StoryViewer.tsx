@@ -7,6 +7,7 @@ import { resolveUrl } from '../config';
 import * as social from '../services/social';
 import { OptionSheet } from './OptionSheet';
 import { CachedImage } from './CachedImage';
+import { Icon } from './Icon';
 
 const { width: W } = Dimensions.get('window');
 
@@ -149,15 +150,15 @@ export const StoryViewer = ({ groups: initial, startGroup, meId, onClose }: Prop
             <Text style={styles.name}>{mine ? 'Your story' : group.user.name}</Text>
             <Text style={styles.time}>{new Date(story.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
             <View style={{ flex: 1 }} />
-            {mine ? <TouchableOpacity onPress={remove} hitSlop={10}><Text style={styles.icon}>🗑</Text></TouchableOpacity> : null}
-            <TouchableOpacity onPress={() => onClose(changed.current)} hitSlop={10}><Text style={styles.icon}>✕</Text></TouchableOpacity>
+            {mine ? <TouchableOpacity onPress={remove} hitSlop={10}><View style={styles.icon}><Icon name="trash" size={22} color="#fff" /></View></TouchableOpacity> : null}
+            <TouchableOpacity onPress={() => onClose(changed.current)} hitSlop={10}><View style={styles.icon}><Icon name="close" size={24} color="#fff" /></View></TouchableOpacity>
           </View>
         </View>
 
         {story.caption ? <Text style={styles.caption}>{story.caption}</Text> : null}
         {mine ? (
           <TouchableOpacity style={styles.viewersBtn} onPress={async () => setViewers(await social.getStoryViewers(story.id).catch(() => []))}>
-            <Text style={styles.viewersText}>👁 Viewers</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Icon name="eye" size={16} color="#fff" /><Text style={styles.viewersText}>Viewers</Text></View>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={styles.viewersBtn} onPress={replyToStory}>
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
   avatar: { width: 32, height: 32, borderRadius: 16 },
   name: { color: '#fff', fontWeight: '700', fontSize: 15 },
   time: { color: 'rgba(255,255,255,0.7)', fontSize: 12 },
-  icon: { color: '#fff', fontSize: 20, paddingHorizontal: 6 },
+  icon: { paddingHorizontal: 6 },
   caption: { position: 'absolute', bottom: 80, left: 20, right: 20, color: '#fff', fontSize: 17, textAlign: 'center', textShadowColor: '#000', textShadowRadius: 6 },
   viewersBtn: { position: 'absolute', bottom: 34, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20 },
   viewersText: { color: '#fff', fontWeight: '700' },

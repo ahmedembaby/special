@@ -1,4 +1,5 @@
 import React from 'react';
+import { I18nManager, View } from 'react-native';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 /**
@@ -13,6 +14,8 @@ export type IconName =
   | 'edit' | 'trash' | 'messageCircle' | 'repeat' | 'share' | 'heart' | 'home' | 'mail' | 'checkCircle'
   | 'moreHorizontal' | 'sendFeather' | 'imageFeather'
   | 'homeFill' | 'heartFill' | 'bellFill' | 'mailFill' | 'userFill' | 'usersFill' | 'plus' | 'settings' | 'calendar' | 'mapPin'
+  | 'attach' | 'play' | 'pause' | 'arrowUp' | 'arrowDown' | 'reply' | 'forward' | 'star' | 'starFill' | 'pinned' | 'checkSquare' | 'square'
+  | 'poll' | 'wifiOff' | 'refresh' | 'alertCircle' | 'chevronLeft' | 'sparkle' | 'lockFill' | 'eyeOff' | 'translate'
   | 'verified' | 'bookmark' | 'link' | 'trending' | 'composeFab' | 'x' | 'bubble' | 'sliders' | 'flag' | 'archive';
 
 type Node = { t: 'p'; d: string; fill?: boolean } | { t: 'c'; cx: number; cy: number; r: number; fill?: boolean } | { t: 'r'; x: number; y: number; w: number; h: number; rx: number };
@@ -54,8 +57,8 @@ const ICONS: Record<IconName, Node[]> = {
   fingerprint: [p('M6 9a8 8 0 0112 0M4 13a10 10 0 0116 0M8 12a4 4 0 018 0v3a6 6 0 01-1.5 4M12 12v4a5 5 0 01-1 3M8 15v1a8 8 0 001.5 4.5')],
   pin: [p('M7 4v16M17 4v16M3 9h18M3 15h18')],
   warning: [p('M12 3l10 18H2zM12 10v5M12 18v.2')],
-  mic: [p('M12 1a3 3 0 00-3 3v3a3 3 0 00-3 3v3a3 3 0 003 3h6a3 3 0 003-3v-3a3 3 0 003-3V4a3 3 0 00-3-3z')],
-  edit: [p('M3 17.2V20a1 1 0 001 1h5.2a1 1 0 001-1V17.2l-4.2-4.2zM18.8 5.2L15 9M15 9l1.4 1.4a4 4 0 11-5.6-5.6L9 5.2')],
+  mic: [p('M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z'), p('M19 10v2a7 7 0 01-14 0v-2M12 19v3')],
+  edit: [p('M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z')],
   trash: [p('M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6')],
   messageCircle: [p('M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.5 8.5 0 018 8z')],
   repeat: [p('M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3')],
@@ -86,17 +89,44 @@ const ICONS: Record<IconName, Node[]> = {
   bubble: [p('M12 3a9 9 0 00-7.8 13.5L3 21l4.6-1.2A9 9 0 1012 3z')],
   sliders: [p('M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6')],
   sendFeather: [p('M3 11.5L21 3l-5 18-4.5-7.5z M11.5 13.5L21 3')],
-  imageFeather: [c(12, 12, 7), p('M6.6 15.1l-2.4-2.4M17.4 5.1l2.4 2.4')],
+  imageFeather: [p('M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48')],
+  attach: [p('M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48')],
+  play: [p('M7 4.5l12 7.5-12 7.5z', true)],
+  pause: [p('M7 5h3.5v14H7zM13.5 5H17v14h-3.5z', true)],
+  arrowUp: [p('M12 20V4M6 10l6-6 6 6')],
+  arrowDown: [p('M12 4v16M6 14l6 6 6-6')],
+  reply: [p('M9 14L4 9l5-5M20 20v-7a4 4 0 00-4-4H4')],
+  forward: [p('M15 14l5-5-5-5M4 20v-7a4 4 0 014-4h16')],
+  star: [p('M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z')],
+  starFill: [p('M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z', true)],
+  pinned: [p('M15 3H9l1 6-3 3v2h10v-2l-3-3zM12 14v7')],
+  checkSquare: [p('M9 11l3 3 8-8M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2h11')],
+  square: [{ t: 'r', x: 4, y: 4, w: 16, h: 16, rx: 3 }],
+  poll: [p('M18 20V10M12 20V4M6 20v-6')],
+  wifiOff: [p('M1 1l22 22M16.7 11.1A11 11 0 0119 12.6M5 12.6a11 11 0 015.2-2.4M10.7 5.1A16 16 0 0122.6 9M1.4 9a16 16 0 014.7-2.9M8.5 16.1a6 6 0 016.9 0M12 20h.01')],
+  refresh: [p('M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0114.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0020.5 15')],
+  alertCircle: [c(12, 12, 10), p('M12 8v4M12 16h.01')],
+  chevronLeft: [p('M15 18l-6-6 6-6')],
+  sparkle: [p('M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z')],
+  lockFill: [p('M6 11h12v9H6z', true), p('M8.5 11V8a3.5 3.5 0 017 0v3')],
+  eyeOff: [p('M17.9 17.9A10.1 10.1 0 0112 20c-6.5 0-10-8-10-8a18 18 0 014.1-5.1M9.9 4.2A9.7 9.7 0 0112 4c6.5 0 10 8 10 8a18 18 0 01-2.2 3.2M1 1l22 22')],
+  translate: [p('M4 5h9M9 3v2M6 5c0 4 3 7 7 8M12 5c0 4-3 7-7 8M13 21l4-10 4 10M14.5 18h5')],
 };
+
+/** Direction icons that point the way the layout reads; they flip in right-to-left layouts. Media (play/pause) and literal-direction icons never flip. */
+const MIRROR_IN_RTL = new Set<IconName>(['arrowLeft', 'arrowRight', 'chevronLeft', 'chevronRight', 'reply', 'forward', 'send', 'sendFeather', 'logout']);
 
 export interface IconProps {
   name: IconName;
+  /** Override the default RTL flip (false keeps a literal direction, e.g. a physical swipe hint). */
+  mirror?: boolean;
   size?: number;
   color?: string;
   strokeWidth?: number;
 }
 
-export const Icon = ({ name, size = 24, color = '#626B84', strokeWidth = 2 }: IconProps) => (
+export const Icon = ({ name, size = 24, color = '#626B84', strokeWidth = 2, mirror }: IconProps) => {
+  const svg = (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     {ICONS[name].map((n, i) => {
       if (n.t === 'c') {
@@ -118,6 +148,9 @@ export const Icon = ({ name, size = 24, color = '#626B84', strokeWidth = 2 }: Ic
       );
     })}
   </Svg>
-);
+  );
+  // Flip with a wrapping View: a plain transform on a View is supported everywhere, unlike relying on the Svg view's own style.
+  return I18nManager.isRTL && (mirror ?? MIRROR_IN_RTL.has(name)) ? <View style={{ width: size, height: size, transform: [{ scaleX: -1 }] }}>{svg}</View> : svg;
+};
 
 export default Icon;

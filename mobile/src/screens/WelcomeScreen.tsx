@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '../theme/useAppColors';
+import { Icon } from '../components/Icon';
 
 export default function WelcomeScreen() {
   const navigation = useNavigation() as any;
@@ -30,8 +31,8 @@ export default function WelcomeScreen() {
         <LinearGradient colors={['#F0E9FF', '#E7F5FF']} style={styles.logoHalo}>
           <Image source={require('../../assets/adaptive-icon.png')} style={styles.heroLogo} resizeMode="contain" />
         </LinearGradient>
-        <View style={styles.sparkleTop}><Text style={styles.sparkle}>✦</Text></View>
-        <View style={styles.sparkleSide}><Text style={styles.sparkle}>✧</Text></View>
+        <View style={styles.sparkleTop}><Icon name="sparkle" size={30} color="#9A7BFF" /></View>
+        <View style={styles.sparkleSide}><Icon name="sparkle" size={22} color="#9A7BFF" /></View>
       </View>
 
       <View style={styles.copy}>
@@ -44,7 +45,7 @@ export default function WelcomeScreen() {
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Continue with phone" activeOpacity={0.88} onPress={() => navigation.navigate('Login')}>
           <LinearGradient colors={['#8A45F5', '#5545E8', '#246CEB']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.primaryButton}>
             <Text style={styles.buttonText}>Continue with phone</Text>
-            <Text style={styles.buttonArrow}>→</Text>
+            <View style={styles.buttonArrow}><Icon name="arrowRight" size={22} color="#FFFFFF" /></View>
           </LinearGradient>
         </TouchableOpacity>
         <Text style={[styles.legal, { color: c.textMuted }]}>By continuing, you agree to our Terms of Service and Privacy Policy.</Text>
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
   actions: { gap: 14 },
   primaryButton: { minHeight: 60, borderRadius: 20, paddingHorizontal: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: '#604AE7', shadowOpacity: 0.28, shadowRadius: 18, shadowOffset: { width: 0, height: 9 }, elevation: 7 },
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 0.1 },
-  buttonArrow: { color: '#FFFFFF', fontSize: 22, fontWeight: '700', position: 'absolute', right: 22 },
+  buttonArrow: { position: 'absolute', end: 22 },
   legal: { fontSize: 11, lineHeight: 17, textAlign: 'center', paddingHorizontal: 8 },
   footer: { fontSize: 8, letterSpacing: 2, fontWeight: '800', textAlign: 'center', marginTop: 3 },
 });

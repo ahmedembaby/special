@@ -34,7 +34,7 @@ export const ScreenHeader = (p: Props) => {
         <View style={styles.side}>
           {p.onBack ? (
             <TouchableOpacity onPress={p.onBack} hitSlop={10} style={[styles.iconBtn, { backgroundColor: c.surface, borderColor: c.border }]} accessibilityRole="button" accessibilityLabel={t('Go back')}>
-              <Icon name={lang === 'ar' ? 'arrowRight' : 'arrowLeft'} size={20} color={c.text} />
+              <Icon name="arrowLeft" size={20} color={c.text} />
             </TouchableOpacity>
           ) : p.onAvatarPress ? (
             <Avatar source={p.avatarUri} name={p.avatarName} size={40} onPress={p.onAvatarPress} />
