@@ -237,7 +237,7 @@ const conversationsPage = () => listView({
   headers: ['المحادثة', 'النوع', 'المشاركون', 'الرسائل', 'آخر رسالة', 'الإجراء'],
   csvHeaders: ['ID', 'الاسم', 'النوع', 'المشاركون', 'الرسائل', 'آخر رسالة'],
   csvRow: (c) => [c.id, c.name || '', c.type, c.participant_count, c.message_count, c.last_message_at || ''],
-  row: (c) => `<tr><td><b>${esc(c.name) || 'محادثة #' + c.id}</b><small class="muted"> #${c.id}</small></td><td>${esc(c.type)}</td><td>${num(c.participant_count)}</td><td>${num(c.message_count)}</td><td>${wl(c.last_message_at)}</td><td>${W(btn('conv-delete', c.id, 'حذف', 'danger'))}</td></tr>`,
+  row: (c) => `<tr><td><b>${esc(c.name) || 'محادثة #' + c.id}</b><small class="muted"> #${c.id}</small></td><td>${esc(c.type)}</td><td>${num(c.participant_count)}</td><td>${num(c.message_count)}</td><td>${wl(c.last_message_at)}</td><td>${W(btn('conv-msgs', c.id, 'الرسائل', 'ghost') + btn('conv-delete', c.id, 'حذف', 'danger'))}</td></tr>`,
 });
 const sessionsPage = () => listView({
   key: 'sessions', title: 'الجلسات النشطة والأجهزة', path: '/admin/sessions', search: 'ابحث بالمستخدم أو الجهاز…', csv: true,
@@ -536,10 +536,39 @@ const otpPage = () => listView({
   row: (e) => { const [label, kind] = OTP_EVENT_LABEL[e.event] || [e.event, '']; return `<tr><td><span class="text-ltr">${esc(e.phone)}</span></td><td>${pill(label, kind)}</td><td>${esc(OTP_DETAIL_LABEL[e.detail] || e.detail || '—')}</td><td>${wl(e.created_at)}</td></tr>`; },
 });
 
+/* ---------- conversation message viewer (admin/owner only) ---------- */
+async function showConversationMessages(id) {
+  const limit = 50;
+  let offset = 0, total = 0;
+  openModal('رسائل المحادثة', '<div class="notice-box">عرض مقصور على الإدارة العليا — محتوى الرسائل خاص بالمستخدمين، تعامل معه بسرية تامة.</div><div id="convMsgs"><div class="loading">جارٍ تحميل الرسائل…</div></div><div class="actions modal-actions" id="convMoreWrap"></div>');
+  const render = (items, append) => {
+    const rows = items.map((m) => `<div class="msg-row"><div class="msg-head"><b>${esc(m.sender_name)}</b> <small class="muted">@${esc(m.username || '—')}</small> <small class="muted">${wl(m.created_at)}</small></div><div class="msg-body">${m.type === 'text' ? esc(m.content) : pill(({ image: 'صورة', video: 'فيديو', voice: 'رسالة صوتية', file: 'ملف', poll: 'استطلاع' })[m.type] || m.type) + (m.file_name ? ' ' + esc(m.file_name) : '')}</div></div>`).join('');
+    const box = $('#convMsgs');
+    if (append) box.insertAdjacentHTML('beforeend', rows);
+    else box.innerHTML = rows || empty('لا توجد رسائل في هذه المحادثة.');
+    const wrap = $('#convMoreWrap');
+    wrap.innerHTML = offset < total ? `<button class="btn ghost" id="convMore">تحميل رسائل أقدم (${num(total - offset)} متبقية)</button>` : '';
+    const b = $('#convMore');
+    if (b) b.onclick = () => load(true);
+  };
+  const load = async (append) => {
+    try {
+      const { data, total: t } = await request(`/admin/conversations/${id}/messages?limit=${limit}&offset=${offset}`);
+      total = t;
+      offset += (data.items || []).length;
+      const title = $('#modalRoot .modal h2');
+      if (title) title.textContent = `رسائل ${data.conversation && data.conversation.name ? data.conversation.name : 'محادثة #' + id}`;
+      render(data.items || [], append);
+    } catch (err) { $('#convMsgs').innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
+  };
+  await load(false);
+}
+
 const PAGES = { overview, users: usersPage, posts: postsPage, stories: storiesPage, reports: reportsPage, groups: groupsPage, conversations: conversationsPage, sessions: sessionsPage, broadcast: broadcastPage, campaigns: campaignsPage, backups: backupsPage, words: wordsPage, audit: auditPage, admins: adminsPage, release: releasePage, errors: errorsPage, verifications: verificationsPage, ai: aiPage, otp: otpPage, rlog: rlogPage, appeals: appealsPage, alerts: alertsPage };
 const reload = () => loadPage(state.page, { keepScroll: true });
 const ACTIONS = {
   'user-view': (id) => showUser(id),
+  'conv-msgs': (id) => showConversationMessages(id),
   'user-warn': async (id) => { const v = await ask({ title: 'تنبيه إداري', message: 'سيصل التنبيه للمستخدم داخل التطبيق وكإشعار دفع.', confirm: 'إرسال التنبيه', fields: [{ name: 'message', label: 'نص التنبيه', type: 'textarea', required: true, max: 500, placeholder: 'اكتب سبب التنبيه…' }] }); if (!v) return; await post(`/admin/users/${id}/warn`, { message: v.message }); toast('تم إرسال التنبيه للمستخدم'); },
   'user-ban': async (id, el) => { const banned = el.dataset.banned !== 'true'; if (!(await ask({ title: banned ? 'حظر المستخدم' : 'إلغاء الحظر', message: banned ? 'سيُسجَّل خروجه من كل الأجهزة ولن يتمكن من الدخول.' : 'سيتمكن المستخدم من الدخول مجدداً.', confirm: banned ? 'حظر' : 'إلغاء الحظر', danger: banned }))) return; await post(`/admin/users/${id}/ban`, { banned }); toast('تم تحديث حالة المستخدم'); closeModal(); reload(); },
   'user-delete': async (id) => { if (!(await ask({ title: 'حذف المستخدم نهائياً', message: 'سيُحذف الحساب وكل بياناته المرتبطة ولا يمكن التراجع.', confirm: 'حذف نهائي', danger: true, fields: [{ name: 'c', label: 'اكتب «حذف» للتأكيد', expect: 'حذف', required: true }] }))) return; await del('/admin/users/' + id); toast('تم حذف المستخدم'); reload(); },
