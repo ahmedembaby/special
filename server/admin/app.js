@@ -3,7 +3,7 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const state = { token: sessionStorage.getItem('special_admin_token') || '', user: null, me: null, page: 'overview', days: 7, pg: {}, auto: false, loginPhone: '', refocus: null };
-const TITLES = { rlog: 'سجل قرارات البلاغات', appeals: 'الاعتراضات', alerts: 'التنبيهات التلقائية', overview: 'نظرة عامة', users: 'إدارة المستخدمين', posts: 'إدارة المنشورات', stories: 'إدارة الحالات والقصص', reports: 'مراجعة البلاغات', groups: 'المجموعات', conversations: 'المحادثات', sessions: 'الجلسات والأجهزة', broadcast: 'إرسال إعلان', campaigns: 'إدارة الحملات الإعلانية', backups: 'النسخ الاحتياطية', words: 'الكلمات المحظورة', audit: 'سجل الإدارة', otp: 'مراقبة رموز التحقق', admins: 'صلاحيات الإدارة', release: 'الإصدارات والتحديثات', errors: 'أخطاء الخادم', verifications: 'توثيق الحسابات', ai: 'الذكاء الاصطناعي' };
+const TITLES = { rlog: 'سجل قرارات البلاغات', appeals: 'الاعتراضات', alerts: 'التنبيهات التلقائية', overview: 'نظرة عامة', users: 'إدارة المستخدمين', posts: 'إدارة المنشورات', stories: 'إدارة الحالات والقصص', reports: 'مراجعة البلاغات', groups: 'المجموعات', conversations: 'المحادثات', sessions: 'الجلسات والأجهزة', broadcast: 'إرسال إعلان', campaigns: 'إدارة الحملات الإعلانية', backups: 'النسخ الاحتياطية', words: 'الكلمات المحظورة', audit: 'سجل الإدارة', otp: 'مراقبة رموز التحقق', settings: 'الإعدادات', admins: 'صلاحيات الإدارة', release: 'الإصدارات والتحديثات', errors: 'أخطاء الخادم', verifications: 'توثيق الحسابات', ai: 'الذكاء الاصطناعي' };
 const ROLE_LABEL = { owner: 'مالك', admin: 'مدير', moderator: 'مشرف محتوى', support: 'دعم فني' };
 
 /* ---------- helpers ---------- */
@@ -628,7 +628,44 @@ async function showConversationMessages(id) {
   await load(false);
 }
 
-const PAGES = { overview, users: usersPage, posts: postsPage, stories: storiesPage, reports: reportsPage, groups: groupsPage, conversations: conversationsPage, sessions: sessionsPage, broadcast: broadcastPage, campaigns: campaignsPage, backups: backupsPage, words: wordsPage, audit: auditPage, admins: adminsPage, release: releasePage, errors: errorsPage, verifications: verificationsPage, ai: aiPage, otp: otpPage, rlog: rlogPage, appeals: appealsPage, alerts: alertsPage };
+/* ---------- settings: server config status + local dashboard preferences ---------- */
+const dashPrefs = {
+  get auto() { try { return localStorage.getItem('special_admin_autorefresh') !== '0'; } catch { return true; } },
+  get refreshMs() { try { return Number(localStorage.getItem('special_admin_refresh_ms')) || 60000; } catch { return 60000; } },
+};
+async function settingsPage() {
+  const d = await api('/admin/settings');
+  const rows = [
+    ['بيئة التشغيل', `<b class="text-ltr">${esc(d.environment)}</b>`],
+    ['وضع OTP التجريبي', pill(d.otpDevMode ? 'مفعّل — الرمز يظهر في الاستجابة' : 'معطّل', d.otpDevMode ? 'amber' : 'green')],
+    ['واتساب', pill(d.whatsapp.ready ? `متصل${d.whatsapp.account ? ' (' + d.whatsapp.account + ')' : ''}` : 'غير متصل', d.whatsapp.ready ? 'green' : 'red')],
+    ['تشفير النسخ الاحتياطي', pill(d.backups.configured ? 'مضبوط' : 'غير مضبوط', d.backups.configured ? 'green' : 'red')],
+    ['النسخ الخارجي (S3)', pill(d.backups.offhost ? 'مُعدّ' : 'غير مُعدّ', d.backups.offhost ? 'green' : 'amber')],
+    ['الجدولة التلقائية للنسخ', pill(d.backups.autoHours ? `كل ${num(d.backups.autoHours)} ساعة` : 'بدون جدولة', d.backups.autoHours ? 'green' : 'amber')],
+    ['Webhook التنبيهات', pill(d.alertWebhook ? 'مُعدّ' : 'غير مُعدّ', d.alertWebhook ? 'green' : 'amber')],
+    ['الذكاء الاصطناعي', pill(d.ai.configured ? 'مُعدّ' : 'غير مُعدّ', d.ai.configured ? 'green' : 'amber')],
+    ['Redis', pill(d.redis === 'configured' ? 'مُعدّ' : 'غير مُعدّ — تخزين مؤقت بالذاكرة', d.redis === 'configured' ? 'green' : 'amber')],
+  ].map((x) => `<div class="quick-row"><span>${x[0]}</span><div class="row-end">${x[1]}</div></div>`).join('');
+  shell(toolbar('الإعدادات') + `<div class="grid two-col"><section class="panel"><div class="panel-head"><div><h2>حالة تهيئة الخادم</h2><p>عرض فقط — تُغيَّر هذه القيم من متغيرات البيئة (.env) ثم إعادة تشغيل الخادم. لا تظهر أي قيم سرية هنا.</p></div></div><div class="quick-list">${rows}</div></section>
+  <section class="panel"><div class="panel-head"><div><h2>تفضيلات لوحة التحكم</h2><p>محلية على هذا المتصفح فقط.</p></div></div><form id="dashPrefsForm"><div class="field"><label>المظهر</label><select id="prefTheme"><option value="light">فاتح</option><option value="dark">داكن</option></select></div><div class="field"><label>التحديث التلقائي للبيانات</label><select id="prefAuto"><option value="1">مفعّل</option><option value="0">معطّل</option></select></div><div class="field"><label>فترة التحديث</label><select id="prefInterval"><option value="30000">كل 30 ثانية</option><option value="60000">كل دقيقة</option><option value="120000">كل دقيقتين</option></select></div><button class="btn primary">حفظ التفضيلات</button></form></section></div>`);
+  $('#prefTheme').value = document.body.classList.contains('dark') ? 'dark' : 'light';
+  $('#prefAuto').value = dashPrefs.auto ? '1' : '0';
+  $('#prefInterval').value = String(dashPrefs.refreshMs);
+  $('#dashPrefsForm').onsubmit = (e) => {
+    e.preventDefault();
+    const dark = $('#prefTheme').value === 'dark';
+    document.body.classList.toggle('dark', dark);
+    try {
+      localStorage.setItem('special_admin_theme', dark ? 'dark' : 'light');
+      localStorage.setItem('special_admin_autorefresh', $('#prefAuto').value);
+      localStorage.setItem('special_admin_refresh_ms', $('#prefInterval').value);
+    } catch { /* private mode */ }
+    startAuto();
+    toast('تم حفظ التفضيلات');
+  };
+}
+
+const PAGES = { overview, users: usersPage, posts: postsPage, stories: storiesPage, reports: reportsPage, groups: groupsPage, conversations: conversationsPage, sessions: sessionsPage, broadcast: broadcastPage, campaigns: campaignsPage, backups: backupsPage, words: wordsPage, audit: auditPage, admins: adminsPage, release: releasePage, errors: errorsPage, verifications: verificationsPage, ai: aiPage, otp: otpPage, settings: settingsPage, rlog: rlogPage, appeals: appealsPage, alerts: alertsPage };
 const reload = () => loadPage(state.page, { keepScroll: true });
 const ACTIONS = {
   'user-view': (id) => showUser(id),
@@ -785,13 +822,14 @@ async function logout(show = true) {
 let autoTimer = null;
 function startAuto() {
   stopAuto();
+  if (!dashPrefs.auto) return;
   autoTimer = setInterval(async () => {
     if (document.hidden || !state.token) return;
     try {
       if (state.page === 'overview' && !$('#modalRoot').innerHTML && !$('#dialogRoot').innerHTML) await loadPage('overview', { keepScroll: true });
       else { const s = await api('/admin/stats'); $('#reportBadge').textContent = num(s.openReports); trackReports(s.openReports); }
     } catch { /* offline indicator already updated */ }
-  }, 60000);
+  }, dashPrefs.refreshMs);
 }
 const stopAuto = () => { clearInterval(autoTimer); autoTimer = null; };
 
