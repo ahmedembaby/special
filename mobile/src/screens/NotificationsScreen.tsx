@@ -3,6 +3,7 @@ import { View, Text, SectionList, ActivityIndicator, RefreshControl, StyleSheet,
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAppColors } from '../theme/useAppColors';
 import * as social from '../services/social';
+import { EmptyState } from '../components/EmptyState';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { NotificationItem } from '../components/NotificationItem';
 import { Icon } from '../components/Icon';
@@ -42,16 +43,19 @@ export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [category, setCategory] = useState<Category>('all');
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const list = await social.listNotifications();
+      setFailed(false);
       setItems(list);
       setUnreadIds(new Set(list.filter((n) => !n.read).map((n) => n.id)));
       await social.markNotificationsRead().catch(() => {});
       refreshUnreadCounts();
     } catch {
-      // keep the current list
+      // keep the current list; with nothing to show, offer a retry instead of an empty screen
+      setFailed(true);
     } finally { setLoading(false); setRefreshing(false); }
   }, [refreshUnreadCounts]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -102,6 +106,8 @@ export default function NotificationsScreen() {
       <ScreenHeader title={t('Notifications')} avatarUri={me.avatar} avatarName={me.name} onAvatarPress={() => nav.navigate('Profile')} rightIcon="settings" onRightPress={() => nav.navigate('Profile', { screen: 'Settings' })} />
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+      ) : failed && items.length === 0 ? (
+        <EmptyState icon="bell" title="Could not load notifications" subtitle="Check your connection and try again." actionLabel="Try again" onAction={() => { setLoading(true); load(); }} />
       ) : (
         <View style={{ flex: 1 }}>
           <View>
