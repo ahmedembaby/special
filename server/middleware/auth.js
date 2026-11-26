@@ -24,7 +24,7 @@ async function authenticateToken(token, device = {}) {
     const [rows] = await pool.query(
       `SELECT ds.id, ds.device_name,
               (ds.last_active_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)) AS stale,
-              u.id AS user_id, u.name, u.username, u.avatar, u.phone, u.banned
+              u.id AS user_id, u.name, u.username, u.avatar, u.phone, u.banned, u.banned_until
        FROM device_sessions ds
        JOIN users u ON u.id = ds.user_id
        WHERE ${where} AND ds.user_id = ? AND ds.revoked_at IS NULL AND ds.expires_at > NOW()
@@ -69,6 +69,11 @@ async function authenticateToken(token, device = {}) {
     );
   }
 
+  // A temporary ban lifts itself once its time has passed.
+  if (activeSession.banned && activeSession.banned_until && new Date(activeSession.banned_until) <= new Date()) {
+    await pool.query('UPDATE users SET banned = 0, banned_until = NULL WHERE id = ?', [activeSession.user_id]);
+    activeSession.banned = 0;
+  }
   if (activeSession.banned) return null;
   return {
     id: activeSession.user_id,
