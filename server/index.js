@@ -16,7 +16,7 @@ const errorMonitor = require('./services/errorMonitor');
 process.on('unhandledRejection', (reason) => { errorMonitor.record(reason, 'unhandledRejection'); console.error('🔴 Unhandled Rejection:', reason); });
 process.on('uncaughtException', (err) => { errorMonitor.record(err, 'uncaughtException'); console.error('🔴 Uncaught Exception:', err); });
 
-const { authMiddleware, authenticateToken, getToken } = require('./middleware/auth');
+const { authMiddleware, authenticateToken, authenticateMediaToken, getToken } = require('./middleware/auth');
 const { isParticipant } = require('./services/chat');
 
 const app = express();
@@ -65,7 +65,8 @@ const { canAccessChatMedia, canAccessStoryMedia } = require('./services/mediaAcc
 const authorizePrivateUpload = (kind) => async (req, res, next) => {
   try {
     const raw = req.query.t || getToken(req);
-    const user = await authenticateToken(raw);
+    // ?t= carries a media-only token (new apps) or the session JWT (older apps, still accepted so they keep working)
+    const user = (await authenticateMediaToken(raw)) || (await authenticateToken(raw));
     if (!user) return res.status(401).end();
     const filename = path.basename(req.path);
     if (!filename || filename !== req.path.slice(1)) return res.status(404).end();
@@ -165,7 +166,7 @@ app.use((err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: 'File is too large' });
   if (err.type === 'entity.parse.failed') return res.status(400).json({ message: 'Invalid JSON' });
   const status = err.status || (err.name === 'MulterError' ? 400 : 500);
-  if (status >= 500) { errorMonitor.record(err, req.method + ' ' + req.originalUrl); console.error('Unhandled error:', err); }
+  if (status >= 500) { errorMonitor.record(err, req.method + ' ' + String(req.originalUrl).split('?')[0]); console.error('Unhandled error:', err); }
   res.status(status).json({ message: status >= 500 ? 'Internal server error' : err.message });
 });
 
