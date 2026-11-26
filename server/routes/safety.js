@@ -162,7 +162,12 @@ router.post('/account/code', async (req, res) => {
 
 async function verifyReauth(req, res) {
   const { method, u } = await reauthMethod(req.user.id);
-  if (!method) return true; // nothing to verify against (no 2FA, password or phone)
+  if (!method) {
+    // Every account made through signup or phone login has a password or a phone, so this is only a half-removed or
+    // anonymised account. Fail closed: never erase an account we cannot re-verify. Support can handle it by hand.
+    res.status(403).json({ message: 'This account has no way to verify it is you. Contact support to delete it.', reauthRequired: true, method: null });
+    return false;
+  }
   if (method === 'totp') {
     const code = String(req.body.totp || '').trim();
     if (!code) { reauthRequired(res, method); return false; }
