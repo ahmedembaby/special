@@ -153,7 +153,7 @@ async function listView(cfg) {
 
 /* ---------- overview ---------- */
 function chart(series, label) {
-  const w = 640, h = 205, p = 26, vals = series.map((x) => Number(x.count)), max = Math.max(1, ...vals);
+  const w = 640, h = 205, p = 26, vals = series.map((x) => Number(x.count)), max = Math.max(1, ...vals), realMax = Math.max(0, ...vals);
   const x = (i) => p + (i * (w - 2 * p)) / Math.max(1, vals.length - 1);
   const y = (v) => h - p - (v / max) * (h - 2 * p);
   const pts = vals.map((v, i) => [x(i), y(v)]);
@@ -163,7 +163,7 @@ function chart(series, label) {
   const dots = vals.length <= 14 ? pts.map((q, i) => `<circle class="dot" cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="3.5"><title>${esc(series[i].date)}: ${vals[i]}</title></circle>`).join('') : '';
   const labels = `<text x="${p}" y="${h - 6}" text-anchor="start">${esc((series[0]?.date || '').slice(5))}</text><text x="${w - p}" y="${h - 6}" text-anchor="end">${esc((series[series.length - 1]?.date || '').slice(5))}</text><text x="${p}" y="${p - 8}" text-anchor="start">${num(max)}</text>`;
   const total = vals.reduce((a, b) => a + b, 0);
-  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}">${grid}<path class="area" d="${area}"/><path class="line" d="${path}"/>${dots}${labels}</svg><div class="chart-sum">الإجمالي في الفترة: <b>${num(total)}</b> · الأعلى يومياً: <b>${num(max)}</b></div>`;
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}">${grid}<path class="area" d="${area}"/><path class="line" d="${path}"/>${dots}${labels}</svg><div class="chart-sum">الإجمالي في الفترة: <b>${num(total)}</b> · الأعلى يومياً: <b>${num(realMax)}</b></div>`;
 }
 
 async function overview() {
@@ -352,7 +352,14 @@ async function campaignsPage() {
 
 const bytes = (n) => { n = Number(n || 0); return n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : n > 1024 ? (n / 1024).toFixed(0) + ' KB' : n + ' B'; };
 async function backupsPage() {
-  const d = await api('/admin/backups');
+  let d;
+  try { d = await api('/admin/backups'); } catch (err) {
+    if (/BACKUP_ENCRYPTION_KEY/.test(err.message || '')) {
+      shell(toolbar('النسخ الاحتياطية المشفرة') + '<div class="notice-box">النسخ الاحتياطي غير مفعّل: مفتاح التشفير BACKUP_ENCRYPTION_KEY غير مضبوط أو غير صالح. ضع في ملف server/.env قيمة من 64 حرفاً سداسية عشرية (مثال لتوليدها: openssl rand -hex 32) ثم أعد تشغيل الخادم.</div>');
+      return;
+    }
+    throw err;
+  }
   const body = d.files.map((x) => `<tr><td class="text-ltr">${esc(x.name)}</td><td>${bytes(x.size)}</td><td>${when(x.created_at)}</td><td><div class="actions">${btn('backup-verify', x.name, 'فحص السلامة', 'success')}${d.offhost ? btn('backup-upload', x.name, 'رفع خارجي', 'ghost') : ''}${btn('backup-restore', x.name, 'استعادة', 'danger')}${btn('backup-delete', x.name, 'حذف', 'ghost')}</div></td></tr>`).join('');
   const runs = d.runs.map((r) => `<tr><td>${when(r.created_at)}</td><td>${{ create: 'إنشاء', upload: 'رفع خارجي', verify: 'فحص سلامة' }[r.kind] || esc(r.kind)}</td><td class="text-ltr">${esc(r.file || '—')}</td><td>${pill(r.ok ? 'نجح' : 'فشل', r.ok ? 'green' : 'red')}</td><td class="cell-wrap">${esc(r.detail || '')}</td></tr>`).join('');
   shell(toolbar('النسخ الاحتياطية المشفرة', `${pill(d.offhost ? 'نسخ خارجي مفعّل' : 'محلي فقط', d.offhost ? 'green' : 'amber')} ${pill(d.autoHours ? `تلقائي كل ${d.autoHours} ساعة` : 'بدون جدولة', d.autoHours ? 'green' : 'amber')} <button class="btn" data-act="backup-run">تشغيل دورة كاملة الآن</button> <button class="btn primary" data-act="backup-create">إنشاء نسخة</button>`)
