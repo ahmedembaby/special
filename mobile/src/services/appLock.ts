@@ -33,15 +33,17 @@ const FAIL_KEY = 'echat_pin_fail_state';
 export const PIN_MAX_TRIES = 5;
 const BASE_LOCK_S = 30;
 const MAX_LOCK_S = 3600;
-interface FailState { fails: number; lockouts: number; until: number }
-const EMPTY_FAIL: FailState = { fails: 0, lockouts: 0, until: 0 };
+// total = wrong PINs in a row since the last correct one (never reset by a lockout ending). At PIN_SIGNOUT_TRIES the app signs the user out.
+export const PIN_SIGNOUT_TRIES = 10;
+interface FailState { fails: number; lockouts: number; until: number; total: number }
+const EMPTY_FAIL: FailState = { fails: 0, lockouts: 0, until: 0, total: 0 };
 
 async function readFail(): Promise<FailState> {
   const raw = await secureGet(FAIL_KEY);
   if (!raw) return { ...EMPTY_FAIL };
   try {
     const v = JSON.parse(raw);
-    return { fails: Number(v.fails) || 0, lockouts: Number(v.lockouts) || 0, until: Number(v.until) || 0 };
+    return { fails: Number(v.fails) || 0, lockouts: Number(v.lockouts) || 0, until: Number(v.until) || 0, total: Number(v.total) || 0 };
   } catch { return { ...EMPTY_FAIL }; }
 }
 const writeFail = async (st: FailState) => { try { await SecureStore.setItemAsync(FAIL_KEY, JSON.stringify(st)); } catch {} };
@@ -64,18 +66,29 @@ export async function verifyPin(pin: string): Promise<boolean> {
   if (st.until > Date.now()) return false;
   const stored = await secureGet(PIN_KEY);
   if (!!stored && stored === pin) {
-    if (st.fails || st.lockouts || st.until) await writeFail({ ...EMPTY_FAIL });
+    if (st.fails || st.lockouts || st.until || st.total) await writeFail({ ...EMPTY_FAIL });
     return true;
   }
+  const total = st.total + 1;
   const fails = st.fails + 1;
   if (fails >= PIN_MAX_TRIES) {
     const lockouts = st.lockouts + 1;
     const wait = Math.min(MAX_LOCK_S, BASE_LOCK_S * 2 ** (lockouts - 1));
-    await writeFail({ fails: 0, lockouts, until: Date.now() + wait * 1000 });
+    await writeFail({ fails: 0, lockouts, until: Date.now() + wait * 1000, total });
   } else {
-    await writeFail({ ...st, fails });
+    await writeFail({ ...st, fails, total });
   }
   return false;
+}
+
+/** True once PIN_SIGNOUT_TRIES wrong PINs in a row were entered: the lock screen must sign the user out. */
+export async function pinSignOutDue(): Promise<boolean> {
+  return (await readFail()).total >= PIN_SIGNOUT_TRIES;
+}
+
+/** Clears the failed-attempt state (after a sign-out or a fresh phone/OTP login, which proves ownership). */
+export async function resetPinFailState(): Promise<void> {
+  try { await SecureStore.deleteItemAsync(FAIL_KEY); } catch {}
 }
 
 export async function disableLock(): Promise<void> {
