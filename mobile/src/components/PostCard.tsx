@@ -15,6 +15,7 @@ import { Icon } from './Icon';
 import { ReactionsSheet } from './ReactionsSheet';
 import { ReactionButton, ReactionSummary, ReactionState, applyReaction } from './ReactionButton';
 import { resolveUrl } from '../config';
+import { useI18n } from '../i18n';
 
 interface Props {
   post: Post;
@@ -29,6 +30,7 @@ interface Props {
 
 const PostCardImpl = ({ post, meId, onLike, onDelete, onComment, onPress, onUserPress, detail }: Props) => {
   const { c } = useAppColors();
+  const { t, lang } = useI18n();
   const initialReaction = (): ReactionState => ({
     my: post.my_reaction ?? (post.likes.includes(meId) ? '❤️' : null),
     count: post.likes_count ?? post.likes.length,
@@ -50,9 +52,9 @@ const PostCardImpl = ({ post, meId, onLike, onDelete, onComment, onPress, onUser
   const own = post.user.id === meId;
 
   const confirmDelete = () =>
-    Alert.alert('Delete post', 'Are you sure you want to delete this post?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => onDelete(post.id) },
+    Alert.alert(t('Delete post'), t('Are you sure you want to delete this post?'), [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('Delete'), style: 'destructive', onPress: () => onDelete(post.id) },
     ]);
 
   const share = () => Share.share({ message: `${post.user.name} (@${post.user.username}): ${post.content}` }).catch(() => {});
@@ -73,15 +75,15 @@ const PostCardImpl = ({ post, meId, onLike, onDelete, onComment, onPress, onUser
     const text = draft.trim();
     if (!text) return;
     try { await social.editPost(post.id, text); setContent(text); setEdited(true); setEditing(false); }
-    catch (e: any) { Alert.alert('Error', e?.response?.data?.message || 'Could not edit the post'); }
+    catch (e: any) { Alert.alert(t('Error'), e?.response?.data?.message || t('Could not edit the post')); }
   };
   const vote = async (optionId: string) => {
-    try { const p = await social.votePoll(post.id, optionId); setPoll(p.poll); } catch { Alert.alert('Error', 'Could not vote'); }
+    try { const p = await social.votePoll(post.id, optionId); setPoll(p.poll); } catch { Alert.alert(t('Error'), t('Could not vote')); }
   };
   const bookmark = async () => { try { setBookmarked(await social.toggleBookmark(post.id)); } catch { /* offline */ } };
   const repostNow = async () => {
-    try { await social.createPost({} as any, '', null, { repostOf: post.id }); Alert.alert('Reposted', 'Shared to your profile.'); }
-    catch { Alert.alert('Error', 'Could not repost'); }
+    try { await social.createPost({} as any, '', null, { repostOf: post.id }); Alert.alert(t('Reposted'), t('Shared to your profile.')); }
+    catch { Alert.alert(t('Error'), t('Could not repost')); }
   };
   // The viewer keeps its own counters so the heart/comment numbers move immediately,
   // whichever screen owns the post list.
@@ -99,7 +101,7 @@ const PostCardImpl = ({ post, meId, onLike, onDelete, onComment, onPress, onUser
     onOpenComments: () => { setViewer(false); onComment(post); },
   };
 
-  const ACTION_LABELS: Record<string, string> = { messageCircle: 'Comments', repeat: 'Repost', bookmark: 'Save post', share: 'Share post', heart: 'Like' };
+  const ACTION_LABELS: Record<string, string> = { messageCircle: t('Comments'), repeat: t('Repost'), bookmark: t('Save post'), share: t('Share post'), heart: t('Like') };
   const Action = ({ icon, count, color, onPress: onP }: { icon: any; count?: number; color: string; onPress?: () => void }) => (
     <TouchableOpacity style={styles.action} onPress={onP} hitSlop={8} activeOpacity={0.6} accessibilityRole="button"
       accessibilityLabel={`${ACTION_LABELS[icon] || String(icon)}${count ? `, ${count}` : ''}`}>
@@ -121,22 +123,22 @@ const PostCardImpl = ({ post, meId, onLike, onDelete, onComment, onPress, onUser
             <Text style={[styles.name, { color: c.text }]} numberOfLines={1}>{post.user.name}</Text>
             {post.user.verified ? <Icon name="verified" size={15} color={c.primary} strokeWidth={1.2} /> : null}
             <Text style={[styles.meta, { color: c.textSecondary }]} numberOfLines={1}>
-              {' '}@{post.user.username} · {timeAgo(post.createdAt)}{edited ? ' · edited' : ''}
+              {' '}@{post.user.username} · {timeAgo(post.createdAt, lang)}{edited ? ` · ${t('edited')}` : ''}
             </Text>
           </View>
           {own ? (
             <View style={{ flexDirection: 'row', gap: 14 }}>
               {!post.repost_of ? (
-                <TouchableOpacity onPress={() => { setDraft(content); setEditing(true); }} hitSlop={10} accessibilityRole="button" accessibilityLabel="Edit post">
+                <TouchableOpacity onPress={() => { setDraft(content); setEditing(true); }} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Edit post')}>
                   <Icon name="edit" size={17} color={c.textSecondary} />
                 </TouchableOpacity>
               ) : null}
-              <TouchableOpacity onPress={confirmDelete} hitSlop={10} accessibilityRole="button" accessibilityLabel="Delete post">
+              <TouchableOpacity onPress={confirmDelete} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Delete post')}>
                 <Icon name="trash" size={17} color={c.textSecondary} />
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity onPress={() => setReport({ type: 'post', id: post.id })} hitSlop={10} accessibilityRole="button" accessibilityLabel="Report post">
+            <TouchableOpacity onPress={() => setReport({ type: 'post', id: post.id })} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('Report post')}>
               <Icon name="flag" size={17} color={c.textSecondary} />
             </TouchableOpacity>
           )}
@@ -146,7 +148,7 @@ const PostCardImpl = ({ post, meId, onLike, onDelete, onComment, onPress, onUser
         {post.repost_of ? (
           <View style={{ borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 10, marginTop: 6 }}>
             {post.repost_of.deleted ? (
-              <Text style={{ color: c.textSecondary }}>This post is no longer available.</Text>
+              <Text style={{ color: c.textSecondary }}>{t('This post is no longer available.')}</Text>
             ) : (
               <>
                 <Text style={{ color: c.text, fontWeight: '700' }}>{post.repost_of.user?.name} <Text style={{ color: c.textSecondary, fontWeight: '400' }}>@{post.repost_of.user?.username}</Text></Text>
@@ -162,7 +164,7 @@ const PostCardImpl = ({ post, meId, onLike, onDelete, onComment, onPress, onUser
               const mine = poll.my_vote === o.id;
               return (
                 <TouchableOpacity key={o.id} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`Vote: ${o.text || ''}`} onPress={() => vote(o.id)} style={{ borderWidth: 1, borderColor: mine ? c.primary : c.border, borderRadius: 10, overflow: 'hidden' }}>
-                  {poll.my_vote ? <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, backgroundColor: c.primary, opacity: 0.18 }} /> : null}
+                  {poll.my_vote ? <View style={{ position: 'absolute', start: 0, top: 0, bottom: 0, width: `${pct}%`, backgroundColor: c.primary, opacity: 0.18 }} /> : null}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 10 }}>
                     <Text style={{ color: c.text, fontWeight: mine ? '800' : '500' }}>{o.text}{mine ? ' ✓' : ''}</Text>
                     {poll.my_vote ? <Text style={{ color: c.textSecondary }}>{pct}%</Text> : null}
@@ -170,7 +172,7 @@ const PostCardImpl = ({ post, meId, onLike, onDelete, onComment, onPress, onUser
                 </TouchableOpacity>
               );
             })}
-            <Text style={{ color: c.textSecondary, fontSize: 12 }}>{poll.total} votes</Text>
+            <Text style={{ color: c.textSecondary, fontSize: 12 }}>{poll.total} {t('votes')}</Text>
           </View>
         ) : null}
         {imgs.length ? (
@@ -209,11 +211,11 @@ const PostCardImpl = ({ post, meId, onLike, onDelete, onComment, onPress, onUser
         <Modal visible={editing} transparent animationType="fade" onRequestClose={() => setEditing(false)}>
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 }}>
             <View style={{ backgroundColor: c.background, borderRadius: 14, padding: 16 }}>
-              <Text style={{ color: c.text, fontSize: 16, fontWeight: '700', marginBottom: 10 }}>Edit post</Text>
+              <Text style={{ color: c.text, fontSize: 16, fontWeight: '700', marginBottom: 10 }}>{t('Edit post')}</Text>
               <TextInput value={draft} onChangeText={setDraft} multiline maxLength={1000} style={{ color: c.text, borderColor: c.inputBorder, borderWidth: 1, borderRadius: 10, padding: 10, minHeight: 90, textAlignVertical: 'top' }} />
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 14 }}>
-                <TouchableOpacity onPress={() => setEditing(false)}><Text style={{ color: c.textSecondary, fontSize: 15 }}>Cancel</Text></TouchableOpacity>
-                <TouchableOpacity onPress={saveEdit}><Text style={{ color: c.primary, fontSize: 15, fontWeight: '700' }}>Save</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => setEditing(false)}><Text style={{ color: c.textSecondary, fontSize: 15 }}>{t('Cancel')}</Text></TouchableOpacity>
+                <TouchableOpacity onPress={saveEdit}><Text style={{ color: c.primary, fontSize: 15, fontWeight: '700' }}>{t('Save')}</Text></TouchableOpacity>
               </View>
             </View>
           </View>
@@ -228,7 +230,7 @@ const PostCardImpl = ({ post, meId, onLike, onDelete, onComment, onPress, onUser
           <ReactionButton state={rx} onReact={react} onCountPress={() => setSheet(true)} color={c.textSecondary} likedColor={c.like} size={18} textStyle={styles.count} />
           <Action icon="bookmark" color={bookmarked ? c.primary : c.textSecondary} onPress={bookmark} />
           <Action icon="share" color={c.textSecondary} onPress={share} />
-          <OptionSheet visible={repostMenu} options={[{ label: 'Repost', onPress: repostNow }, { label: 'Quote', onPress: () => nav.navigate('Compose', { quote: post }) }]} onClose={() => setRepostMenu(false)} />
+          <OptionSheet visible={repostMenu} options={[{ label: t('Repost'), onPress: repostNow }, { label: t('Quote'), onPress: () => nav.navigate('Compose', { quote: post }) }]} onClose={() => setRepostMenu(false)} />
         </View>
       </View>
     </TouchableOpacity>
@@ -251,7 +253,7 @@ const styles = StyleSheet.create({
   gridRow: { flexDirection: 'row', height: 220, gap: 2 },
   col: { flex: 1, gap: 2 },
   cell: { width: '100%', height: '100%' },
-  actions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 15, paddingRight: 18 },
+  actions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 15, paddingEnd: 18 },
   action: { flexDirection: 'row', alignItems: 'center', gap: 6, minWidth: 44 },
   count: { fontSize: 13 },
 });
