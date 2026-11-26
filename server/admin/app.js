@@ -131,7 +131,9 @@ function ask({ title, message = '', confirm = 'تأكيد', danger = false, fiel
     const inputs = fields.map((f) => {
       const control = f.type === 'textarea'
         ? `<textarea name="${f.name}" rows="4" maxlength="${f.max || 500}" ${f.required ? 'required' : ''} placeholder="${esc(f.placeholder || '')}"></textarea>`
-        : `<input name="${f.name}" maxlength="${f.max || 200}" autocomplete="off" ${f.required ? 'required' : ''} placeholder="${esc(f.placeholder || '')}">`;
+        : f.type === 'select'
+          ? `<select name="${f.name}">${f.options.map((o) => `<option value="${o[0]}">${esc(o[1])}</option>`).join('')}</select>`
+          : `<input name="${f.name}" maxlength="${f.max || 200}" autocomplete="off" ${f.required ? 'required' : ''} placeholder="${esc(f.placeholder || '')}">`;
       return `<div class="field"><label>${esc(f.label)}</label>${control}</div>`;
     }).join('');
     root.innerHTML = `<div class="modal-backdrop dialog-backdrop"><form class="dialog" role="alertdialog" aria-modal="true"><h2>${esc(title)}</h2>${message ? `<p class="dialog-text">${esc(message)}</p>` : ''}${inputs}<p class="dialog-error" id="dialogError"></p><div class="dialog-actions"><button type="button" class="btn ghost" id="dialogCancel">إلغاء</button><button type="submit" class="btn ${danger ? 'danger-solid' : 'primary'}">${esc(confirm)}</button></div></form></div>`;
@@ -249,7 +251,7 @@ const usersPage = () => listView({
   headers: ['المستخدم', 'بيانات الاتصال', 'آخر ظهور', 'الحالة', 'تاريخ التسجيل', 'الإجراءات'],
   csvRow: (u) => [u.id, u.name, u.username, u.phone, u.email, u.banned ? 'محظور' : 'نشط', u.created_at],
   csvHeaders: ['ID', 'الاسم', 'اسم المستخدم', 'الهاتف', 'البريد', 'الحالة', 'تاريخ التسجيل'],
-  row: (u) => `<tr><td>${userCell(u)}</td><td><span class="text-ltr">${esc(u.phone || u.email || '—')}</span></td><td>${u.status === 'online' ? pill('متصل', 'green') : `<span class="muted">${ago(u.last_seen)}</span>`}</td><td>${u.banned ? pill('محظور', 'red') : pill('نشط', 'green')}${u.is_admin ? ' ' + pill('إدارة', 'amber') : ''}</td><td>${wl(u.created_at)}</td><td><div class="actions">${btn('user-view', u.id, 'التفاصيل')}${u.is_admin ? '' : W(btn('user-warn', u.id, 'تحذير') + btn('user-ban', u.id, u.banned ? 'إلغاء الحظر' : 'حظر', u.banned ? 'success' : 'danger', `data-banned="${u.banned}"`) + btn('user-delete', u.id, 'حذف', 'danger'))}</div></td></tr>`,
+  row: (u) => `<tr><td>${userCell(u)}</td><td><span class="text-ltr">${esc(u.phone || u.email || '—')}</span></td><td>${u.status === 'online' ? pill('متصل', 'green') : `<span class="muted">${ago(u.last_seen)}</span>`}</td><td>${u.banned ? pill(u.banned_until ? 'محظور مؤقتاً' : 'محظور', 'red') : pill('نشط', 'green')}${u.banned && u.banned_until ? `<br><small class="muted">حتى ${wl(u.banned_until)}</small>` : ''}${u.is_admin ? ' ' + pill('إدارة', 'amber') : ''}</td><td>${wl(u.created_at)}</td><td><div class="actions">${btn('user-view', u.id, 'التفاصيل')}${u.is_admin ? '' : W(btn('user-warn', u.id, 'تحذير') + btn('user-ban', u.id, u.banned ? 'إلغاء الحظر' : 'حظر', u.banned ? 'success' : 'danger', `data-banned="${u.banned}"`) + btn('user-delete', u.id, 'حذف', 'danger'))}</div></td></tr>`,
 });
 
 /* ---------- content lists ---------- */
@@ -530,7 +532,7 @@ async function releasePage() {
 /* ---------- user profile modal ---------- */
 async function showUser(id) {
   const u = await api('/admin/users/' + id);
-  const items = [['الاسم', u.name], ['اسم المستخدم', u.username && '@' + u.username], ['الهاتف', u.phone], ['البريد', u.email], ['الحالة', u.banned ? 'محظور' : u.status === 'online' ? 'متصل الآن' : 'نشط'], ['آخر ظهور', ago(u.last_seen)], ['تاريخ التسجيل', when(u.created_at)], ['جلسات نشطة', num(u.stats.activeSessions)], ['المنشورات', num(u.stats.posts)], ['الرسائل المرسلة', num(u.stats.messages)], ['المتابعون', num(u.stats.followers)], ['يتابع', num(u.stats.following)], ['بلاغات ضده', num(u.stats.reportsAgainst)], ['نبذة', u.bio]];
+  const items = [['الاسم', u.name], ['اسم المستخدم', u.username && '@' + u.username], ['الهاتف', u.phone], ['البريد', u.email], ['الحالة', u.banned ? (u.banned_until ? 'محظور حتى ' + when(u.banned_until) : 'محظور') : u.status === 'online' ? 'متصل الآن' : 'نشط'], ['آخر ظهور', ago(u.last_seen)], ['تاريخ التسجيل', when(u.created_at)], ['جلسات نشطة', num(u.stats.activeSessions)], ['المنشورات', num(u.stats.posts)], ['الرسائل المرسلة', num(u.stats.messages)], ['المتابعون', num(u.stats.followers)], ['يتابع', num(u.stats.following)], ['بلاغات ضده', num(u.stats.reportsAgainst)], ['نبذة', u.bio]];
   const posts = (u.recentPosts || []).map((p) => `<div class="quick-row"><span class="cell-wrap">${esc(String(p.content || '(بدون نص)').slice(0, 120))}</span><small class="muted">${wl(p.created_at)}</small></div>`).join('');
   const actions = u.is_admin ? '' : W(`<div class="actions modal-actions">${btn('user-warn', u.id, 'إرسال تحذير')}${btn('user-sessions', u.id, 'تسجيل خروج من كل الأجهزة')}${btn('user-verify', u.id, u.verified ? 'سحب التوثيق' : 'توثيق الحساب', u.verified ? 'danger' : 'success', `data-on="${u.verified ? 0 : 1}"`)}${btn('user-ban', u.id, u.banned ? 'إلغاء الحظر' : 'حظر الحساب', u.banned ? 'success' : 'danger', `data-banned="${u.banned}"`)}</div>`);
   openModal('ملف المستخدم', `<div class="detail-grid">${items.map((x) => `<div class="detail-item"><small>${x[0]}</small><b>${esc(x[1] ?? '—')}</b></div>`).join('')}</div>${posts ? `<h3 class="modal-sub">آخر المنشورات</h3><div class="quick-list">${posts}</div>` : ''}${actions}`);
@@ -620,7 +622,21 @@ const ACTIONS = {
   'user-view': (id) => showUser(id),
   'conv-msgs': (id) => showConversationMessages(id),
   'user-warn': async (id) => { const v = await ask({ title: 'تنبيه إداري', message: 'سيصل التنبيه للمستخدم داخل التطبيق وكإشعار دفع.', confirm: 'إرسال التنبيه', fields: [{ name: 'message', label: 'نص التنبيه', type: 'textarea', required: true, max: 500, placeholder: 'اكتب سبب التنبيه…' }] }); if (!v) return; await post(`/admin/users/${id}/warn`, { message: v.message }); toast('تم إرسال التنبيه للمستخدم'); },
-  'user-ban': async (id, el) => { const banned = el.dataset.banned !== 'true'; if (!(await ask({ title: banned ? 'حظر المستخدم' : 'إلغاء الحظر', message: banned ? 'سيُسجَّل خروجه من كل الأجهزة ولن يتمكن من الدخول.' : 'سيتمكن المستخدم من الدخول مجدداً.', confirm: banned ? 'حظر' : 'إلغاء الحظر', danger: banned }))) return; await post(`/admin/users/${id}/ban`, { banned }); toast('تم تحديث حالة المستخدم'); closeModal(); reload(); },
+  'user-ban': async (id, el) => {
+    const banned = el.dataset.banned !== 'true';
+    const v = await ask({
+      title: banned ? 'حظر المستخدم' : 'إلغاء الحظر',
+      message: banned ? 'سيُسجَّل خروجه من كل الأجهزة ولن يتمكن من الدخول حتى ينتهي الحظر أو يُرفع يدوياً.' : 'سيتمكن المستخدم من الدخول مجدداً.',
+      confirm: banned ? 'حظر' : 'إلغاء الحظر', danger: banned,
+      fields: banned ? [{ name: 'duration', label: 'مدة الحظر', type: 'select', options: [['permanent', 'دائم'], ['24', '24 ساعة'], ['72', '3 أيام'], ['168', '7 أيام'], ['720', '30 يوماً']] }] : [],
+    });
+    if (!v) return;
+    const body = { banned };
+    if (banned && v.duration && v.duration !== 'permanent') body.until = new Date(Date.now() + Number(v.duration) * 3600e3).toISOString();
+    await post(`/admin/users/${id}/ban`, body);
+    toast(banned && body.until ? 'تم الحظر مؤقتاً — سيُرفع تلقائياً في موعده' : 'تم تحديث حالة المستخدم');
+    closeModal(); reload();
+  },
   'user-delete': async (id) => { if (!(await ask({ title: 'حذف المستخدم نهائياً', message: 'سيُحذف الحساب وكل بياناته المرتبطة ولا يمكن التراجع.', confirm: 'حذف نهائي', danger: true, fields: [{ name: 'c', label: 'اكتب «حذف» للتأكيد', expect: 'حذف', required: true }] }))) return; await del('/admin/users/' + id); toast('تم حذف المستخدم'); reload(); },
   'user-sessions': async (id) => { if (!(await ask({ title: 'تسجيل الخروج من كل الأجهزة', message: 'سيحتاج المستخدم لتسجيل الدخول من جديد على كل أجهزته.', confirm: 'إنهاء الجلسات', danger: true }))) return; const d = await post(`/admin/users/${id}/sessions/revoke`); toast(`تم إنهاء ${num(d.revoked)} جلسة`); },
   'post-delete': async (id) => { if (!(await ask({ title: 'حذف المنشور', message: 'سيُحذف المنشور نهائياً.', confirm: 'حذف', danger: true }))) return; await del('/admin/posts/' + id); toast('تم حذف المنشور'); reload(); },
