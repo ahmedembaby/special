@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAppColors } from '../theme/useAppColors';
+import { useI18n } from '../i18n';
 import { EmptyState } from '../components/EmptyState';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { IconText } from '../components/IconText';
@@ -14,6 +15,7 @@ const label = (m: api.StarredMessage): { icon: IconName | null; text: string } =
 
 /** Messages you starred, newest first. Tap one to open its chat; long-press to remove the star. */
 export default function StarredScreen() {
+  const { t } = useI18n();
   const nav = useNavigation() as any;
   const { c } = useAppColors();
   const [items, setItems] = useState<api.StarredMessage[]>([]);
@@ -35,7 +37,7 @@ export default function StarredScreen() {
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <ScreenHeader title="Starred messages" onBack={() => nav.goBack()} />
       {loading ? <ActivityIndicator color={c.primary} style={{ marginTop: 30 }} /> : failed && items.length === 0 ? (
-        <EmptyState icon="star" title="Could not load starred messages" subtitle="Check your connection and try again." actionLabel="Try again" onAction={() => { setLoading(true); setFailed(false); api.messages.starred().then((r) => setItems(r.data.messages || [])).catch(() => setFailed(true)).finally(() => setLoading(false)); }} />
+        <EmptyState icon="star" title={t('Could not load starred messages')} subtitle={t('Check your connection and try again.')} actionLabel={t('Try again')} onAction={() => { setLoading(true); setFailed(false); api.messages.starred().then((r) => setItems(r.data.messages || [])).catch(() => setFailed(true)).finally(() => setLoading(false)); }} />
       ) : (
         <FlatList
           data={items}
