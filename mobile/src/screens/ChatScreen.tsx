@@ -941,7 +941,9 @@ export default function ChatScreen() {
       if (!perm.granted) return Alert.alert('Permission needed', 'Allow location access to share where you are.');
       const pos = await Location.getCurrentPositionAsync({});
       const text = `📍 https://maps.google.com/?q=${pos.coords.latitude.toFixed(5)},${pos.coords.longitude.toFixed(5)}`;
-      const res = await api.messages.send({ conversation_id: conversationId!, content: text });
+      // Direct chats with both keys only accept encrypted text (the server answers 409 otherwise), same as normal messages.
+      const wire = encryptionOn && peerKey ? e2ee.encrypt(peerKey, text) : text;
+      const res = await api.messages.send({ conversation_id: conversationId!, content: wire });
       setMessages((prev) => appendUnique(prev, res.data));
     } catch {
       Alert.alert('Error', 'Could not get your location (needs a build with the location permission).');
@@ -955,7 +957,8 @@ export default function ChatScreen() {
     setStickerOpen(false);
     try {
       const text = `sticker:${emoji}`;
-      const res = await api.messages.send({ conversation_id: conversationId!, content: text, reply_to: replyTo?.id });
+      const wire = encryptionOn && peerKey ? e2ee.encrypt(peerKey, text) : text;
+      const res = await api.messages.send({ conversation_id: conversationId!, content: wire, reply_to: replyTo?.id });
       setMessages((prev) => appendUnique(prev, res.data));
       setReplyTo(null);
     } catch { Alert.alert('Error', 'Could not send the sticker'); }
@@ -999,6 +1002,20 @@ export default function ChatScreen() {
     closeOptions();
     const text = textOf(m);
     const target = /[\u0600-\u06FF]/.test(text) ? 'en' : 'ar';
+    // Translation is done by the server through a third-party service, so an end-to-end encrypted message
+    // would leave its protection. Ask first, once per message.
+    if (String(m.content || '').startsWith('e2ee:')) {
+      const ok = await new Promise<boolean>((resolve) => Alert.alert(
+        'Send this message for translation?',
+        'This message is end-to-end encrypted. To translate it, its text will be sent to the server and to an external translation service. Nothing is sent unless you agree.',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Translate', onPress: () => resolve(true) },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) },
+      ));
+      if (!ok) return;
+    }
     try {
       const r = await api.messages.translate(text, target);
       Alert.alert(target === 'ar' ? 'Translation (Arabic)' : 'Translation (English)', r.data.translation);
@@ -1023,7 +1040,7 @@ export default function ChatScreen() {
     .filter((message) => message.type === 'text' || !message.type)
     .slice(-35)
     .map((message) => (isMine(message.sender_id) ? 'Me' : message.sender_name || 'Participant') + ': ' + textOf(message))
-    .join('\\n')
+    .join('\n')
     .slice(-16000);
 
   const unreadContext = (() => {
@@ -1032,7 +1049,7 @@ export default function ChatScreen() {
     return unread
       .filter((message) => message.type === 'text' || !message.type)
       .map((message) => (isMine(message.sender_id) ? 'Me' : message.sender_name || 'Participant') + ': ' + textOf(message))
-      .join('\\n')
+      .join('\n')
       .slice(-16000);
   })();
 
