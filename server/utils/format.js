@@ -39,7 +39,12 @@ const normalizePhone = (raw) => {
   if (!raw) return '';
   const s = String(raw).trim();
   const digits = s.replace(/\D/g, '');
-  return digits ? `+${digits}` : '';
+  if (!digits) return '';
+  // Egyptian local format: 01xxxxxxxxx (11 digits) -> +201xxxxxxxxx
+  if (digits.length === 11 && digits.startsWith('01')) return `+2${digits}`;
+  // 00 international prefix: 0020... -> +20...
+  if (digits.startsWith('00')) return `+${digits.slice(2)}`;
+  return `+${digits}`;
 };
 
 module.exports = { toUser, publicUser, toInt, normalizePhone };
