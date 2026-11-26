@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppColors } from '../theme/useAppColors';
@@ -12,11 +12,29 @@ export default function DeleteAccountScreen() {
   const { logout } = useAuth();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  // How the owner proves it is them before the account is erased (an older server answers 404: no extra step)
+  const [method, setMethod] = useState<'totp' | 'password' | 'otp' | null>(null);
+  const [proof, setProof] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+  useEffect(() => {
+    api.safety.deleteAccountReauth().then((r) => setMethod(r.data.method)).catch(() => setMethod(null));
+  }, []);
+
+  const sendCode = async () => {
+    setBusy(true);
+    try { await api.safety.deleteAccountCode(); setCodeSent(true); }
+    catch (e: any) { Alert.alert('Error', e?.response?.data?.message || 'Could not send the code'); }
+    setBusy(false);
+  };
+
+  const needsProof = method !== null;
+  const proofReady = !needsProof || (method === 'otp' ? codeSent && proof.trim().length > 0 : proof.trim().length > 0);
 
   const go = async () => {
     setBusy(true);
     try {
-      await api.safety.deleteAccount();
+      const value = proof.trim();
+      await api.safety.deleteAccount(method === 'totp' ? { totp: value } : method === 'password' ? { password: proof } : method === 'otp' ? { code: value } : undefined);
       await logout().catch(() => {});
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || 'Could not delete the account');
@@ -36,7 +54,31 @@ export default function DeleteAccountScreen() {
         </View>
         <Text style={{ color: c.textSecondary, fontWeight: '600' }}>Type DELETE to confirm:</Text>
         <TextInput value={text} onChangeText={setText} accessibilityLabel="Type DELETE to confirm account deletion" autoCapitalize="characters" autoCorrect={false} style={[styles.input, { color: c.text, borderColor: c.border, backgroundColor: c.card }]} />
-        <TouchableOpacity disabled={text !== 'DELETE' || busy} onPress={go} accessibilityRole="button" accessibilityLabel="Permanently delete my account" accessibilityState={{ disabled: text !== 'DELETE' || busy, busy }} style={[styles.btn, { backgroundColor: c.danger, opacity: text === 'DELETE' && !busy ? 1 : 0.4 }]}>
+        {method ? (
+          <View style={{ gap: 10 }}>
+            <Text style={{ color: c.textSecondary, fontWeight: '600' }}>
+              {method === 'totp' ? 'Enter the code from your authenticator app:' : method === 'password' ? 'Enter your password:' : 'We will send a code to your WhatsApp number:'}
+            </Text>
+            {method === 'otp' ? (
+              <TouchableOpacity disabled={busy} onPress={sendCode} accessibilityRole="button" accessibilityLabel="Send verification code" style={[styles.btn, { backgroundColor: c.surface }]}>
+                <Text style={{ color: c.text, fontWeight: '700' }}>{codeSent ? 'Send a new code' : 'Send code'}</Text>
+              </TouchableOpacity>
+            ) : null}
+            {method !== 'otp' || codeSent ? (
+              <TextInput
+                value={proof}
+                onChangeText={setProof}
+                accessibilityLabel={method === 'password' ? 'Password' : 'Verification code'}
+                secureTextEntry={method === 'password'}
+                keyboardType={method === 'password' ? 'default' : 'number-pad'}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={[styles.input, { color: c.text, borderColor: c.border, backgroundColor: c.card }]}
+              />
+            ) : null}
+          </View>
+        ) : null}
+        <TouchableOpacity disabled={text !== 'DELETE' || busy || !proofReady} onPress={go} accessibilityRole="button" accessibilityLabel="Permanently delete my account" accessibilityState={{ disabled: text !== 'DELETE' || busy || !proofReady, busy }} style={[styles.btn, { backgroundColor: c.danger, opacity: text === 'DELETE' && !busy && proofReady ? 1 : 0.4 }]}>
           <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{busy ? 'Deleting…' : 'Delete my account'}</Text>
         </TouchableOpacity>
       </View>
