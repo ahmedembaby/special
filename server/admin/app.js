@@ -14,6 +14,13 @@ const when = (v) => {
   const d = new Date(v);
   return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' });
 };
+/* Dates/phones: bidi-isolated LTR span so numbers never jumble inside RTL text. */
+const whenLtr = (v) => {
+  if (!v) return '—';
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+const wl = (v) => `<span class="text-ltr">${whenLtr(v)}</span>`;
 const ago = (v) => {
   if (!v) return 'لم يظهر بعد';
   const s = Math.max(0, (Date.now() - new Date(v).getTime()) / 1000);
@@ -198,7 +205,7 @@ const usersPage = () => listView({
   headers: ['المستخدم', 'بيانات الاتصال', 'آخر ظهور', 'الحالة', 'تاريخ التسجيل', 'الإجراءات'],
   csvRow: (u) => [u.id, u.name, u.username, u.phone, u.email, u.banned ? 'محظور' : 'نشط', u.created_at],
   csvHeaders: ['ID', 'الاسم', 'اسم المستخدم', 'الهاتف', 'البريد', 'الحالة', 'تاريخ التسجيل'],
-  row: (u) => `<tr><td>${userCell(u)}</td><td>${esc(u.phone || u.email || '—')}</td><td>${u.status === 'online' ? pill('متصل', 'green') : `<span class="muted">${ago(u.last_seen)}</span>`}</td><td>${u.banned ? pill('محظور', 'red') : pill('نشط', 'green')}${u.is_admin ? ' ' + pill('إدارة', 'amber') : ''}</td><td>${when(u.created_at)}</td><td><div class="actions">${btn('user-view', u.id, 'التفاصيل')}${u.is_admin ? '' : W(btn('user-warn', u.id, 'تحذير') + btn('user-ban', u.id, u.banned ? 'إلغاء الحظر' : 'حظر', u.banned ? 'success' : 'danger', `data-banned="${u.banned}"`) + btn('user-delete', u.id, 'حذف', 'danger'))}</div></td></tr>`,
+  row: (u) => `<tr><td>${userCell(u)}</td><td><span class="text-ltr">${esc(u.phone || u.email || '—')}</span></td><td>${u.status === 'online' ? pill('متصل', 'green') : `<span class="muted">${ago(u.last_seen)}</span>`}</td><td>${u.banned ? pill('محظور', 'red') : pill('نشط', 'green')}${u.is_admin ? ' ' + pill('إدارة', 'amber') : ''}</td><td>${wl(u.created_at)}</td><td><div class="actions">${btn('user-view', u.id, 'التفاصيل')}${u.is_admin ? '' : W(btn('user-warn', u.id, 'تحذير') + btn('user-ban', u.id, u.banned ? 'إلغاء الحظر' : 'حظر', u.banned ? 'success' : 'danger', `data-banned="${u.banned}"`) + btn('user-delete', u.id, 'حذف', 'danger'))}</div></td></tr>`,
 });
 
 /* ---------- content lists ---------- */
@@ -207,21 +214,21 @@ const postsPage = () => listView({
   headers: ['المنشور', 'الناشر', 'التفاعل', 'التاريخ', 'الإجراءات'],
   csvHeaders: ['ID', 'المنشور', 'الناشر', 'الإعجابات', 'التعليقات', 'التاريخ'],
   csvRow: (p) => [p.id, p.content, p.user_name, p.likes_count, p.comments_count, p.created_at],
-  row: (p) => `<tr><td class="cell-wrap">${esc((p.content || '').slice(0, 220)) || '<span class="muted">بدون نص</span>'}${p.image || Number(p.image_count) ? '<br>' + pill(`${num(p.image_count || 1)} صورة`) : ''}</td><td>${esc(p.user_name)} <small class="muted">@${esc(p.username || '')}</small></td><td>${num(p.likes_count)} إعجاب · ${num(p.comments_count)} تعليق</td><td>${when(p.created_at)}</td><td>${btn('post-delete', p.id, 'حذف', 'danger')}</td></tr>`,
+  row: (p) => `<tr><td class="cell-wrap">${esc((p.content || '').slice(0, 220)) || '<span class="muted">بدون نص</span>'}${p.image || Number(p.image_count) ? '<br>' + pill(`${num(p.image_count || 1)} صورة`) : ''}</td><td>${esc(p.user_name)} <small class="muted">@${esc(p.username || '')}</small></td><td>${num(p.likes_count)} إعجاب · ${num(p.comments_count)} تعليق</td><td>${wl(p.created_at)}</td><td>${btn('post-delete', p.id, 'حذف', 'danger')}</td></tr>`,
 });
 const storiesPage = () => listView({
   key: 'stories', title: 'الحالات والقصص', path: '/admin/stories', search: 'بحث بالناشر أو المحتوى…', csv: true,
   headers: ['الناشر', 'النوع', 'المحتوى', 'الجمهور', 'المشاهدات', 'النشر والانتهاء', 'الإجراء'],
   csvHeaders: ['ID', 'الناشر', 'النوع', 'المحتوى', 'الجمهور', 'المشاهدات', 'النشر', 'الانتهاء'],
   csvRow: (s) => [s.id, s.user_name, s.media_type, s.text_content || s.caption || '', s.audience, s.views_count, s.created_at, s.expires_at],
-  row: (s) => `<tr><td>${esc(s.user_name)} <small class="muted">@${esc(s.username || '')}</small></td><td>${pill(s.media_type)}</td><td class="cell-wrap">${esc(String(s.text_content || s.caption || s.media_url || '—').slice(0, 180))}</td><td>${esc(s.audience)}</td><td>${num(s.views_count)}</td><td>${when(s.created_at)}<small class="muted block">${when(s.expires_at)}</small></td><td>${btn('story-delete', s.id, 'حذف الحالة', 'danger')}</td></tr>`,
+  row: (s) => `<tr><td>${esc(s.user_name)} <small class="muted">@${esc(s.username || '')}</small></td><td>${pill(s.media_type)}</td><td class="cell-wrap">${esc(String(s.text_content || s.caption || s.media_url || '—').slice(0, 180))}</td><td>${esc(s.audience)}</td><td>${num(s.views_count)}</td><td>${wl(s.created_at)}<small class="muted block">${wl(s.expires_at)}</small></td><td>${btn('story-delete', s.id, 'حذف الحالة', 'danger')}</td></tr>`,
 });
 const groupsPage = () => listView({
   key: 'groups', title: 'المجموعات', path: '/admin/groups', search: 'ابحث باسم المجموعة أو المالك…', csv: true,
   headers: ['المجموعة', 'النوع', 'المالك', 'الأعضاء', 'تاريخ الإنشاء', 'الإجراء'],
   csvHeaders: ['ID', 'المجموعة', 'النوع', 'المالك', 'الأعضاء', 'تاريخ الإنشاء'],
   csvRow: (g) => [g.id, g.name, g.type, g.owner_name, g.member_count, g.created_at],
-  row: (g) => `<tr><td><b>${esc(g.name)}</b><small class="muted"> #${g.id}</small></td><td>${esc(g.type)}</td><td>${esc(g.owner_name || '—')}</td><td>${num(g.member_count)}</td><td>${when(g.created_at)}</td><td>${btn('group-delete', g.id, 'حذف المجموعة', 'danger')}</td></tr>`,
+  row: (g) => `<tr><td><b>${esc(g.name)}</b><small class="muted"> #${g.id}</small></td><td>${esc(g.type)}</td><td>${esc(g.owner_name || '—')}</td><td>${num(g.member_count)}</td><td>${wl(g.created_at)}</td><td>${btn('group-delete', g.id, 'حذف المجموعة', 'danger')}</td></tr>`,
 });
 const conversationsPage = () => listView({
   key: 'conversations', title: 'المحادثات', path: '/admin/conversations', search: 'ابحث باسم المحادثة…', csv: true,
@@ -229,14 +236,14 @@ const conversationsPage = () => listView({
   headers: ['المحادثة', 'النوع', 'المشاركون', 'الرسائل', 'آخر رسالة', 'الإجراء'],
   csvHeaders: ['ID', 'الاسم', 'النوع', 'المشاركون', 'الرسائل', 'آخر رسالة'],
   csvRow: (c) => [c.id, c.name || '', c.type, c.participant_count, c.message_count, c.last_message_at || ''],
-  row: (c) => `<tr><td><b>${esc(c.name) || 'محادثة #' + c.id}</b><small class="muted"> #${c.id}</small></td><td>${esc(c.type)}</td><td>${num(c.participant_count)}</td><td>${num(c.message_count)}</td><td>${when(c.last_message_at)}</td><td>${W(btn('conv-delete', c.id, 'حذف', 'danger'))}</td></tr>`,
+  row: (c) => `<tr><td><b>${esc(c.name) || 'محادثة #' + c.id}</b><small class="muted"> #${c.id}</small></td><td>${esc(c.type)}</td><td>${num(c.participant_count)}</td><td>${num(c.message_count)}</td><td>${wl(c.last_message_at)}</td><td>${W(btn('conv-delete', c.id, 'حذف', 'danger'))}</td></tr>`,
 });
 const sessionsPage = () => listView({
   key: 'sessions', title: 'الجلسات النشطة والأجهزة', path: '/admin/sessions', search: 'ابحث بالمستخدم أو الجهاز…', csv: true,
   headers: ['المستخدم', 'الجهاز', 'النظام', 'آخر نشاط', 'انتهاء الجلسة', 'الإجراء'],
   csvHeaders: ['المستخدم', 'الهاتف', 'الجهاز', 'النظام', 'آخر نشاط', 'انتهاء الجلسة'],
   csvRow: (s) => [s.user_name, s.phone || '', s.device_name, s.platform, s.last_active_at, s.expires_at],
-  row: (s) => `<tr><td>${userCell({ name: s.user_name, username: s.username })}${s.is_current ? '<br>' + pill('جلستك الحالية', 'green') : ''}</td><td>${esc(s.device_name)}</td><td>${esc(s.platform)}</td><td>${ago(s.last_active_at)}</td><td>${when(s.expires_at)}</td><td>${W(btn('session-revoke', s.id, 'إنهاء الجلسة', 'danger', s.is_current ? 'disabled' : ''))}</td></tr>`,
+  row: (s) => `<tr><td>${userCell({ name: s.user_name, username: s.username })}${s.is_current ? '<br>' + pill('جلستك الحالية', 'green') : ''}</td><td>${esc(s.device_name)}</td><td>${esc(s.platform)}</td><td>${ago(s.last_active_at)}</td><td>${wl(s.expires_at)}</td><td>${W(btn('session-revoke', s.id, 'إنهاء الجلسة', 'danger', s.is_current ? 'disabled' : ''))}</td></tr>`,
 });
 /* Translates an audit row (method + path + JSON details) into a readable Arabic action. */
 const AUDIT_ACTIONS = [
@@ -284,7 +291,7 @@ const auditPage = () => listView({
   headers: ['المسؤول', 'الإجراء', 'التفاصيل', 'التاريخ'],
   csvHeaders: ['المسؤول', 'الإجراء', 'العملية', 'المسار', 'التفاصيل', 'التاريخ'],
   csvRow: (a) => [a.admin_name, auditText(a), a.method, a.path, a.details || '', a.created_at],
-  row: (a) => `<tr><td>${esc(a.admin_name)}</td><td class="cell-wrap"><b>${esc(auditText(a))}</b><br>${pill(a.method, a.method === 'DELETE' ? 'red' : '')} <small class="muted text-ltr">${esc(a.path)}</small></td><td class="cell-wide">${esc(a.details || '—')}</td><td>${when(a.created_at)}</td></tr>`,
+  row: (a) => `<tr><td>${esc(a.admin_name)}</td><td class="cell-wrap"><b>${esc(auditText(a))}</b><br>${pill(a.method, a.method === 'DELETE' ? 'red' : '')} <small class="muted text-ltr">${esc(a.path)}</small></td><td class="cell-wide">${esc(a.details || '—')}</td><td>${wl(a.created_at)}</td></tr>`,
 });
 
 /* ---------- reports ---------- */
@@ -309,7 +316,7 @@ async function reportsPage() {
           : `<div class="report-target">من <b>${esc(p?.author || '—')}</b><p>${esc(p?.text || 'بدون نص (وسائط)')}</p></div>`;
     const authorId = r.target_type === 'user' ? r.target_id : p?.authorId;
     const open = r.status === 'open';
-    return `<article class="report-card"><div class="report-top"><div><h3>بلاغ #${r.id} — ${TARGET_LABEL[r.target_type] || esc(r.target_type)} #${r.target_id}</h3><div class="report-meta">بواسطة ${esc(r.reporter_name)} (@${esc(r.reporter_username || '')}) · ${when(r.created_at)}</div></div><div class="actions">${r.reports_on_target > 1 ? pill(`${r.reports_on_target} بلاغات على نفس الهدف`, 'red') : ''}${pill(open ? 'مفتوح' : r.status === 'resolved' ? 'تم الحل' : 'مرفوض', open ? 'amber' : 'green')}</div></div>
+    return `<article class="report-card"><div class="report-top"><div><h3>بلاغ #${r.id} — ${TARGET_LABEL[r.target_type] || esc(r.target_type)} #${r.target_id}</h3><div class="report-meta">بواسطة ${esc(r.reporter_name)} (@${esc(r.reporter_username || '')}) · ${wl(r.created_at)}</div></div><div class="actions">${r.reports_on_target > 1 ? pill(`${r.reports_on_target} بلاغات على نفس الهدف`, 'red') : ''}${pill(open ? 'مفتوح' : r.status === 'resolved' ? 'تم الحل' : 'مرفوض', open ? 'amber' : 'green')}</div></div>
       <p><b>السبب:</b> ${esc(REASON_LABEL[r.reason] || r.reason)}</p>${r.details ? `<p>${esc(r.details)}</p>` : ''}${content}
       ${open && state.me.pages.includes('reports') ? `<div class="actions">${btn('report-resolve', r.id, 'حل البلاغ', 'success')}${!r.target_missing && r.target_type !== 'user' && r.target_type !== 'message' ? btn('report-delete', r.id, 'حذف المحتوى وحل البلاغ', 'danger') : ''}${!r.target_missing && r.target_type === 'message' ? btn('report-delete', r.id, 'حذف الرسالة وحل البلاغ', 'danger') : ''}${authorId && !p?.banned && state.me.canWrite ? btn('report-ban', r.id, 'حظر صاحب المحتوى وحل البلاغ', 'danger', `data-user="${authorId}"`) : ''}${btn('report-dismiss', r.id, 'رفض البلاغ')}${authorId ? btn('user-view', authorId, 'ملف صاحب المحتوى', 'ghost') : ''}</div>` : ''}</article>`;
   }).join('');
@@ -325,7 +332,7 @@ async function broadcastPage() {
     api('/admin/broadcasts').catch(() => []),
   ]);
   const pct = stats.total ? Math.round((stats.withToken / stats.total) * 100) : 0;
-  const rows = history.map((h) => `<tr><td><b>${esc(h.title)}</b><small class="muted block">${esc((h.body || '').slice(0, 90))}</small></td><td>${num(h.recipients)}<small class="muted block">${num(h.push_capable)} يستقبلون Push</small></td><td>${num(h.read_count)} <small class="muted">(${h.recipients ? Math.round((h.read_count / h.recipients) * 100) : 0}%)</small></td><td>${when(h.created_at)}</td><td>${btn('rebroadcast', h.broadcast_id, 'إعادة استخدام', 'ghost', `data-title="${esc(h.title)}" data-body="${esc(h.body)}"`)}</td></tr>`).join('');
+  const rows = history.map((h) => `<tr><td><b>${esc(h.title)}</b><small class="muted block">${esc((h.body || '').slice(0, 90))}</small></td><td>${num(h.recipients)}<small class="muted block">${num(h.push_capable)} يستقبلون Push</small></td><td>${num(h.read_count)} <small class="muted">(${h.recipients ? Math.round((h.read_count / h.recipients) * 100) : 0}%)</small></td><td>${wl(h.created_at)}</td><td>${btn('rebroadcast', h.broadcast_id, 'إعادة استخدام', 'ghost', `data-title="${esc(h.title)}" data-body="${esc(h.body)}"`)}</td></tr>`).join('');
   shell(`<div class="grid stats-grid"><div class="stat-card"><div class="stat-head">الحسابات الفعّالة<span class="stat-icon">♙</span></div><div class="stat-value">${num(stats.total)}</div><div class="stat-foot">ستصلها الإشعارات داخل التطبيق</div></div><div class="stat-card"><div class="stat-head">أجهزة تستقبل الإشعارات<span class="stat-icon">◉</span></div><div class="stat-value">${num(stats.withToken)}</div><div class="stat-foot">${pct}% من الحسابات لديها جهاز مسجّل</div></div></div>
   <div class="grid overview-grid"><section class="panel"><div class="panel-head"><div><h2>إرسال إشعار</h2><p>يصل داخل التطبيق فوراً، وكإشعار دفع للأجهزة المسجّلة.</p></div></div>
   <form id="broadcastForm"><div class="field"><label>الجمهور <small class="muted" id="audienceCount"></small></label><select name="audience"><option value="all">كل المستخدمين</option><option value="active7">النشطون خلال 7 أيام</option><option value="active30">النشطون خلال 30 يوماً</option><option value="users">مستخدمون محددون (بالمعرّف)</option></select></div>
@@ -400,8 +407,8 @@ async function backupsPage() {
     }
     throw err;
   }
-  const body = d.files.map((x) => `<tr><td class="text-ltr">${esc(x.name)}</td><td>${bytes(x.size)}</td><td>${when(x.created_at)}</td><td><div class="actions">${btn('backup-verify', x.name, 'فحص السلامة', 'success')}${d.offhost ? btn('backup-upload', x.name, 'رفع خارجي', 'ghost') : ''}${btn('backup-restore', x.name, 'استعادة', 'danger')}${btn('backup-delete', x.name, 'حذف', 'ghost')}</div></td></tr>`).join('');
-  const runs = d.runs.map((r) => `<tr><td>${when(r.created_at)}</td><td>${{ create: 'إنشاء', upload: 'رفع خارجي', verify: 'فحص سلامة' }[r.kind] || esc(r.kind)}</td><td class="text-ltr">${esc(r.file || '—')}</td><td>${pill(r.ok ? 'نجح' : 'فشل', r.ok ? 'green' : 'red')}</td><td class="cell-wrap">${esc(r.detail || '')}</td></tr>`).join('');
+  const body = d.files.map((x) => `<tr><td class="text-ltr">${esc(x.name)}</td><td>${bytes(x.size)}</td><td>${wl(x.created_at)}</td><td><div class="actions">${btn('backup-verify', x.name, 'فحص السلامة', 'success')}${d.offhost ? btn('backup-upload', x.name, 'رفع خارجي', 'ghost') : ''}${btn('backup-restore', x.name, 'استعادة', 'danger')}${btn('backup-delete', x.name, 'حذف', 'ghost')}</div></td></tr>`).join('');
+  const runs = d.runs.map((r) => `<tr><td>${wl(r.created_at)}</td><td>${{ create: 'إنشاء', upload: 'رفع خارجي', verify: 'فحص سلامة' }[r.kind] || esc(r.kind)}</td><td class="text-ltr">${esc(r.file || '—')}</td><td>${pill(r.ok ? 'نجح' : 'فشل', r.ok ? 'green' : 'red')}</td><td class="cell-wrap">${esc(r.detail || '')}</td></tr>`).join('');
   shell(toolbar('النسخ الاحتياطية المشفرة', `${pill(d.offhost ? 'نسخ خارجي مفعّل' : 'محلي فقط', d.offhost ? 'green' : 'amber')} ${pill(d.autoHours ? `تلقائي كل ${d.autoHours} ساعة` : 'بدون جدولة', d.autoHours ? 'green' : 'amber')} <button class="btn" data-act="backup-run">تشغيل دورة كاملة الآن</button> <button class="btn primary" data-act="backup-create">إنشاء نسخة</button>`)
     + '<div class="notice-box">الدورة الكاملة: إنشاء ← فحص سلامة (فك التشفير والتحقق من اكتمال الملف) ← رفع إلى التخزين الخارجي المتوافق مع S3 والتحقق من الحجم. فحص السلامة لا يلمس قاعدة البيانات الحية؛ جرّب الاستعادة الفعلية دورياً على خادم اختبار. الإعداد: BACKUP_DIR وBACKUP_ENCRYPTION_KEY وBACKUP_S3_* وBACKUP_AUTO_HOURS.</div>'
     + (d.files.length ? table(['الملف', 'الحجم', 'تاريخ الإنشاء', 'الإجراء'], body) : empty('لا توجد نسخ احتياطية بعد.'))
@@ -413,14 +420,14 @@ const ACTION_LABEL = { none: 'بدون إجراء', deleted_content: 'حذف ا�
 async function rlogPage() {
   const st = pg('rlog'), limit = 30;
   const { items, total } = await apiList(`/admin/reports-log?${new URLSearchParams({ limit, offset: st.offset })}`);
-  const rows = items.map((d) => `<tr><td>${when(d.created_at)}</td><td>#${d.report_id} · ${esc(TARGET_LABEL[d.target_type] || d.target_type || '')}</td><td>${pill(d.decision === 'resolved' ? 'تم الحل' : 'مرفوض', d.decision === 'resolved' ? 'green' : '')}</td><td>${esc(ACTION_LABEL[d.action] || d.action)}</td><td>${esc(d.admin_name || '—')}</td><td class="cell-wrap">${esc(d.note || '—')}</td></tr>`).join('');
+  const rows = items.map((d) => `<tr><td>${wl(d.created_at)}</td><td>#${d.report_id} · ${esc(TARGET_LABEL[d.target_type] || d.target_type || '')}</td><td>${pill(d.decision === 'resolved' ? 'تم الحل' : 'مرفوض', d.decision === 'resolved' ? 'green' : '')}</td><td>${esc(ACTION_LABEL[d.action] || d.action)}</td><td>${esc(d.admin_name || '—')}</td><td class="cell-wrap">${esc(d.note || '—')}</td></tr>`).join('');
   shell(toolbar('سجل قرارات البلاغات') + (rows ? table(['الوقت', 'البلاغ', 'القرار', 'الإجراء', 'المشرف', 'الملاحظة'], rows) : empty('لا توجد قرارات مسجلة بعد.')) + pager('rlog', total, limit));
 }
 async function appealsPage() {
   const st = pg('appeals'), limit = 20;
   const status = st.f.status || 'pending';
   const { items, total } = await apiList(`/admin/appeals?${new URLSearchParams({ status, limit, offset: st.offset })}`);
-  const rows = items.map((a) => `<tr><td>${userCell(a)}${a.banned ? ' ' + pill('محظور', 'red') : ''}</td><td>${a.kind === 'account' ? 'حظر الحساب' : 'قرار على محتوى'}</td><td class="cell-wrap">${esc(a.message)}</td><td>${when(a.created_at)}</td><td>${a.status === 'pending' ? btn('appeal-accept', a.id, 'قبول', 'success') + ' ' + btn('appeal-deny', a.id, 'رفض', 'danger') : pill(a.status === 'accepted' ? 'مقبول' : 'مرفوض', a.status === 'accepted' ? 'green' : 'red') + (a.review_note ? `<br><small class="muted">${esc(a.review_note)}</small>` : '')}</td></tr>`).join('');
+  const rows = items.map((a) => `<tr><td>${userCell(a)}${a.banned ? ' ' + pill('محظور', 'red') : ''}</td><td>${a.kind === 'account' ? 'حظر الحساب' : 'قرار على محتوى'}</td><td class="cell-wrap">${esc(a.message)}</td><td>${wl(a.created_at)}</td><td>${a.status === 'pending' ? btn('appeal-accept', a.id, 'قبول', 'success') + ' ' + btn('appeal-deny', a.id, 'رفض', 'danger') : pill(a.status === 'accepted' ? 'مقبول' : 'مرفوض', a.status === 'accepted' ? 'green' : 'red') + (a.review_note ? `<br><small class="muted">${esc(a.review_note)}</small>` : '')}</td></tr>`).join('');
   shell(toolbar('اعتراضات المستخدمين', `<select class="select-small" data-filter="appeals:status" aria-label="الحالة"><option value="pending" ${status === 'pending' ? 'selected' : ''}>قيد المراجعة</option><option value="accepted" ${status === 'accepted' ? 'selected' : ''}>مقبولة</option><option value="denied" ${status === 'denied' ? 'selected' : ''}>مرفوضة</option></select>`)
     + '<div class="notice-box">قبول اعتراض على حظر حساب يلغي الحظر تلقائياً. اعتراضات الحسابات المحظورة تصل من شاشة الدخول ولا يمكن التحقق من هوية صاحبها إلا عبر تواصل لاحق، فراجعها بحذر.</div>'
     + (rows ? table(['المستخدم', 'النوع', 'الرسالة', 'التاريخ', 'القرار'], rows) : empty('لا توجد اعتراضات.')) + pager('appeals', total, limit));
@@ -428,7 +435,7 @@ async function appealsPage() {
 async function alertsPage() {
   const d = await api('/admin/alerts');
   const m = d.metrics, t = d.thresholds;
-  const rows = d.items.map((a) => `<tr><td>${when(a.created_at)}</td><td>${pill({ error_rate: 'معدل الأخطاء', latency: 'زمن الاستجابة', backup: 'النسخ الاحتياطي' }[a.kind] || a.kind, 'amber')}</td><td class="cell-wrap">${esc(a.message)}</td></tr>`).join('');
+  const rows = d.items.map((a) => `<tr><td>${wl(a.created_at)}</td><td>${pill({ error_rate: 'معدل الأخطاء', latency: 'زمن الاستجابة', backup: 'النسخ الاحتياطي' }[a.kind] || a.kind, 'amber')}</td><td class="cell-wrap">${esc(a.message)}</td></tr>`).join('');
   shell(toolbar('التنبيهات التلقائية', pill(d.webhook ? 'Webhook مفعّل' : 'Webhook غير مُعدّ', d.webhook ? 'green' : 'amber'))
     + `<div class="stat-grid"><div class="stat-card"><span>طلبات (آخر ${Math.round(m.windowSeconds / 60)} د)</span><b>${num(m.requests)}</b></div><div class="stat-card"><span>نسبة الأخطاء</span><b>${(m.errorRate * 100).toFixed(1)}%</b></div><div class="stat-card"><span>p50 / p95</span><b>${num(m.p50)} / ${num(m.p95)} ms</b></div><div class="stat-card"><span>حدود التنبيه</span><b>${(t.errorRate * 100).toFixed(0)}% · ${num(t.p95Ms)}ms</b></div></div>`
     + '<div class="notice-box">تُرسل التنبيهات لمالكي الإدارة داخل التطبيق وكإشعار دفع، وإلى ALERT_WEBHOOK_URL إن وُجد، بحد أقصى تنبيه كل 30 دقيقة لكل نوع. المقاييس داخل ذاكرة العملية وتُصفَّر عند إعادة التشغيل.</div>'
@@ -437,12 +444,12 @@ async function alertsPage() {
 
 async function errorsPage() {
   const rows = await api('/admin/errors?limit=100');
-  shell(toolbar('سجل أخطاء الخادم', pill(`${rows.length} خطأ في الذاكرة`, rows.length ? 'amber' : 'green')) + '<div class="notice-box">يعرض آخر 100 خطأ منذ آخر تشغيل للخادم. السجل مؤقت داخل الذاكرة ولا يحل محل Sentry أو نظام تجميع سجلات دائم.</div>' + (rows.length ? table(['الوقت', 'المصدر', 'الرسالة', 'تفاصيل مختصرة'], rows.map((x) => `<tr><td>${when(x.at)}</td><td>${esc(x.source)}</td><td class="cell-wrap">${esc(x.message)}</td><td class="cell-wide">${esc(x.stack || '—')}</td></tr>`).join('')) : empty('لا توجد أخطاء مسجلة. 🎉')));
+  shell(toolbar('سجل أخطاء الخادم', pill(`${rows.length} خطأ في الذاكرة`, rows.length ? 'amber' : 'green')) + '<div class="notice-box">يعرض آخر 100 خطأ منذ آخر تشغيل للخادم. السجل مؤقت داخل الذاكرة ولا يحل محل Sentry أو نظام تجميع سجلات دائم.</div>' + (rows.length ? table(['الوقت', 'المصدر', 'الرسالة', 'تفاصيل مختصرة'], rows.map((x) => `<tr><td>${wl(x.at)}</td><td>${esc(x.source)}</td><td class="cell-wrap">${esc(x.message)}</td><td class="cell-wide">${esc(x.stack || '—')}</td></tr>`).join('')) : empty('لا توجد أخطاء مسجلة. 🎉')));
 }
 
 async function adminsPage() {
   const d = await api('/admin/admins');
-  const rows = (d.admins || []).map((a) => `<tr><td>${esc(a.name)} <small class="muted">@${esc(a.username || '')}</small></td><td>${esc(a.phone || '—')}</td><td>${pill(ROLE_LABEL[a.role] || a.role, a.role === 'admin' ? 'green' : a.role === 'moderator' ? 'amber' : '')}</td><td>${when(a.created_at)}</td><td>${btn('admin-remove', a.user_id, 'إزالة الصلاحية', 'danger')}</td></tr>`).join('');
+  const rows = (d.admins || []).map((a) => `<tr><td>${esc(a.name)} <small class="muted">@${esc(a.username || '')}</small></td><td><span class="text-ltr">${esc(a.phone || '—')}</span></td><td>${pill(ROLE_LABEL[a.role] || a.role, a.role === 'admin' ? 'green' : a.role === 'moderator' ? 'amber' : '')}</td><td>${wl(a.created_at)}</td><td>${btn('admin-remove', a.user_id, 'إزالة الصلاحية', 'danger')}</td></tr>`).join('');
   shell(toolbar('إدارة صلاحيات المشرفين') + `<section class="panel panel-narrow"><div class="panel-head"><div><h2>إضافة مشرف</h2><p>أدخل رقم المستخدم من قاعدة الحسابات واختر أقل صلاحية لازمة.</p></div></div><form id="adminRoleForm"><div class="field"><label>معرّف المستخدم</label><input name="userId" type="number" min="1" required placeholder="User ID"></div><div class="field"><label>الدور</label><select name="role" required><option value="support">الدعم الفني — قراءة فقط</option><option value="moderator">مشرف محتوى وبلاغات</option><option value="admin">مدير — إدارة كاملة دون إدارة المالكين</option></select></div><button class="btn primary">حفظ الصلاحية</button></form></section><section class="panel"><div class="panel-head"><h2>المشرفون الحاليون</h2></div>${rows ? table(['المستخدم', 'الهاتف', 'الدور', 'تاريخ الإضافة', 'الإجراء'], rows) : empty('لا يوجد مشرفون إضافيون.')}</section>`);
   $('#adminRoleForm').onsubmit = async (e) => { e.preventDefault(); const f = new FormData(e.target); try { await post('/admin/admins', { userId: Number(f.get('userId')), role: f.get('role') }); toast('تم حفظ الصلاحية'); adminsPage(); } catch (err) { toast(err.message, true); } };
 }
@@ -457,7 +464,7 @@ async function releasePage() {
 async function showUser(id) {
   const u = await api('/admin/users/' + id);
   const items = [['الاسم', u.name], ['اسم المستخدم', u.username && '@' + u.username], ['الهاتف', u.phone], ['البريد', u.email], ['الحالة', u.banned ? 'محظور' : u.status === 'online' ? 'متصل الآن' : 'نشط'], ['آخر ظهور', ago(u.last_seen)], ['تاريخ التسجيل', when(u.created_at)], ['جلسات نشطة', num(u.stats.activeSessions)], ['المنشورات', num(u.stats.posts)], ['الرسائل المرسلة', num(u.stats.messages)], ['المتابعون', num(u.stats.followers)], ['يتابع', num(u.stats.following)], ['بلاغات ضده', num(u.stats.reportsAgainst)], ['نبذة', u.bio]];
-  const posts = (u.recentPosts || []).map((p) => `<div class="quick-row"><span class="cell-wrap">${esc(String(p.content || '(بدون نص)').slice(0, 120))}</span><small class="muted">${when(p.created_at)}</small></div>`).join('');
+  const posts = (u.recentPosts || []).map((p) => `<div class="quick-row"><span class="cell-wrap">${esc(String(p.content || '(بدون نص)').slice(0, 120))}</span><small class="muted">${wl(p.created_at)}</small></div>`).join('');
   const actions = u.is_admin ? '' : W(`<div class="actions modal-actions">${btn('user-warn', u.id, 'إرسال تحذير')}${btn('user-sessions', u.id, 'تسجيل خروج من كل الأجهزة')}${btn('user-verify', u.id, u.verified ? 'سحب التوثيق' : 'توثيق الحساب', u.verified ? 'danger' : 'success', `data-on="${u.verified ? 0 : 1}"`)}${btn('user-ban', u.id, u.banned ? 'إلغاء الحظر' : 'حظر الحساب', u.banned ? 'success' : 'danger', `data-banned="${u.banned}"`)}</div>`);
   openModal('ملف المستخدم', `<div class="detail-grid">${items.map((x) => `<div class="detail-item"><small>${x[0]}</small><b>${esc(x[1] ?? '—')}</b></div>`).join('')}</div>${posts ? `<h3 class="modal-sub">آخر المنشورات</h3><div class="quick-list">${posts}</div>` : ''}${actions}`);
 }
@@ -472,7 +479,7 @@ async function verificationsPage() {
   const status = st.f.status || 'pending';
   const { items, total } = await apiList(`/admin/verifications?${new URLSearchParams({ status, limit, offset: st.offset })}`);
   const opt = (cur, list) => list.map((o) => `<option value="${o[0]}" ${cur === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('');
-  const rows = items.map((v) => { const [label, kind] = VSTATUS[v.status] || [v.status, '']; return `<tr><td>${userCell(v)}${v.verified ? checkMark : ''}</td><td>${esc(VCAT[v.category] || v.category)}</td><td class="cell-wrap">${esc(v.reason || '—')}${v.link ? `<br><small class="muted">${esc(v.link)}</small>` : ''}</td><td>${num(v.followers)} متابع · ${num(v.posts)} منشور</td><td>${pill(label, kind)}${v.review_note ? `<br><small class="muted">${esc(v.review_note)}</small>` : ''}</td><td>${when(v.created_at)}</td><td>${v.status === 'pending' ? btn('verify-approve', v.id, 'توثيق', 'success') + ' ' + btn('verify-reject', v.id, 'رفض', 'danger') : ''}</td></tr>`; }).join('');
+  const rows = items.map((v) => { const [label, kind] = VSTATUS[v.status] || [v.status, '']; return `<tr><td>${userCell(v)}${v.verified ? checkMark : ''}</td><td>${esc(VCAT[v.category] || v.category)}</td><td class="cell-wrap">${esc(v.reason || '—')}${v.link ? `<br><small class="muted">${esc(v.link)}</small>` : ''}</td><td>${num(v.followers)} متابع · ${num(v.posts)} منشور</td><td>${pill(label, kind)}${v.review_note ? `<br><small class="muted">${esc(v.review_note)}</small>` : ''}</td><td>${wl(v.created_at)}</td><td>${v.status === 'pending' ? btn('verify-approve', v.id, 'توثيق', 'success') + ' ' + btn('verify-reject', v.id, 'رفض', 'danger') : ''}</td></tr>`; }).join('');
   shell(toolbar('طلبات التوثيق', `<select class="select-small" data-filter="verifications:status" aria-label="الحالة">${opt(status, [['pending', 'قيد المراجعة'], ['approved', 'مقبولة'], ['rejected', 'مرفوضة']])}</select>`)
     + '<div class="notice-box">يمكنك أيضاً منح أو سحب العلامة مباشرة من نافذة المستخدم. يصل المستخدم إشعار بالنتيجة.</div>'
     + (rows ? table(['المستخدم', 'الفئة', 'السبب', 'النشاط', 'الحالة', 'التاريخ', 'الإجراء'], rows) : empty('لا توجد طلبات في هذا التصنيف.')) + pager('verifications', total, limit));
