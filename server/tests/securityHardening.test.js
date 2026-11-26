@@ -15,6 +15,12 @@ const fakePool = {
       return [s ? [{ id: uid, banned: state.users[uid].banned ? 1 : 0 }] : []];
     }
     if (/SELECT phone, password, totp_enabled, totp_secret FROM users/.test(sql)) return [[state.users[params[0]]]];
+    if (/SELECT totp_secret, totp_enabled, totp_last_step FROM users/.test(sql)) { const u = state.users[params[0]]; return [[{ totp_secret: u.totp_secret, totp_enabled: u.totp_enabled, totp_last_step: u.totp_last_step ?? null }]]; }
+    if (/UPDATE users SET totp_last_step/.test(sql)) {
+      const [step, , uid] = params; const u = state.users[uid];
+      if (u.totp_last_step != null && u.totp_last_step >= step) return [{ affectedRows: 0 }];
+      u.totp_last_step = step; return [{ affectedRows: 1 }];
+    }
     if (/DELETE FROM users/.test(sql)) { state.deleted.push(params[0]); return [{ affectedRows: 1 }]; }
     return [[]];
   },
@@ -94,4 +100,51 @@ test('delete account: phone-only users need a fresh WhatsApp code, single use, l
   assert.strictEqual(r.status, 200); assert.deepStrictEqual(state.deleted, [10]);
   r = await call(del, { user, body: { confirm: 'DELETE', code: state.otpSent[0].code } });
   assert.strictEqual(r.status, 401, 'code is single use');
+});
+
+const totpLib = require('../utils/totp');
+
+test('delete account: 2FA users must give a valid authenticator code, replay is refused', async () => {
+  state.deleted = [];
+  const secret = totpLib.generateSecret();
+  state.users[11] = { phone: '+201222222222', password: await bcrypt.hash('pw', 4), totp_enabled: 1, totp_secret: secret };
+  const del = route('delete', '/account'); const user = { id: 11, token: 't' };
+  let r = await call(del, { user, body: { confirm: 'DELETE' } });
+  assert.strictEqual(r.status, 401); assert.strictEqual(r.body.method, 'totp'); assert.strictEqual(r.body.reauthRequired, true);
+  r = await call(del, { user, body: { confirm: 'DELETE', password: 'pw' } });
+  assert.strictEqual(r.status, 401, 'a password is not enough when 2FA is on'); assert.deepStrictEqual(state.deleted, []);
+  r = await call(del, { user, body: { confirm: 'DELETE', totp: '000000' === totpLib.totp(secret) ? '111111' : '000000' } });
+  assert.strictEqual(r.status, 401); assert.deepStrictEqual(state.deleted, []);
+  r = await call(del, { user, body: { confirm: 'DELETE', totp: totpLib.totp(secret) } });
+  assert.strictEqual(r.status, 200); assert.deepStrictEqual(state.deleted, [11]);
+  state.deleted = [];
+  r = await call(del, { user, body: { confirm: 'DELETE', totp: totpLib.totp(secret) } });
+  assert.strictEqual(r.status, 401, 'the same code cannot be used twice'); assert.deepStrictEqual(state.deleted, []);
+});
+
+test('delete account: old app (no proof), missing confirm, attempt limit, and no-credential accounts', async () => {
+  state.deleted = [];
+  const del = route('delete', '/account');
+  state.users[12] = { phone: null, password: await bcrypt.hash('pw12', 4), totp_enabled: 0, totp_secret: null };
+  const user = { id: 12, token: 't' };
+  let r = await call(del, { user, body: {} });
+  assert.strictEqual(r.status, 400, 'confirm is still required');
+  r = await call(del, { user, body: { confirm: 'DELETE' } }); // what an old app sends
+  assert.strictEqual(r.status, 401); assert.match(r.body.message, /Update the app/); assert.deepStrictEqual(state.deleted, []);
+  for (let i = 0; i < 5; i++) assert.strictEqual((await call(del, { user, body: { confirm: 'DELETE', password: 'bad' } })).status, 401);
+  r = await call(del, { user, body: { confirm: 'DELETE', password: 'pw12' } });
+  assert.strictEqual(r.status, 429, 'locked after 5 wrong attempts even with the right password'); assert.deepStrictEqual(state.deleted, []);
+  // an account with nothing to verify against keeps the old behaviour (no lockout of the owner)
+  state.users[13] = { phone: null, password: null, totp_enabled: 0, totp_secret: null };
+  r = await call(del, { user: { id: 13, token: 't' }, body: { confirm: 'DELETE' } });
+  assert.strictEqual(r.status, 200); assert.deepStrictEqual(state.deleted, [13]);
+});
+
+test('media token: cannot be re-pointed at another user or session', async () => {
+  state.users[7] = { banned: 0 }; state.users[8] = { banned: 0 };
+  state.sessions = [{ id: 'sess-1', user_id: 7 }, { id: 'sess-2', user_id: 8 }];
+  assert.strictEqual(await authenticateMediaToken(signMediaToken(8, 'sess-1')), null, 'user 8 with user 7 session');
+  assert.deepStrictEqual(await authenticateMediaToken(signMediaToken(8, 'sess-2')), { id: 8, sessionId: 'sess-2', media: true });
+  assert.strictEqual(await authenticateMediaToken(undefined), null);
+  assert.strictEqual(await authenticateMediaToken('garbage'), null);
 });
