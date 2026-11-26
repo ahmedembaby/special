@@ -239,12 +239,19 @@ const conversationsPage = () => listView({
   csvRow: (c) => [c.id, c.name || '', c.type, c.participant_count, c.message_count, c.last_message_at || ''],
   row: (c) => `<tr><td><b>${esc(c.name) || 'محادثة #' + c.id}</b><small class="muted"> #${c.id}</small></td><td>${esc(c.type)}</td><td>${num(c.participant_count)}</td><td>${num(c.message_count)}</td><td>${wl(c.last_message_at)}</td><td>${W(btn('conv-msgs', c.id, 'الرسائل', 'ghost') + btn('conv-delete', c.id, 'حذف', 'danger'))}</td></tr>`,
 });
+/* Short "Browser · OS" label from a user-agent string. */
+const uaShort = (ua) => {
+  if (!ua) return '—';
+  const os = /windows/i.test(ua) ? 'Windows' : /android/i.test(ua) ? 'Android' : /iphone|ipad/i.test(ua) ? 'iOS' : /mac os/i.test(ua) ? 'macOS' : /linux/i.test(ua) ? 'Linux' : '';
+  const br = /edg/i.test(ua) ? 'Edge' : /firefox/i.test(ua) ? 'Firefox' : /chrome/i.test(ua) ? 'Chrome' : /safari/i.test(ua) ? 'Safari' : /okhttp/i.test(ua) ? 'تطبيق أندرويد' : /expo/i.test(ua) ? 'Expo' : '';
+  return [br, os].filter(Boolean).join(' · ') || String(ua).slice(0, 40);
+};
 const sessionsPage = () => listView({
   key: 'sessions', title: 'الجلسات النشطة والأجهزة', path: '/admin/sessions', search: 'ابحث بالمستخدم أو الجهاز…', csv: true,
-  headers: ['المستخدم', 'الجهاز', 'النظام', 'آخر نشاط', 'انتهاء الجلسة', 'الإجراء'],
-  csvHeaders: ['المستخدم', 'الهاتف', 'الجهاز', 'النظام', 'آخر نشاط', 'انتهاء الجلسة'],
-  csvRow: (s) => [s.user_name, s.phone || '', s.device_name, s.platform, s.last_active_at, s.expires_at],
-  row: (s) => `<tr><td>${userCell({ name: s.user_name, username: s.username })}${s.is_current ? '<br>' + pill('جلستك الحالية', 'green') : ''}</td><td>${esc(s.device_name)}</td><td>${esc(s.platform)}</td><td>${ago(s.last_active_at)}</td><td>${wl(s.expires_at)}</td><td>${W(btn('session-revoke', s.id, 'إنهاء الجلسة', 'danger', s.is_current ? 'disabled' : ''))}</td></tr>`,
+  headers: ['المستخدم', 'الجهاز', 'النظام', 'عنوان IP', 'المتصفح/التطبيق', 'آخر نشاط', 'انتهاء الجلسة', 'الإجراء'],
+  csvHeaders: ['المستخدم', 'الهاتف', 'الجهاز', 'النظام', 'IP', 'المتصفح/التطبيق', 'آخر نشاط', 'انتهاء الجلسة'],
+  csvRow: (s) => [s.user_name, s.phone || '', s.device_name, s.platform, s.ip || '', s.user_agent || '', s.last_active_at, s.expires_at],
+  row: (s) => `<tr><td>${userCell({ name: s.user_name, username: s.username })}${s.is_current ? '<br>' + pill('جلستك الحالية', 'green') : ''}</td><td>${esc(s.device_name)}</td><td>${esc(s.platform)}</td><td><span class="text-ltr">${esc(s.ip || '—')}</span></td><td title="${esc(s.user_agent || '')}">${esc(uaShort(s.user_agent))}</td><td>${ago(s.last_active_at)}</td><td>${wl(s.expires_at)}</td><td>${W(btn('session-revoke', s.id, 'إنهاء الجلسة', 'danger', s.is_current ? 'disabled' : ''))}</td></tr>`,
 });
 /* Translates an audit row (method + path + JSON details) into a readable Arabic action. */
 const AUDIT_ACTIONS = [
