@@ -12,6 +12,7 @@ import { Colors, Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
 import * as api from '../services/api';
 import { AIAssistantSheet } from '../components/AIAssistantSheet';
+import { bubbleCorners } from '../utils/bubbleShape';
 import { resolveUrl } from '../config';
 import { useAuth } from '../context/AuthContext';
 
@@ -1447,6 +1448,8 @@ export default function ChatScreen() {
               const isOwn = isMine(item.sender_id);
               const prev = index > 0 ? visibleMessages[index - 1] : undefined;
               const newDay = !prev || !sameDay(prev.created_at, item.created_at);
+              const nxt = index < visibleMessages.length - 1 ? visibleMessages[index + 1] : undefined;
+              const groupedWithNext = !!nxt && sameDay(nxt.created_at, item.created_at) && String(nxt.sender_id) === String(item.sender_id) && new Date(nxt.created_at).getTime() - new Date(item.created_at).getTime() < 5 * 60 * 1000;
               const groupedWithPrev = !!prev && !newDay && String(prev.sender_id) === String(item.sender_id) && new Date(item.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60 * 1000;
               const isFile = item.type === 'file';
               const isVoice = item.type === 'voice';
@@ -1561,7 +1564,7 @@ export default function ChatScreen() {
                         <Text style={{ fontSize: 64 }}>{textOf(item).slice(8)}</Text>
                       </TouchableOpacity>
                     ) : !isVoice ? (
-                      <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.otherBubble, isOwn ? ownBubbleStyle : null]}>
+                      <View style={[styles.bubble, isOwn ? styles.ownBubble : styles.otherBubble, bubbleCorners(isOwn, groupedWithPrev, groupedWithNext), isOwn ? ownBubbleStyle : null]}>
                         <Text
                           style={[styles.messageText, { color: isOwn ? '#FFFFFF' : TEXT_GRAY_900 }, textOf(item).startsWith('📍 http') && { textDecorationLine: 'underline' }]}
                           onPress={textOf(item).startsWith('📍 http') ? () => Linking.openURL(textOf(item).slice(2).trim()) : undefined}
