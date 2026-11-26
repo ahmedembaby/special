@@ -19,6 +19,7 @@ const BANNER = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=9
 
 export default function ProfileScreen() {
   const [avatarViewer, setAvatarViewer] = useState(false);
+  const [coverViewer, setCoverViewer] = useState(false);
   const nav = useNavigation() as any;
   const { c } = useAppColors();
   const insets = useSafeAreaInsets();
@@ -36,7 +37,10 @@ export default function ProfileScreen() {
   const header = (
     <View>
       <View>
-        <Image source={{ uri: resolveUrl((user as any)?.cover_image) || BANNER }} style={styles.banner} />
+        <TouchableOpacity activeOpacity={0.95} disabled={!(user as any)?.cover_image} onPress={() => setCoverViewer(true)} accessibilityRole="imagebutton" accessibilityLabel="View cover photo">
+          <Image source={{ uri: resolveUrl((user as any)?.cover_image) || BANNER }} style={styles.banner} />
+        </TouchableOpacity>
+        {coverViewer ? <ImageViewer uri={resolveUrl((user as any)?.cover_image)} onClose={() => setCoverViewer(false)} /> : null}
         <View style={[styles.topBar, { top: insets.top + 8 }]}>
           <TouchableOpacity style={styles.circle} onPress={() => nav.getParent()?.navigate('Home')}>
             <Icon name="arrowLeft" size={20} color="#FFFFFF" />
