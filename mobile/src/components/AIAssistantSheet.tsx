@@ -50,7 +50,7 @@ export const AIAssistantSheet = ({ visible, onClose, context, unreadContext = ''
           const parsed = JSON.parse(response.data.result);
           if (Array.isArray(parsed)) terms = parsed.filter((value) => typeof value === 'string').map((value) => value.trim()).filter(Boolean).slice(0, 8);
         } catch {
-          terms = response.data.result.split(/[;,\\n]/).map((value) => value.replace(/^[0-9.\\s-]+/, '').trim()).filter(Boolean).slice(0, 8);
+          terms = response.data.result.split(/[;,\n]/).map((value) => value.replace(/^[0-9.\s-]+/, '').trim()).filter(Boolean).slice(0, 8);
         }
         if (terms.length) {
           onSearchTerms?.(terms);
