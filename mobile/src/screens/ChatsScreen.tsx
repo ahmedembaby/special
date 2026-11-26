@@ -154,7 +154,7 @@ export default function ChatsScreen() {
               </TouchableOpacity>
             ) : archivedCount > 0 || showArchived ? (
               <TouchableOpacity onPress={() => setShowArchived((v) => !v)} style={{ paddingHorizontal: 20, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 9 }}>
-                <Icon name={showArchived ? (lang === 'ar' ? 'arrowRight' : 'arrowLeft') : 'archive'} size={17} color={c.primary} />
+                <Icon name={showArchived ? 'arrowLeft' : 'archive'} size={17} color={c.primary} />
                 <Text style={{ color: c.primary, fontWeight: '700' }}>{showArchived ? 'Back to chats' : `Archived (${archivedCount})`}</Text>
               </TouchableOpacity>
             ) : undefined
