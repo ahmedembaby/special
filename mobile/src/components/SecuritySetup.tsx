@@ -92,7 +92,11 @@ export const SecuritySetup = ({ mode }: { mode: Mode }) => {
           if (await lock.verifyPin(pin)) {
             if (disable) { await lock.disableLock(); await refresh(); navigation.goBack(); return; }
             setStep('new'); setPin(''); setMsg('');
-          } else { setPin(''); setMsg('Wrong PIN'); }
+          } else {
+            setPin('');
+            const wait = await lock.getPinLockoutSeconds();
+            setMsg(wait > 0 ? `Too many attempts. Try again in ${wait}s` : 'Wrong PIN');
+          }
         } else if (step === 'new') {
           setFirstPin(pin); setPin(''); setStep('confirm'); setMsg('');
         } else if (pin !== firstPin) {
