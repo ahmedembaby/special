@@ -158,6 +158,37 @@ async function logout() {
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('WhatsApp timed out')), ms))]);
 
 /**
+ * Send one text inside the WhatsApp Web page, the way whatsapp-web.js does internally, with two fixes for
+ * current WhatsApp Web builds (LID migration):
+ *  1. The 1:1 chat of a number lives under its @lid id, not under <digits>@c.us. Chat.get(<digits>@c.us)
+ *     finds nothing and the createWid/getNumberId paths throw the opaque "t: t" / "invalid wid" errors.
+ *     So the phone number is resolved to its LID page-side (WAWebApiContact.getCurrentLid).
+ *  2. window.WWebJS.getChat() must return the REAL chat model ({ getAsModel: false }). The default returns a
+ *     plain serialized copy, and sending through it fails with "reading 'enqueue'" of undefined.
+ * Returns { notOnWhatsApp: true } when WhatsApp says the number has no account, otherwise { ok: true }.
+ */
+async function sendViaPage(digits, text) {
+  return client.pupPage.evaluate(async (digits, text) => {
+    const widFactory = window.require('WAWebWidFactory');
+    const contactApi = window.require('WAWebApiContact');
+    const wid = widFactory.createWid(`${digits}@c.us`);
+    let lid = contactApi.getCurrentLid(wid);
+    if (!lid) {
+      try {
+        const found = await window.require('WAWebQueryExistsJob').queryWidExists(wid);
+        if (!found || !found.wid) return { notOnWhatsApp: true };
+        lid = contactApi.getCurrentLid(wid);
+      } catch (e) { /* lookup unavailable: fall back to the phone id below */ }
+    }
+    const target = lid ? lid.toString() : wid.toString();
+    const chat = await window.WWebJS.getChat(target, { getAsModel: false });
+    if (!chat) throw new Error(`chat not found for ${lid ? 'lid' : 'phone'} id`);
+    await window.WWebJS.sendMessage(chat, text, {});
+    return { ok: true, via: lid ? 'lid' : 'phone' };
+  }, digits, text);
+}
+
+/**
  * Send the code. Returns { success, code? }:
  *  NOT_READY, NOT_ON_WHATSAPP, SEND_FAILED when it could not be delivered.
  */
@@ -168,31 +199,32 @@ async function sendOTP(phoneNumber, code) {
   }
   const digits = String(phoneNumber).replace(/\D/g, '');
   const text = `*E-Chat*\n\nرمز التحقق الخاص بك: *${code}*\nYour verification code: *${code}*\n\nصالح لمدة 5 دقائق · Valid for 5 minutes.\nلا تشاركه مع أي شخص · Do not share it with anyone.`;
+  const brief = (err) => String((err && err.message) || err).split('\n')[0];
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      // Resolves the real WhatsApp id (and tells us if the number has WhatsApp at all).
-      // WhatsApp Web updates sometimes break this lookup inside the page (an opaque "t: t" error, e.g. when the
-      // `_serialized` property is renamed). A thrown lookup error is not proof that the number is unregistered,
-      // so in that case fall back to addressing the chat directly instead of failing the whole OTP.
-      let id = null;
-      let lookupFailed = false;
+      let result;
       try {
-        id = await withTimeout(client.getNumberId(digits), 20000);
-      } catch (lookupErr) {
-        lookupFailed = true;
-        console.warn(`WhatsApp: getNumberId failed (${String(lookupErr && lookupErr.message || lookupErr).split('\n')[0]}); sending to ${'*'.repeat(Math.max(digits.length - 2, 0))}${digits.slice(-2)}@c.us directly`);
+        result = await withTimeout(sendViaPage(digits, text), 30000);
+      } catch (pageErr) {
+        // Older / pinned WhatsApp Web builds: the library's own send path may still work there.
+        console.warn(`WhatsApp: page send failed (${brief(pageErr)}); trying client.sendMessage`);
+        try {
+          const id = await withTimeout(client.getNumberId(digits), 20000);
+          if (!id) return { success: false, code: 'NOT_ON_WHATSAPP', message: 'This number is not registered on WhatsApp' };
+          await withTimeout(client.sendMessage(id._serialized || id.$1, text), 20000);
+          result = { ok: true, via: 'client' };
+        } catch (fallbackErr) {
+          throw pageErr;
+        }
       }
-      if (!lookupFailed && !id) return { success: false, code: 'NOT_ON_WHATSAPP', message: 'This number is not registered on WhatsApp' };
-      // `_serialized` may have been renamed to `$1` by WhatsApp Web
-      const chatId = (id && (id._serialized || id.$1)) || `${digits}@c.us`;
-      await withTimeout(client.sendMessage(chatId, text), 20000);
-      console.log(`WhatsApp: OTP sent to +${digits}`);
+      if (result && result.notOnWhatsApp) return { success: false, code: 'NOT_ON_WHATSAPP', message: 'This number is not registered on WhatsApp' };
+      console.log(`WhatsApp: OTP sent to +${digits} (${result && result.via})`);
       return { success: true, message: 'OTP sent via WhatsApp' };
     } catch (err) {
       const detail = err instanceof Error ? (err.stack || err.message) : (typeof err === 'string' ? err : JSON.stringify(err));
       console.error(`WhatsApp send failed (attempt ${attempt}, client status=${status}, state=${await client?.getState?.().catch((e) => `getState error: ${e && e.message}`)}):`, detail);
-      if (attempt === 2) return { success: false, code: 'SEND_FAILED', message: String(err && err.message || err) };
+      if (attempt === 2) return { success: false, code: 'SEND_FAILED', message: brief(err) };
       await new Promise((r) => setTimeout(r, 1500));
     }
   }
