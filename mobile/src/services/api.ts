@@ -226,6 +226,12 @@ export const users = {
   putKeyBackup: (backup: string) => api.put('/users/me/key-backup', { backup }),
   setPublicKey: (public_key: string) => api.put('/users/me/key', { public_key }),
   lookupPhones: (phones: string[]) => api.post<Array<User & { phone_tail: string }>>('/users/lookup-phones', { phones }),
+  updateCover: (formData: FormData) =>
+    api.put<{ cover_image: string }>('/users/cover', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      transformRequest: (data) => data,
+    }),
+  removeCover: () => api.delete('/users/cover'),
   updateAvatar: (formData: FormData) =>
     api.put('/users/avatar', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
