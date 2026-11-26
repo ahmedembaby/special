@@ -4,12 +4,14 @@
  *  - the public key is uploaded to the server so the other person can encrypt for us
  *  - messages are sealed with nacl.box (X25519 + XSalsa20-Poly1305) using the shared key of both parties,
  *    so the sender can read their own messages too
- * Limits: one device per account, no key backup (a reinstall means old encrypted messages are unreadable).
+ * Limits: one device per account. An optional passphrase-protected key backup is stored on the server (see backupKey/restoreKey);
+ * without it a reinstall means old encrypted messages are unreadable.
  */
 import nacl from 'tweetnacl';
 import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import * as api from './api';
+import { scryptAsync } from '../vendor/scrypt';
 
 nacl.setPRNG((x: Uint8Array, n: number) => {
   const bytes = Crypto.getRandomBytes(n);
@@ -121,31 +123,50 @@ export const safetyNumber = (myPublic: string, peerPublic: string): string => {
 
 // ---------- key backup (also lets a second device read the same chats) ----------
 // The secret key is encrypted with a passphrase on the device; the server stores only the unreadable blob.
+// Blob versions (the version and cost parameters travel inside the blob, so old backups keep restoring):
+//   v1:salt:nonce:box              20,000 rounds of SHA-512 (legacy, still readable, never written any more)
+//   v2:N:r:p:salt:nonce:box        scrypt (memory-hard), parameters stored in the blob so the cost can be raised later
 const KDF_ROUNDS = 20000;
-const deriveKey = (passphrase: string, salt: Uint8Array): Uint8Array => {
+const SCRYPT_PARAMS = { N: 2 ** 14, r: 8, p: 1 };
+const deriveKeyV1 = (passphrase: string, salt: Uint8Array): Uint8Array => {
   let h = nacl.hash(new Uint8Array([...utf8(passphrase), ...salt]));
   for (let i = 0; i < KDF_ROUNDS; i++) h = nacl.hash(h);
   return h.slice(0, nacl.secretbox.keyLength);
 };
+const deriveKeyV2 = (passphrase: string, salt: Uint8Array, N: number, r: number, p: number): Promise<Uint8Array> =>
+  scryptAsync(utf8(passphrase), salt, { N, r, p, dkLen: nacl.secretbox.keyLength });
+// Refuse absurd parameters from a tampered blob (they would freeze or crash the phone).
+const sane = (N: number, r: number, p: number) => Number.isInteger(Math.log2(N)) && N >= 2 ** 12 && N <= 2 ** 18 && r >= 1 && r <= 8 && p >= 1 && p <= 4;
 
 export const backupKey = async (userId: string | number, passphrase: string): Promise<void> => {
   const stored = await SecureStore.getItemAsync(secretName(userId));
   if (!stored) throw new Error('no key');
   const salt = nacl.randomBytes(16);
   const nonce = nacl.randomBytes(nacl.secretbox.nonceLength);
-  const box = nacl.secretbox(fromB64(stored), nonce, deriveKey(passphrase, salt));
-  await api.users.putKeyBackup(`v1:${toB64(salt)}:${toB64(nonce)}:${toB64(box)}`);
+  const { N, r, p } = SCRYPT_PARAMS;
+  const box = nacl.secretbox(fromB64(stored), nonce, await deriveKeyV2(passphrase, salt, N, r, p));
+  await api.users.putKeyBackup(`v2:${N}:${r}:${p}:${toB64(salt)}:${toB64(nonce)}:${toB64(box)}`);
 };
 
 /** Returns false when the passphrase is wrong. */
 export const restoreKey = async (userId: string | number, passphrase: string): Promise<boolean> => {
   const { data } = await api.users.getKeyBackup();
-  const [ver, salt, nonce, box] = data.backup.split(':');
-  if (ver !== 'v1') throw new Error('unsupported backup');
-  const secret = nacl.secretbox.open(fromB64(box), fromB64(nonce), deriveKey(passphrase, fromB64(salt)));
+  const parts = String(data.backup).split(':');
+  let secret: Uint8Array | null;
+  if (parts[0] === 'v1' && parts.length === 4) {
+    secret = nacl.secretbox.open(fromB64(parts[3]), fromB64(parts[2]), deriveKeyV1(passphrase, fromB64(parts[1])));
+  } else if (parts[0] === 'v2' && parts.length === 7) {
+    const [N, r, p] = [Number(parts[1]), Number(parts[2]), Number(parts[3])];
+    if (!sane(N, r, p)) throw new Error('unsupported backup');
+    secret = nacl.secretbox.open(fromB64(parts[6]), fromB64(parts[5]), await deriveKeyV2(passphrase, fromB64(parts[4]), N, r, p));
+  } else {
+    throw new Error('unsupported backup');
+  }
   if (!secret) return false;
   await SecureStore.setItemAsync(secretName(userId), toB64(secret));
   forgetKeys();
   await ensureKeys(userId, null);
+  // An old v1 backup is re-saved with the stronger KDF now that we hold the passphrase (best effort, same passphrase).
+  if (parts[0] === 'v1') backupKey(userId, passphrase).catch(() => {});
   return true;
 };

@@ -14,7 +14,8 @@ export default function KeyBackupScreen() {
   const [busy, setBusy] = useState(false);
 
   const run = async (kind: 'backup' | 'restore') => {
-    if (pass.length < 8) return Alert.alert('Passphrase too short', 'Use at least 8 characters.');
+    // Restoring an older backup keeps working with the old 8-character minimum; new backups need 12 because the key derivation is modest.
+    if (pass.length < (kind === 'backup' ? 12 : 8)) return Alert.alert('Passphrase too short', kind === 'backup' ? 'Use at least 12 characters.' : 'Use at least 8 characters.');
     setBusy(true);
     try {
       await new Promise<void>((resolve) => setTimeout(resolve, 50)); // let the spinner render before the CPU-heavy key derivation
@@ -48,7 +49,7 @@ export default function KeyBackupScreen() {
           autoCorrect={false}
           onChangeText={setPass}
           secureTextEntry
-          placeholder="Passphrase (8+ characters)"
+          placeholder="Passphrase (12+ characters for a new backup)"
           placeholderTextColor={c.placeholder}
           style={[styles.input, { color: c.text, borderColor: c.border, backgroundColor: c.card }]}
         />

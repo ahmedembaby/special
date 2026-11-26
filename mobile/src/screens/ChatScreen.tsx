@@ -28,6 +28,7 @@ import { ImageViewer } from '../components/ImageViewer';
 import { CachedImage } from '../components/CachedImage';
 import { onSocket, joinConversation, leaveConversation, emitTyping } from '../services/socket';
 import * as e2ee from '../services/e2ee';
+import { checkPeerKey, acceptPeerKey } from '../services/peerKeys';
 import { OptionSheet, SheetOption } from '../components/OptionSheet';
 import { ReportSheet, ReportTarget } from '../components/ReportSheet';
 import { Linking } from 'react-native';
@@ -179,6 +180,7 @@ export default function ChatScreen() {
   const [menu, setMenu] = useState<null | 'main' | 'mute' | 'disappear' | 'forward' | 'readers'>(null);
   const [meta, setMeta] = useState<{ muted: boolean; disappear: number | null }>({ muted: false, disappear: null });
   const [peerKey, setPeerKey] = useState<string | null>(null);
+  const [keyChanged, setKeyChanged] = useState(false);
   const [myKey, setMyKey] = useState<string | null>(null);
   const [report, setReport] = useState<ReportTarget>(null);
   const [stickerOpen, setStickerOpen] = useState(false);
@@ -285,6 +287,7 @@ export default function ChatScreen() {
       api.conversations.get(conversationId).then((res) => {
         const peer = res.data.participants?.find((p) => String(p.id) === String(header.userId));
         setPeerKey(peer?.public_key || null);
+        Alert.alert('Security key changed', `${header.name} changed their encryption key. Check the safety number with them before sending anything private.`);
       }).catch(() => {});
     });
   }, [conversationId, header.userId]);
@@ -304,6 +307,13 @@ export default function ChatScreen() {
     e2ee.ensureKeys(user.id, user.public_key).then(setMyKey).catch(() => {});
   }, [user?.id]);
   const encryptionOn = !inGroup && !!peerKey && !!myKey;
+  // warn when the contact's key differs from the one we first saw (reinstall, new device, or someone in the middle)
+  useEffect(() => {
+    if (!user?.id || !header.userId || !peerKey) { setKeyChanged(false); return; }
+    let alive = true;
+    checkPeerKey(user.id, header.userId, peerKey).then((state) => { if (alive) setKeyChanged(state === 'changed'); });
+    return () => { alive = false; };
+  }, [user?.id, header.userId, peerKey]);
   // the text of a message (decrypted when needed)
   const textOf = useCallback((m: { content?: string }): string => {
     const content = m.content || '';
@@ -941,7 +951,9 @@ export default function ChatScreen() {
       if (!perm.granted) return Alert.alert('Permission needed', 'Allow location access to share where you are.');
       const pos = await Location.getCurrentPositionAsync({});
       const text = `📍 https://maps.google.com/?q=${pos.coords.latitude.toFixed(5)},${pos.coords.longitude.toFixed(5)}`;
-      const res = await api.messages.send({ conversation_id: conversationId!, content: text });
+      // Direct chats with both keys only accept encrypted text (the server answers 409 otherwise), same as normal messages.
+      const wire = encryptionOn && peerKey ? e2ee.encrypt(peerKey, text) : text;
+      const res = await api.messages.send({ conversation_id: conversationId!, content: wire });
       setMessages((prev) => appendUnique(prev, res.data));
     } catch {
       Alert.alert('Error', 'Could not get your location (needs a build with the location permission).');
@@ -955,7 +967,8 @@ export default function ChatScreen() {
     setStickerOpen(false);
     try {
       const text = `sticker:${emoji}`;
-      const res = await api.messages.send({ conversation_id: conversationId!, content: text, reply_to: replyTo?.id });
+      const wire = encryptionOn && peerKey ? e2ee.encrypt(peerKey, text) : text;
+      const res = await api.messages.send({ conversation_id: conversationId!, content: wire, reply_to: replyTo?.id });
       setMessages((prev) => appendUnique(prev, res.data));
       setReplyTo(null);
     } catch { Alert.alert('Error', 'Could not send the sticker'); }
@@ -999,6 +1012,20 @@ export default function ChatScreen() {
     closeOptions();
     const text = textOf(m);
     const target = /[\u0600-\u06FF]/.test(text) ? 'en' : 'ar';
+    // Translation is done by the server through a third-party service, so an end-to-end encrypted message
+    // would leave its protection. Ask first, once per message.
+    if (String(m.content || '').startsWith('e2ee:')) {
+      const ok = await new Promise<boolean>((resolve) => Alert.alert(
+        'Send this message for translation?',
+        'This message is end-to-end encrypted. To translate it, its text will be sent to the server and to an external translation service. Nothing is sent unless you agree.',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Translate', onPress: () => resolve(true) },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) },
+      ));
+      if (!ok) return;
+    }
     try {
       const r = await api.messages.translate(text, target);
       Alert.alert(target === 'ar' ? 'Translation (Arabic)' : 'Translation (English)', r.data.translation);
@@ -1023,7 +1050,7 @@ export default function ChatScreen() {
     .filter((message) => message.type === 'text' || !message.type)
     .slice(-35)
     .map((message) => (isMine(message.sender_id) ? 'Me' : message.sender_name || 'Participant') + ': ' + textOf(message))
-    .join('\\n')
+    .join('\n')
     .slice(-16000);
 
   const unreadContext = (() => {
@@ -1032,7 +1059,7 @@ export default function ChatScreen() {
     return unread
       .filter((message) => message.type === 'text' || !message.type)
       .map((message) => (isMine(message.sender_id) ? 'Me' : message.sender_name || 'Participant') + ': ' + textOf(message))
-      .join('\\n')
+      .join('\n')
       .slice(-16000);
   })();
 
@@ -1358,6 +1385,24 @@ export default function ChatScreen() {
           <Text style={{ color: TEXT_GRAY_900, fontWeight: '700', fontSize: 16, flex: 1, marginLeft: 14 }}>{selected.length} selected</Text>
           <TouchableOpacity onPress={forwardSelected} style={styles.selectBtn}><Text style={{ color: X_BLUE, fontWeight: '700' }}>↪ Forward</Text></TouchableOpacity>
           <TouchableOpacity onPress={deleteSelected} style={styles.selectBtn}><Text style={{ color: c.danger, fontWeight: '700' }}>🗑 Delete</Text></TouchableOpacity>
+        </View>
+      ) : null}
+
+      {keyChanged && !inGroup ? (
+        <View accessibilityRole="alert" style={{ backgroundColor: c.danger + '1F', borderColor: c.danger, borderWidth: StyleSheet.hairlineWidth, margin: 10, padding: 12, borderRadius: 14, gap: 8 }}>
+          <Text style={{ color: c.danger, fontWeight: '800' }}>{header.name}'s security key changed</Text>
+          <Text style={{ color: TEXT_GRAY_900, fontSize: 13, lineHeight: 19 }}>
+            This happens when they reinstall the app or use a new phone, but it can also mean someone is intercepting the chat. New messages are still encrypted. Compare the safety number with them before sharing anything private.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            <TouchableOpacity onPress={showSafety} accessibilityRole="button"><Text style={{ color: X_BLUE, fontWeight: '700' }}>Check safety number</Text></TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={() => { if (user?.id && header.userId && peerKey) acceptPeerKey(user.id, header.userId, peerKey).then(() => setKeyChanged(false)); }}
+            >
+              <Text style={{ color: TEXT_GRAY_900, fontWeight: '700' }}>I verified it, trust new key</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : null}
 

@@ -3,6 +3,9 @@ const pool = require('../db');
 const rt = require('../services/realtime');
 const kv = require('../services/kv');
 const { publicUser } = require('../utils/format');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const wa = require('../services/whatsapp');
 const { isAdminUser } = require('../middleware/auth');
 
 const router = express.Router();
@@ -108,11 +111,102 @@ router.get('/export', async (req, res) => {
   }
 });
 
-// DELETE /api/safety/account { confirm: 'DELETE' } - permanently removes the account
+// ---- re-verification before deleting the account ----
+// A stolen session or an unlocked phone must not be enough to erase an account. The user proves it is them again with the
+// strongest thing they have: authenticator code (2FA on) > account password (if one exists) > a fresh WhatsApp code to their phone.
+const DELETE_CODE_TTL = 300;
+const DELETE_MAX_ATTEMPTS = 5;
+async function reauthMethod(userId) {
+  const [rows] = await pool.query('SELECT phone, password, totp_enabled, totp_secret FROM users WHERE id = ?', [userId]);
+  const u = rows[0];
+  if (!u) return { method: null };
+  if (u.totp_enabled && u.totp_secret) return { method: 'totp' };
+  if (u.password) return { method: 'password', u };
+  if (u.phone) return { method: 'otp', u };
+  return { method: null };
+}
+const reauthRequired = (res, method) => res.status(401).json({
+  message: 'Confirm it is you before deleting the account. Update the app to the latest version if you do not see a verification step.',
+  reauthRequired: true,
+  method,
+});
+
+// GET /api/safety/account/reauth -> { method: 'totp' | 'password' | 'otp' | null }
+router.get('/account/reauth', async (req, res) => {
+  try { res.json({ method: (await reauthMethod(req.user.id)).method }); }
+  catch { res.status(500).json({ message: 'Could not check verification' }); }
+});
+
+// POST /api/safety/account/code - sends a one-time code to the account's own phone (only used when there is no 2FA/password)
+router.post('/account/code', async (req, res) => {
+  try {
+    const { method, u } = await reauthMethod(req.user.id);
+    if (method !== 'otp') return res.status(400).json({ message: 'A code is not needed for this account' });
+    if (await kv.get(`delete_cooldown:${req.user.id}`)) return res.status(429).json({ message: 'Please wait 30 seconds before requesting another code' });
+    const code = String(crypto.randomInt(1000, 10000));
+    await kv.set(`delete_otp:${req.user.id}`, code, DELETE_CODE_TTL);
+    await kv.del(`delete_attempts:${req.user.id}`);
+    await kv.set(`delete_cooldown:${req.user.id}`, '1', 30);
+    const result = await wa.sendOTP(u.phone, code);
+    if (!result.success) {
+      await kv.del(`delete_otp:${req.user.id}`);
+      await kv.del(`delete_cooldown:${req.user.id}`);
+      return res.status(503).json({ message: 'Could not deliver the verification code right now. Please try again later.' });
+    }
+    res.json({ sent: true });
+  } catch (err) {
+    console.error('delete code:', err.message);
+    res.status(500).json({ message: 'Could not send the code' });
+  }
+});
+
+async function verifyReauth(req, res) {
+  const { method, u } = await reauthMethod(req.user.id);
+  if (!method) {
+    // Every account made through signup or phone login has a password or a phone, so this is only a half-removed or
+    // anonymised account. Fail closed: never erase an account we cannot re-verify. Support can handle it by hand.
+    res.status(403).json({ message: 'This account has no way to verify it is you. Contact support to delete it.', reauthRequired: true, method: null });
+    return false;
+  }
+  if (method === 'totp') {
+    const code = String(req.body.totp || '').trim();
+    if (!code) { reauthRequired(res, method); return false; }
+    const gate = await require('./auth').twoFactorGate(req.user.id, code);
+    if (gate) { res.status(gate.status).json({ ...gate.body, reauthRequired: true, method }); return false; }
+    return true;
+  }
+  const attemptsKey = `delete_attempts:${req.user.id}`;
+  if ((Number(await kv.get(attemptsKey)) || 0) >= DELETE_MAX_ATTEMPTS) {
+    res.status(429).json({ message: 'Too many attempts. Try again later.' });
+    return false;
+  }
+  let ok = false;
+  if (method === 'password') {
+    const pw = String(req.body.password || '');
+    if (!pw) { reauthRequired(res, method); return false; }
+    ok = await bcrypt.compare(pw, u.password);
+  } else {
+    const code = String(req.body.code || '').trim();
+    if (!code) { reauthRequired(res, method); return false; }
+    const stored = await kv.get(`delete_otp:${req.user.id}`);
+    ok = !!stored && stored.length === code.length && crypto.timingSafeEqual(Buffer.from(stored), Buffer.from(code));
+    if (ok) await kv.del(`delete_otp:${req.user.id}`);
+  }
+  if (!ok) {
+    await kv.incr(attemptsKey, 900);
+    res.status(401).json({ message: 'Invalid or expired code', reauthRequired: true, method });
+    return false;
+  }
+  await kv.del(attemptsKey);
+  return true;
+}
+
+// DELETE /api/safety/account { confirm: 'DELETE', totp | password | code } - permanently removes the account
 router.delete('/account', async (req, res) => {
   try {
     if (req.body.confirm !== 'DELETE') return res.status(400).json({ message: 'Type DELETE to confirm' });
     if (isAdminUser(req.user)) return res.status(403).json({ message: 'Admin accounts cannot be deleted from the app' });
+    if (!(await verifyReauth(req, res))) return;
     const id = req.user.id;
     try {
       await pool.query('DELETE FROM users WHERE id = ?', [id]);

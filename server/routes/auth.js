@@ -7,7 +7,7 @@ const pool = require('../db');
 const kv = require('../services/kv');
 const wa = require('../services/whatsapp');
 const sendOTP = wa.sendOTP;
-const { authMiddleware, adminMiddleware, getToken, isAdminUser } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware, getToken, isAdminUser, signMediaToken } = require('../middleware/auth');
 const { JWT_SECRET, JWT_EXPIRES_IN, OTP_DEV_MODE, isProd } = require('../config');
 const { toUser, normalizePhone } = require('../utils/format');
 const totpLib = require('../utils/totp');
@@ -307,6 +307,13 @@ router.post('/logout', authMiddleware, async (req, res) => {
   }
 });
 
+// A token for media URLs only (never the session JWT in a query string). Valid for the life of this session.
+router.get('/media-token', authMiddleware, (req, res) => {
+  if (!req.user.sessionId) return res.status(409).json({ message: 'No session' });
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ token: signMediaToken(req.user.id, req.user.sessionId) });
+});
+
 router.get('/sessions', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT id, device_name, platform, created_at, last_active_at, expires_at, (id = ?) AS is_current FROM device_sessions WHERE user_id = ? AND revoked_at IS NULL AND expires_at > NOW() ORDER BY is_current DESC, last_active_at DESC', [req.user.sessionId || '', req.user.id]);
@@ -342,4 +349,6 @@ router.post('/push/register', authMiddleware, async (req, res) => {
   }
 });
 
+// reused by routes/safety.js to re-verify the authenticator code before destructive actions
+router.twoFactorGate = twoFactorGate;
 module.exports = router;

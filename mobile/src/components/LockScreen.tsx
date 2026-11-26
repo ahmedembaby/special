@@ -5,10 +5,7 @@ import { useAppColors } from '../theme/useAppColors';
 import { useAppLock } from '../context/AppLockContext';
 import { useAuth } from '../context/AuthContext';
 import { Icon } from './Icon';
-import { verifyPin, authenticateBiometric } from '../services/appLock';
-
-const MAX_TRIES = 5;
-const LOCKOUT_S = 30;
+import { verifyPin, authenticateBiometric, getPinLockoutSeconds, getPinTriesLeft, pinSignOutDue } from '../services/appLock';
 
 /** Full-screen overlay shown while the app is locked. */
 export default function LockScreen() {
@@ -18,7 +15,7 @@ export default function LockScreen() {
   const { logout } = useAuth();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
-  const [tries, setTries] = useState(0);
+  const [triesLeft, setTriesLeft] = useState(5);
   const [wait, setWait] = useState(0);
   const inputRef = useRef<any>(null);
 
@@ -28,6 +25,21 @@ export default function LockScreen() {
   }, [settings.biometricEnabled, unlock]);
 
   useEffect(() => { tryBiometric(); }, [tryBiometric]);
+
+  // A lockout survives app restarts: pick it up from the keystore when the screen opens.
+  // 10 wrong PINs in a row (even across restarts) sign the user out. Encrypted-chat keys stay on the device; signing in again with the phone code restores access.
+  const signOutIfDue = useCallback(async () => {
+    if (!(await pinSignOutDue())) return false;
+    await logout().catch(() => {});
+    Alert.alert('Signed out', 'Too many wrong PIN attempts. Sign in again with your phone number. Your encryption key stays on this device.');
+    return true;
+  }, [logout]);
+
+  useEffect(() => {
+    signOutIfDue();
+    getPinLockoutSeconds().then((s) => { if (s > 0) setWait(s); }).catch(() => {});
+    getPinTriesLeft().then(setTriesLeft).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (wait <= 0) return;
@@ -47,8 +59,10 @@ export default function LockScreen() {
     }
     setError(true);
     setPin('');
-    const n = tries + 1;
-    if (n >= MAX_TRIES) { setTries(0); setWait(LOCKOUT_S); } else setTries(n);
+    if (await signOutIfDue()) return;
+    const left = await getPinLockoutSeconds();
+    if (left > 0) setWait(left);
+    setTriesLeft(await getPinTriesLeft());
   };
 
   const forgot = () =>
@@ -69,7 +83,7 @@ export default function LockScreen() {
         <TextInput ref={inputRef} value={pin} onChangeText={onChange} keyboardType="number-pad" maxLength={4} autoFocus caretHidden style={styles.hidden} editable={wait === 0} />
       </TouchableOpacity>
       <Text style={{ color: c.danger, height: 22 }}>
-        {wait > 0 ? `Too many attempts. Try again in ${wait}s` : error ? `Wrong PIN (${MAX_TRIES - tries} tries left)` : ''}
+        {wait > 0 ? `Too many attempts. Try again in ${wait}s` : error ? `Wrong PIN (${triesLeft} tries left)` : ''}
       </Text>
       {settings.biometricEnabled ? (
         <TouchableOpacity onPress={tryBiometric} style={styles.link}>

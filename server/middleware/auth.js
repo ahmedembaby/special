@@ -104,6 +104,25 @@ const isAdminId = async (id) => {
   return roles.length > 0;
 };
 
+// ---- media tokens ----
+// A media token only opens /uploads/chat and /uploads/stories (authenticateToken rejects it for the API and sockets), so it is
+// what the app puts in image/video URLs instead of the full session JWT. It is deterministic per session (no iat/exp, so URLs and
+// the native image cache stay stable) and dies as soon as the session is revoked, expires or the user is banned.
+const signMediaToken = (userId, sessionId) => jwt.sign({ id: userId, jti: sessionId, purpose: 'media' }, JWT_SECRET, { noTimestamp: true });
+async function authenticateMediaToken(token) {
+  if (!token) return null;
+  let decoded;
+  try { decoded = jwt.verify(token, JWT_SECRET); } catch { return null; }
+  if (decoded.purpose !== 'media' || !decoded.jti || !decoded.id) return null;
+  const [rows] = await pool.query(
+    `SELECT u.id, u.banned FROM device_sessions ds JOIN users u ON u.id = ds.user_id
+     WHERE ds.id = ? AND ds.user_id = ? AND ds.revoked_at IS NULL AND ds.expires_at > NOW() LIMIT 1`,
+    [decoded.jti, decoded.id]
+  );
+  if (!rows.length || rows[0].banned) return null;
+  return { id: rows[0].id, sessionId: decoded.jti, media: true };
+}
+
 const adminMiddleware = async (req, res, next) => {
   try {
     if (!req.user) return res.status(403).json({ message: 'Admin access required' });
@@ -121,4 +140,4 @@ const adminMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports = { authMiddleware, adminMiddleware, authenticateToken, isAdminId, isAdminUser, getToken };
+module.exports = { authMiddleware, adminMiddleware, authenticateToken, authenticateMediaToken, signMediaToken, isAdminId, isAdminUser, getToken };

@@ -16,7 +16,7 @@ const errorMonitor = require('./services/errorMonitor');
 process.on('unhandledRejection', (reason) => { errorMonitor.record(reason, 'unhandledRejection'); console.error('🔴 Unhandled Rejection:', reason); });
 process.on('uncaughtException', (err) => { errorMonitor.record(err, 'uncaughtException'); console.error('🔴 Uncaught Exception:', err); });
 
-const { authMiddleware, authenticateToken, getToken } = require('./middleware/auth');
+const { authMiddleware, authenticateToken, authenticateMediaToken, getToken } = require('./middleware/auth');
 const { isParticipant } = require('./services/chat');
 
 const app = express();
@@ -62,33 +62,8 @@ app.use('/uploads', (req, res, next) => {
 });
 // Private media requires a valid session and resource-level authorization.
 const { canAccessChatMedia, canAccessStoryMedia } = require('./services/mediaAccess');
-const authorizePrivateUpload = (kind) => async (req, res, next) => {
-  try {
-    const raw = req.query.t || getToken(req);
-    const user = await authenticateToken(raw);
-    if (!user) return res.status(401).end();
-    const filename = path.basename(req.path);
-    if (!filename || filename !== req.path.slice(1)) return res.status(404).end();
-    const allowed = kind === 'chat'
-      ? await canAccessChatMedia(filename, user.id)
-      : await canAccessStoryMedia(filename, user.id);
-    if (!allowed) return res.status(404).end();
-    // Serve private assets directly so the public static middleware cannot replace
-    // the no-store policy with a cacheable response.
-    return res.sendFile(path.join(uploadsDir, kind, filename), {
-      headers: {
-        'Cache-Control': 'private, no-store',
-        'X-Content-Type-Options': 'nosniff',
-        'Content-Security-Policy': "default-src 'none'; sandbox",
-        'Cross-Origin-Resource-Policy': 'same-site',
-      },
-    }, (err) => {
-      if (err && !res.headersSent) res.status(404).end();
-    });
-  } catch {
-    res.status(404).end();
-  }
-};
+const { makePrivateUploadAuth } = require('./middleware/privateUpload');
+const authorizePrivateUpload = makePrivateUploadAuth({ authenticateToken, authenticateMediaToken, getToken, canAccessChatMedia, canAccessStoryMedia, uploadsDir });
 app.use('/uploads/chat', authorizePrivateUpload('chat'));
 app.use('/uploads/stories', authorizePrivateUpload('stories'));
 app.use('/uploads', express.static(uploadsDir, { fallthrough: true, index: false }));
@@ -165,7 +140,7 @@ app.use((err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: 'File is too large' });
   if (err.type === 'entity.parse.failed') return res.status(400).json({ message: 'Invalid JSON' });
   const status = err.status || (err.name === 'MulterError' ? 400 : 500);
-  if (status >= 500) { errorMonitor.record(err, req.method + ' ' + req.originalUrl); console.error('Unhandled error:', err); }
+  if (status >= 500) { errorMonitor.record(err, req.method + ' ' + String(req.originalUrl).split('?')[0]); console.error('Unhandled error:', err); }
   res.status(status).json({ message: status >= 500 ? 'Internal server error' : err.message });
 });
 

@@ -192,6 +192,8 @@ export const auth = {
   // registrationToken comes from verify-otp for phone numbers that have no account yet
   setName: (data: { registrationToken: string; name: string }) => api.post('/auth/set-name', data),
   logout: () => api.post('/auth/logout'),
+  // a token that only opens chat/story media, used in image URLs instead of the session token
+  mediaToken: () => api.get<{ token: string }>('/auth/media-token'),
   twoFactorStatus: () => api.get<{ enabled: boolean }>('/auth/2fa'),
   twoFactorSetup: () => api.post<{ secret: string; otpauthUrl: string }>('/auth/2fa/setup'),
   twoFactorEnable: (code: string) => api.post<{ enabled: boolean }>('/auth/2fa/enable', { code }),
@@ -337,5 +339,8 @@ export const safety = {
   report: (type: 'user' | 'post' | 'comment' | 'message' | 'story', id: string | number, reason: string, details?: string) =>
     api.post('/safety/report', { type, id: Number(id), reason, details }),
   exportData: () => api.get('/safety/export'),
-  deleteAccount: () => api.delete('/safety/account', { data: { confirm: 'DELETE' } }),
+  // proof it is the owner: authenticator code (totp), password, or the WhatsApp code (code)
+  deleteAccount: (proof?: { totp?: string; password?: string; code?: string }) => api.delete('/safety/account', { data: { confirm: 'DELETE', ...proof } }),
+  deleteAccountReauth: () => api.get<{ method: 'totp' | 'password' | 'otp' | null }>('/safety/account/reauth'),
+  deleteAccountCode: () => api.post<{ sent: boolean }>('/safety/account/code'),
 };

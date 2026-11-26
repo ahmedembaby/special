@@ -92,7 +92,6 @@ export default function SettingsScreen() {
         <Row icon="trash" title={t('Delete account')} danger onPress={() => nav.navigate('DeleteAccount')} />
         <Row icon="file" title={t('Terms of Service')} onPress={() => nav.navigate('Terms', { title: 'Term of Service' })} />
         <Row icon="help" title="About app" onPress={() => nav.navigate('Terms', { title: 'About App' })} />
-        <Row icon="help" title="Help Center" />
 
         <View style={[styles.sep, { backgroundColor: c.border }]} />
         <Row

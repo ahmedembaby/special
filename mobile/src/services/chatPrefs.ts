@@ -6,8 +6,11 @@ const safe = async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => { try 
 // ---- drafts ----
 const dKey = (id: string | number) => `draft:${id}`;
 export const getDraft = (id: string | number) => safe(async () => (await AsyncStorage.getItem(dKey(id))) || '', '');
+// After logout/401 the composer's debounced save may still fire once; it must not write a draft back to the wiped storage.
+let draftsBlocked = false;
+export const enableChatPrefs = () => { draftsBlocked = false; };
 export const setDraft = (id: string | number, text: string) =>
-  safe(async () => { if (text.trim()) await AsyncStorage.setItem(dKey(id), text); else await AsyncStorage.removeItem(dKey(id)); }, undefined);
+  safe(async () => { if (draftsBlocked) return; if (text.trim()) await AsyncStorage.setItem(dKey(id), text); else await AsyncStorage.removeItem(dKey(id)); }, undefined);
 export const getDrafts = (ids: Array<string | number>) =>
   safe(async () => {
     const rows = await AsyncStorage.multiGet(ids.map(dKey));
@@ -15,6 +18,13 @@ export const getDrafts = (ids: Array<string | number>) =>
     rows.forEach(([k, v], i) => { if (v) out[String(ids[i])] = v; });
     return out;
   }, {} as Record<string, string>);
+
+/** Logout: drafts are plain text and not tied to an account, so drop them with the session. Chat themes go too. */
+export const clearChatPrefs = () => safe(async () => {
+  draftsBlocked = true;
+  const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith('draft:') || k.startsWith('chat_theme:'));
+  if (keys.length) await AsyncStorage.multiRemove(keys);
+}, undefined);
 
 // ---- theme ----
 export interface ChatTheme { wallpaper: string | null; bubble: string | null }
