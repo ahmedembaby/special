@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { useOfflineQueue } from '../hooks/useOfflineMutation';
 import { Colors } from '../theme';
+import { Icon } from './Icon';
 
 export function OfflineIndicator() {
   const { queue, isOnline, pendingCount } = useOfflineQueue();
@@ -39,13 +40,13 @@ export function OfflineIndicator() {
       <View style={styles.content}>
         {!isOnline && (
           <>
-            <Text style={styles.icon}>📴</Text>
+            <Icon name="wifiOff" size={16} color="#FFFFFF" />
             <Text style={styles.text}>You're offline</Text>
           </>
         )}
         {pendingCount > 0 && isOnline && (
           <>
-            <Text style={styles.icon}>🔄</Text>
+            <Icon name="refresh" size={16} color="#FFFFFF" />
             <Text style={styles.text}>Syncing {pendingCount} change{pendingCount > 1 ? 's' : ''}...</Text>
           </>
         )}
