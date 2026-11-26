@@ -7,6 +7,42 @@ const TITLES = { rlog: 'سجل قرارات البلاغات', appeals: 'الا�
 const ROLE_LABEL = { owner: 'مالك', admin: 'مدير', moderator: 'مشرف محتوى', support: 'دعم فني' };
 
 /* ---------- helpers ---------- */
+/* Inline SVG icon set (stroke = currentColor, so it follows theme + active states). */
+const ICONS = {
+  'grid': '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  'user': '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>',
+  'users': '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.7c2.8.2 5 1.8 5.5 4.8"/>',
+  'doc': '<path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7M15 3v4h4"/>',
+  'story': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/>',
+  'badge': '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',
+  'flag': '<path d="M5 21V4"/><path d="M5 4c4-2 8 2 14 0v9c-6 2-10-2-14 0"/>',
+  'list': '<path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/>',
+  'rotate': '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
+  'chat': '<path d="M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V5a1 1 0 0 1 1-1z"/>',
+  'device': '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18.5h2"/>',
+  'mega': '<path d="M3 10v4l3 .5v-5z"/><path d="M6 9.5 18 5v14L6 13.5"/><path d="M8.5 14.5v4a1.5 1.5 0 0 0 3 0v-3.7"/>',
+  'target': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>',
+  'db': '<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  'slash': '<circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/>',
+  'key': '<circle cx="8" cy="14" r="4"/><path d="M11 11l8-8"/><path d="M15 7l3 3M18 4l2 2"/>',
+  'shield': '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><circle cx="12" cy="10" r="2.2"/><path d="M8.8 16.2c.7-1.9 1.9-2.8 3.2-2.8s2.5.9 3.2 2.8"/>',
+  'sparkle': '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9z"/>',
+  'zap': '<path d="M13 2 4 14h6l-1 8 9-12h-6z"/>',
+  'warn': '<path d="M12 3 1.8 20.2h20.4z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.2" r=".6"/>',
+  'refresh': '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 3v4h-4"/>',
+  'clock': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  'calendar': '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  'calendar-check': '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15.5l2 2 4-4"/>',
+  'mail': '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/>',
+  'phone': '<path d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+  'image': '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.7" cy="10" r="1.5"/><path d="M21 15.5 15.5 10 6 19"/>',
+  'user-plus': '<circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c.5-3.5 3-5.5 6.5-5.5 2 0 3.8.6 5 1.9"/><path d="M18.5 8v6M15.5 11h6"/>',
+  'contrast': '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>',
+  'menu': '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  'logout': '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/>'
+};
+const icon = (name, size = 18) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = (v) => Number(v || 0).toLocaleString('en-US');
 const when = (v) => {
@@ -178,9 +214,9 @@ async function overview() {
   const [s, system] = await Promise.all([api(`/admin/stats?days=${state.days}`), api('/admin/system')]);
   $('#reportBadge').textContent = num(s.openReports);
   const cards = [
-    ['إجمالي المستخدمين', s.totalUsers, '♙', 'users'], ['النشطون يومياً', s.activeUsers?.daily, '◉', null], ['النشطون أسبوعياً', s.activeUsers?.weekly, '◷', null], ['النشطون شهرياً', s.activeUsers?.monthly, '◫', null],
-    ['الرسائل', s.totalMessages, '✉', null], ['المحادثات', s.totalConversations, '▣', 'conversations'], ['المكالمات اليوم', s.callsToday, '☎', null], ['ملفات الوسائط', s.media?.files, '▤', null],
-    ['المنشورات', s.totalPosts, '▥', 'posts'], ['المجموعات', s.totalGroups, '♧', 'groups'], ['مستخدمون جدد اليوم', s.newUsersToday, '＋', null], ['بلاغات مفتوحة', s.openReports, '⚑', 'reports'],
+    ['إجمالي المستخدمين', s.totalUsers, 'user', 'users'], ['النشطون يومياً', s.activeUsers?.daily, 'clock', null], ['النشطون أسبوعياً', s.activeUsers?.weekly, 'calendar', null], ['النشطون شهرياً', s.activeUsers?.monthly, 'calendar-check', null],
+    ['الرسائل', s.totalMessages, 'mail', null], ['المحادثات', s.totalConversations, 'chat', 'conversations'], ['المكالمات اليوم', s.callsToday, 'phone', null], ['ملفات الوسائط', s.media?.files, 'image', null],
+    ['المنشورات', s.totalPosts, 'doc', 'posts'], ['المجموعات', s.totalGroups, 'users', 'groups'], ['مستخدمون جدد اليوم', s.newUsersToday, 'user-plus', null], ['بلاغات مفتوحة', s.openReports, 'flag', 'reports'],
   ];
   const ranges = [7, 14, 30, 90].map((d) => `<button class="seg ${state.days === d ? 'active' : ''}" data-act="range" data-id="${d}">${d} يوم</button>`).join('');
   const attention = [
@@ -188,7 +224,7 @@ async function overview() {
     ['حسابات محظورة', s.bannedUsers, s.bannedUsers > 0 ? 'users' : null, ''],
     ['مستخدمون متصلون الآن', s.onlineUsers, null, 'green'],
   ].map((x) => `<div class="quick-row"><span>${x[0]}</span><div class="row-end">${x[2] ? btn('go', x[2], 'فتح', 'ghost') : ''}${pill(num(x[1]), x[3])}</div></div>`).join('');
-  shell(`<div class="grid stats-grid">${cards.map((c) => `<div class="stat-card ${c[3] ? 'clickable' : ''}" ${c[3] ? `data-act="go" data-id="${c[3]}" role="button" tabindex="0"` : ''}><div class="stat-head">${c[0]}<span class="stat-icon">${c[2]}</span></div><div class="stat-value">${num(c[1])}</div><div class="stat-foot">${c[3] ? 'اضغط للفتح' : 'إحصائية مباشرة من قاعدة البيانات'}</div></div>`).join('')}</div>
+  shell(`<div class="grid stats-grid">${cards.map((c) => `<div class="stat-card ${c[3] ? 'clickable' : ''}" ${c[3] ? `data-act="go" data-id="${c[3]}" role="button" tabindex="0"` : ''}><div class="stat-head">${c[0]}<span class="stat-icon">${icon(c[2], 20)}</span></div><div class="stat-value">${num(c[1])}</div><div class="stat-foot">${c[3] ? 'اضغط للفتح' : 'إحصائية مباشرة من قاعدة البيانات'}</div></div>`).join('')}</div>
   <div class="toolbar"><h2>النشاط خلال الفترة</h2><div class="seg-group">${ranges}</div></div>
   <div class="grid overview-grid"><section class="panel"><div class="panel-head"><div><h2>نشاط الرسائل</h2><p>آخر ${s.days} يوم</p></div>${pill('مباشر', 'green')}</div>${chart(s.activity.messages, 'مخطط الرسائل')}</section>
   <section class="panel"><div class="panel-head"><h2>تحتاج انتباهك</h2></div><div class="quick-list">${attention}${[['رسائل اليوم', s.messagesToday], ['مكالمات اليوم', s.callsToday], ['حجم الوسائط', ((Number(s.media?.bytes || 0) / 1048576).toFixed(1)) + ' MB']].map((x) => `<div class="quick-row"><span>${x[0]}</span><b>${typeof x[1] === 'string' ? x[1] : num(x[1])}</b></div>`).join('')}</div></section></div>
@@ -341,7 +377,7 @@ async function broadcastPage() {
   ]);
   const pct = stats.total ? Math.round((stats.withToken / stats.total) * 100) : 0;
   const rows = history.map((h) => `<tr><td><b>${esc(h.title)}</b><small class="muted block">${esc((h.body || '').slice(0, 90))}</small></td><td>${num(h.recipients)}<small class="muted block">${num(h.push_capable)} يستقبلون Push</small></td><td>${num(h.read_count)} <small class="muted">(${h.recipients ? Math.round((h.read_count / h.recipients) * 100) : 0}%)</small></td><td>${wl(h.created_at)}</td><td>${btn('rebroadcast', h.broadcast_id, 'إعادة استخدام', 'ghost', `data-title="${esc(h.title)}" data-body="${esc(h.body)}"`)}</td></tr>`).join('');
-  shell(`<div class="grid stats-grid"><div class="stat-card"><div class="stat-head">الحسابات الفعّالة<span class="stat-icon">♙</span></div><div class="stat-value">${num(stats.total)}</div><div class="stat-foot">ستصلها الإشعارات داخل التطبيق</div></div><div class="stat-card"><div class="stat-head">أجهزة تستقبل الإشعارات<span class="stat-icon">◉</span></div><div class="stat-value">${num(stats.withToken)}</div><div class="stat-foot">${pct}% من الحسابات لديها جهاز مسجّل</div></div></div>
+  shell(`<div class="grid stats-grid"><div class="stat-card"><div class="stat-head">الحسابات الفعّالة<span class="stat-icon">${icon('user', 20)}</span></div><div class="stat-value">${num(stats.total)}</div><div class="stat-foot">ستصلها الإشعارات داخل التطبيق</div></div><div class="stat-card"><div class="stat-head">أجهزة تستقبل الإشعارات<span class="stat-icon">${icon('device', 20)}</span></div><div class="stat-value">${num(stats.withToken)}</div><div class="stat-foot">${pct}% من الحسابات لديها جهاز مسجّل</div></div></div>
   <div class="grid overview-grid"><section class="panel"><div class="panel-head"><div><h2>إرسال إشعار</h2><p>يصل داخل التطبيق فوراً، وكإشعار دفع للأجهزة المسجّلة.</p></div></div>
   <form id="broadcastForm"><div class="field"><label>الجمهور <small class="muted" id="audienceCount"></small></label><select name="audience"><option value="all">كل المستخدمين</option><option value="active7">النشطون خلال 7 أيام</option><option value="active30">النشطون خلال 30 يوماً</option><option value="users">مستخدمون محددون (بالمعرّف)</option></select></div>
   <div class="field hidden" id="idsField"><label>معرّفات المستخدمين (مفصولة بفاصلة)</label><input name="ids" placeholder="12, 40, 77" inputmode="numeric"></div>
