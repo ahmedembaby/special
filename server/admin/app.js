@@ -60,7 +60,7 @@ function setLive(ok) {
 
 /* ---------- UI building blocks ---------- */
 const shell = (html) => { $('#pageContent').innerHTML = html; };
-const table = (headers, rows) => `<div class="table-wrap"><table><thead><tr>${headers.map((x) => `<th>${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
+const table = (headers, rows) => `<div class="table-wrap"><table><thead><tr>${headers.map((x, i) => `<th data-sort="${i}" title="اضغط للترتيب حسب هذا العمود">${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
 const pill = (text, kind = '') => `<span class="pill ${kind}">${esc(text)}</span>`;
 const toolbar = (title, actions = '') => `<div class="toolbar"><h2>${title}</h2><div class="toolbar-actions">${actions}</div></div>`;
 const userCell = (u) => `<div class="user-cell"><div class="avatar">${esc((u.name || '?').slice(0, 1))}</div><div><b>${esc(u.name)}</b><small>@${esc(u.username || '—')}</small></div></div>`;
@@ -535,6 +535,34 @@ async function settleReport(id, status, deleteContent, banUser, title, message) 
   await post(`/admin/reports/${id}/resolve`, { status, delete_content: deleteContent, banned_user: !!banUser, note: v ? v.note : '' });
   toast('تم تحديث البلاغ'); reload();
 }
+
+/* Sortable column headers: sorts the rows currently shown on screen (the loaded page only). */
+const cellSortKey = (td) => {
+  const t = (td ? td.textContent : '').trim();
+  if (/^[\s\d.,%$+\-]*$/.test(t)) {
+    const m = t.match(/-?[\d,]+(\.\d+)?/);
+    if (m) return Number(m[0].replace(/,/g, ''));
+  }
+  return t;
+};
+document.addEventListener('click', (e) => {
+  const th = e.target.closest('th[data-sort]');
+  if (!th) return;
+  const tableEl = th.closest('table');
+  const tbody = tableEl && tableEl.tBodies[0];
+  if (!tbody || tbody.rows.length < 2) return;
+  const col = Number(th.dataset.sort);
+  const dir = th.classList.contains('sort-asc') ? -1 : 1;
+  $$('th', tableEl).forEach((h) => h.classList.remove('sort-asc', 'sort-desc'));
+  th.classList.add(dir === 1 ? 'sort-asc' : 'sort-desc');
+  const sorted = Array.from(tbody.rows).sort((r1, r2) => {
+    const a = cellSortKey(r1.cells[col]);
+    const b = cellSortKey(r2.cells[col]);
+    if (typeof a === 'number' && typeof b === 'number') return (a - b) * dir;
+    return String(a).localeCompare(String(b), 'ar') * dir;
+  });
+  sorted.forEach((r) => tbody.appendChild(r));
+});
 
 document.addEventListener('click', async (e) => {
   const el = e.target.closest('[data-act]');

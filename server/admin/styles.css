@@ -101,6 +101,10 @@ th{background:var(--surface-2);color:var(--muted);font-weight:900;text-align:rig
 th:first-child{border-top-right-radius:var(--radius)}th:last-child{border-top-left-radius:var(--radius)}
 td{padding:14px 16px;border-top:1px solid var(--line);vertical-align:middle;color:var(--text)}
 tbody tr{transition:background .15s}tbody tr:hover{background:var(--surface-2)}
+th[data-sort]{cursor:pointer;user-select:none}
+th[data-sort]:hover{color:var(--primary)}
+th.sort-asc:after{content:' ▲';font-size:8px}
+th.sort-desc:after{content:' ▼';font-size:8px}
 .user-cell{display:flex;align-items:center;gap:10px}.user-cell .avatar{width:34px;height:34px;font-size:11px}
 .user-cell b,.user-cell small{display:block}.user-cell b{font-size:12px}.user-cell small{color:var(--muted);font-size:10px;margin-top:3px}
 .actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.btn.tiny{padding:7px 10px;font-size:10px;border-radius:9px}
