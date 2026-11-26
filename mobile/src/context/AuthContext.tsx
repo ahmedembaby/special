@@ -9,6 +9,7 @@ import { connectSocket, disconnectSocket } from '../services/socket';
 import { startOutbox, stopOutbox } from '../services/outbox';
 import { queryClient } from '../providers/QueryProvider';
 import { offlineQueue } from '../utils/offlineQueue';
+import { clearChatPrefs } from '../services/chatPrefs';
 
 export interface User {
   id?: string | number;
@@ -94,6 +95,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await Promise.all([SecureStore.deleteItemAsync('echat_token'), AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token'])]);
     queryClient.clear(); // never show the previous account's cached data
     cacheClear();
+    clearChatPrefs();
     setMediaToken(null);
     setUser(null);
     setToken(null);
@@ -124,6 +126,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       Promise.all([SecureStore.deleteItemAsync('echat_token'), AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token'])]).catch(() => {});
       setMediaToken(null);
       cacheClear();
+      clearChatPrefs();
       queryClient.clear();
       setUser(null);
       setToken(null);
