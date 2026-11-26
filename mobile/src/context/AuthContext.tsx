@@ -38,6 +38,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+
+const MEDIA_KEY = 'echat_media_token';
+/**
+ * Image/video URLs carry a media-only token (see server /auth/media-token), never the session JWT.
+ * The stored token is used immediately; if there is none (first run after the update, or an older server) the session token is
+ * the fallback so media keeps loading. wait=true (login) gives the server up to 2.5s to answer before the first screen renders.
+ */
+const refreshMediaToken = async (sessionToken: string, wait: boolean) => {
+  const stored = await SecureStore.getItemAsync(MEDIA_KEY).catch(() => null);
+  setMediaToken(stored || sessionToken);
+  const fetchIt = api.auth.mediaToken().then(async (r) => {
+    const mt = r.data && r.data.token;
+    if (mt && mt !== stored) { await SecureStore.setItemAsync(MEDIA_KEY, mt).catch(() => {}); setMediaToken(mt); }
+  }).catch(() => { /* older server or offline: keep what we have */ });
+  if (wait && !stored) await Promise.race([fetchIt, new Promise<void>((r) => setTimeout(r, 2500))]);
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -55,7 +72,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!secureToken && legacyToken) await SecureStore.setItemAsync('echat_token', legacyToken);
         if (legacyToken) await AsyncStorage.removeItem('echat_token');
         if (t) {
-          setMediaToken(t);
+          await refreshMediaToken(t, false);
           setToken(t);
           setUser(u ? JSON.parse(u) : null);
           // Refresh the profile in the background (a 401 here logs out through the interceptor)
@@ -82,7 +99,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Fresh login: force the device token to be sent again for this account (see PushNavigationHandler)
     await AsyncStorage.removeItem('push_token').catch(() => {});
     queryClient.clear();
-    setMediaToken(newToken);
+    await SecureStore.deleteItemAsync(MEDIA_KEY).catch(() => {});
+    await refreshMediaToken(newToken, true);
     setUser(userData || null);
     setToken(newToken);
   }, []);
@@ -92,7 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await offlineQueue.deactivate({ clearStored: true });
     // Invalidate the token on the server (best effort) before dropping it locally
     try { await api.auth.logout(); } catch { /* offline or already invalid */ }
-    await Promise.all([SecureStore.deleteItemAsync('echat_token'), AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token'])]);
+    await Promise.all([SecureStore.deleteItemAsync('echat_token'), SecureStore.deleteItemAsync(MEDIA_KEY).catch(() => {}), AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token'])]);
     queryClient.clear(); // never show the previous account's cached data
     cacheClear();
     clearChatPrefs();
@@ -123,7 +141,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // On 401 the token is already invalid: just drop the local session (no server call)
     const handler = () => {
       offlineQueue.deactivate().catch(() => {}); // stop replay; the account's stored queue stays for its next login
-      Promise.all([SecureStore.deleteItemAsync('echat_token'), AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token'])]).catch(() => {});
+      Promise.all([SecureStore.deleteItemAsync('echat_token'), SecureStore.deleteItemAsync(MEDIA_KEY).catch(() => {}), AsyncStorage.multiRemove(['echat_token', 'echat_user', 'push_token'])]).catch(() => {});
       setMediaToken(null);
       cacheClear();
       clearChatPrefs();
