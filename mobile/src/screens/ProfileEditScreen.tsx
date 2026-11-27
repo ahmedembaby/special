@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, StyleSheet, ActivityIndicator, Image, KeyboardAvoidingView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
@@ -110,7 +110,7 @@ export default function ProfileEditScreen() {
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: c.background }]}>
+    <KeyboardAvoidingView style={[styles.root, { backgroundColor: c.background }]} behavior="padding">
       <ScreenHeader title="Edit profile" onBack={() => nav.goBack()} rightText="Save" onRightPress={save} />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24, gap: 14 }}>
         <View>
@@ -141,7 +141,7 @@ export default function ProfileEditScreen() {
         <Field label="Bio" value={bio} onChange={setBio} multiline />
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
