@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAppColors } from '../theme/useAppColors';
 import { resolveUrl } from '../config';
@@ -91,7 +91,7 @@ export const StoriesBar = ({ meId, meAvatar, meName }: { meId: string; meAvatar?
         {others.map(({ g, idx }) => bubble(g.user.avatar, g.user.name, g.all_seen ? c.border : c.primary, () => setOpen(idx), false, g.user.id))}
       </ScrollView>
       <Modal visible={composerOpen} transparent animationType="slide" onRequestClose={() => setComposerOpen(false)}>
-        <View style={styles.modalShade}>
+        <KeyboardAvoidingView style={styles.modalShade} behavior="padding">
           <View style={[styles.composer, { backgroundColor: c.card, borderColor: c.border }]}>
             <View style={styles.composerHead}>
               <Text style={{ color: c.text, fontSize: 18, fontWeight: '800' }}>Create a story</Text>
@@ -111,7 +111,7 @@ export const StoriesBar = ({ meId, meAvatar, meName }: { meId: string; meAvatar?
               <TouchableOpacity onPress={publishText} disabled={!storyText.trim() || uploading} style={[styles.actionBtn, { backgroundColor: c.primary, opacity: !storyText.trim() || uploading ? 0.5 : 1 }]}><Text style={{ color: '#fff', fontWeight: '800' }}>Publish text</Text></TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
       {open !== null ? <StoryViewer groups={groups} startGroup={open} meId={meId} onClose={() => { setOpen(null); load(); }} /> : null}
     </View>
