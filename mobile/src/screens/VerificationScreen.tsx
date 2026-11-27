@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as api from '../services/api';
 import { useAppColors } from '../theme/useAppColors';
@@ -30,7 +31,8 @@ export default function VerificationScreen() {
   const pending = status?.request?.status === 'pending';
   const rejected = status?.request?.status === 'rejected';
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <View style={[styles.header, { borderBottomColor: c.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Icon name="arrowLeft" size={24} color={c.text} /></TouchableOpacity>
@@ -68,6 +70,7 @@ export default function VerificationScreen() {
           </>
         )}
       </ScrollView>
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
