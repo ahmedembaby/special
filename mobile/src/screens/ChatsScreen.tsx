@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { cacheGet, cacheSet } from '../services/cache';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Modal, Pressable, StyleSheet, StatusBar, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as api from '../services/api';
 import { useAppColors } from '../theme/useAppColors';
@@ -16,6 +17,7 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 
 /** "Messages" tab — same data as before (your chat backend), restyled like X DMs. */
 export default function ChatsScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation() as any;
   const { c, isDark } = useAppColors();
   const { t, lang } = useI18n();
@@ -201,7 +203,7 @@ export default function ChatsScreen() {
 
       <Modal visible={menu} transparent animationType="fade" onRequestClose={() => setMenu(false)}>
         <Pressable style={[styles.backdrop, { backgroundColor: c.overlay }]} onPress={() => setMenu(false)} />
-        <View style={[styles.sheet, { backgroundColor: c.card }]}>
+        <View style={[styles.sheet, { backgroundColor: c.card, paddingBottom: 30 + insets.bottom }]}>
           <View style={[styles.grab, { backgroundColor: c.border }]} />
           {[
             { icon: 'userPlus' as const, label: 'New message', to: 'ContactScreen' },
