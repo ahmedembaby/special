@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAppColors } from '../theme/useAppColors';
 import { useMe } from '../hooks/useMe';
@@ -13,7 +13,7 @@ export default function ComposeScreen() {
   const route = useRoute() as any;
   const quote: social.Post | undefined = route.params?.quote;
   return (
-    <View style={[styles.root, { backgroundColor: c.background }]}>
+    <KeyboardAvoidingView style={[styles.root, { backgroundColor: c.background }]} behavior="padding">
       <ScreenHeader title={quote ? 'Quote post' : 'New post'} onBack={() => nav.goBack()} />
       <PostComposer
         me={me}
@@ -24,7 +24,7 @@ export default function ComposeScreen() {
           nav.goBack();
         }}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
