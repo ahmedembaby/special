@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import { SafeAreaView, View, Text, TouchableOpacity, StatusBar, Switch, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, Switch, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Typography, Spacing, BorderRadius } from '../theme/index';
 import { useAppColors } from '../theme/useAppColors';
@@ -27,7 +28,7 @@ export default function SecurityScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={['left', 'right']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <ScreenHeader title="Security" onBack={() => navigation.goBack()} />
       <View style={styles.list}>
