@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, KeyboardAvoidingView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppColors } from '../theme/useAppColors';
 import { useAuth } from '../context/AuthContext';
@@ -43,7 +43,7 @@ export default function DeleteAccountScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.background }}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.background }} behavior="padding">
       <ScreenHeader title="Delete account" onBack={() => nav.goBack()} />
       <View style={{ padding: 20, gap: 14 }}>
         <View style={{ backgroundColor: c.card, borderColor: c.danger, borderWidth: StyleSheet.hairlineWidth, borderRadius: 20, padding: 16, gap: 8 }}>
@@ -82,7 +82,7 @@ export default function DeleteAccountScreen() {
           <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{busy ? 'Deleting…' : 'Delete my account'}</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 const styles = StyleSheet.create({
