@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '../theme/useAppColors';
 import * as api from '../services/api';
 
@@ -7,6 +8,7 @@ type Task = 'summarize' | 'suggest_replies' | 'translate' | 'answer' | 'moderate
 interface Props { visible: boolean; onClose: () => void; context: string; unreadContext?: string; isGroup: boolean; onSearchTerms?: (terms: string[]) => void }
 
 export const AIAssistantSheet = ({ visible, onClose, context, unreadContext = '', isGroup, onSearchTerms }: Props) => {
+  const insets = useSafeAreaInsets();
   const { c } = useAppColors();
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState('');
@@ -67,8 +69,8 @@ export const AIAssistantSheet = ({ visible, onClose, context, unreadContext = ''
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.shade}>
-        <View style={[styles.sheet, { backgroundColor: c.card, borderColor: c.border }]}>
+      <KeyboardAvoidingView style={styles.shade} behavior="padding">
+        <View style={[styles.sheet, { backgroundColor: c.card, borderColor: c.border, paddingBottom: 30 + insets.bottom }]}>
           <View style={styles.header}>
             <View>
               <Text style={{ color: c.text, fontSize: 18, fontWeight: '800' }}>Special AI</Text>
@@ -92,7 +94,7 @@ export const AIAssistantSheet = ({ visible, onClose, context, unreadContext = ''
           {busy ? <ActivityIndicator color={c.primary} style={{ marginVertical: 14 }} /> : null}
           {result ? <ScrollView style={[styles.result, { borderColor: c.border }]}><Text selectable style={{ color: c.text, lineHeight: 22 }}>{result}</Text></ScrollView> : null}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
