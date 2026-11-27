@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ScrollView, KeyboardAvoidingView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppColors } from '../theme/useAppColors';
 import { useAuth } from '../context/AuthContext';
@@ -35,7 +35,7 @@ export default function KeyBackupScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.background }}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.background }} behavior="padding">
       <ScreenHeader title="Encryption key backup" onBack={() => nav.goBack()} />
       <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }}>
         <Text style={{ color: c.text, lineHeight: 22 }}>
@@ -63,7 +63,7 @@ export default function KeyBackupScreen() {
           Restoring replaces this device’s key with the backed-up one. Messages sent while this device had a different key stay unreadable.
         </Text>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 const styles = StyleSheet.create({

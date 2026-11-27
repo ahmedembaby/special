@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import {
-  SafeAreaView, View, FlatList, ActivityIndicator, StatusBar, Platform, AppState, KeyboardAvoidingView, Alert, StyleSheet,
-  TextInput, TouchableOpacity, Text, Modal, PanResponder, ScrollView, I18nManager,
-} from 'react-native';
+import { View, FlatList, ActivityIndicator, StatusBar, Platform, AppState, KeyboardAvoidingView, Alert, StyleSheet, TextInput, TouchableOpacity, Text, Modal, PanResponder, ScrollView, I18nManager } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -79,6 +77,7 @@ const removeReaction = (list: api.MessageReaction[] | undefined, userId: string 
     .filter((x) => x.count > 0);
 
 export default function ChatScreen() {
+  const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const navigation = useNavigation() as any;
   const route = useRoute() as any;
@@ -1313,7 +1312,7 @@ export default function ChatScreen() {
 
   if (!chatAccessReady || (chatLocked && !chatUnlocked)) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: c.background, alignItems: 'center', justifyContent: 'center', padding: 28 }}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: c.background, alignItems: 'center', justifyContent: 'center', padding: 28 }}>
         <Icon name="lock" size={48} color={c.primary} />
         <Text style={{ color: c.text, fontSize: 21, fontWeight: '800', marginTop: 18, marginBottom: 8 }}>Conversation locked</Text>
         <Text style={{ color: c.textSecondary, textAlign: 'center', marginBottom: 22 }}>Authenticate with Face ID or fingerprint to view these messages.</Text>
@@ -1324,7 +1323,8 @@ export default function ChatScreen() {
     );
   }
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: wall }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: wall }]}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <ChatHeader
         name={header.name || ''}
@@ -1813,7 +1813,7 @@ export default function ChatScreen() {
       <ImageViewer uri={viewerUri} onClose={() => setViewerUri(null)} />
       <Modal visible={stickerOpen} transparent animationType="slide" onRequestClose={() => setStickerOpen(false)}>
         <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={() => setStickerOpen(false)} />
-        <View style={{ backgroundColor: c.background, padding: 14, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, paddingBottom: 30 }}>
+        <View style={{ backgroundColor: c.background, padding: 14, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, paddingBottom: 30 + insets.bottom }}>
           {STICKERS.map((e) => (
             <TouchableOpacity key={e} onPress={() => sendSticker(e)} style={{ padding: 6 }}>
               <Text style={{ fontSize: 40 }}>{e}</Text>
@@ -1872,8 +1872,9 @@ export default function ChatScreen() {
       <OptionSheet visible={menu === 'readers'} title={readersInfo?.title || 'Seen by'} options={(readersInfo?.rows || []).map((label) => ({ label, onPress: () => {} }))} onClose={() => setMenu(null)} />
 
       <Modal visible={pollOpen} transparent animationType="slide" onRequestClose={() => setPollOpen(false)}>
-        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setPollOpen(false)} />
-        <View style={[styles.sheetBox, { backgroundColor: c.card }]}>
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end' }} behavior="padding">
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setPollOpen(false)} />
+        <View style={[styles.sheetBox, { position: 'relative', backgroundColor: c.card, paddingBottom: 28 + insets.bottom }]}>
           <Text style={[styles.sheetTitle, { color: TEXT_GRAY_900 }]}>Create a poll</Text>
           <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 360 }}>
             <TextInput value={pollQuestion} onChangeText={setPollQuestion} placeholder="Question" placeholderTextColor={TEXT_GRAY_500} maxLength={200} style={[styles.pollInput, { color: TEXT_GRAY_900, backgroundColor: c.inputBg }]} />
@@ -1889,11 +1890,12 @@ export default function ChatScreen() {
             <TouchableOpacity onPress={createPoll} style={[styles.sheetBtn, { backgroundColor: X_BLUE, flex: 2 }]}><Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Send poll</Text></TouchableOpacity>
           </View>
         </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={themeOpen} transparent animationType="slide" onRequestClose={() => setThemeOpen(false)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setThemeOpen(false)} />
-        <View style={[styles.sheetBox, { backgroundColor: c.card }]}>
+        <View style={[styles.sheetBox, { backgroundColor: c.card, paddingBottom: 28 + insets.bottom }]}>
           <Text style={[styles.sheetTitle, { color: TEXT_GRAY_900 }]}>Chat theme</Text>
           <Text style={[styles.sheetLabel, { color: TEXT_GRAY_500 }]}>Wallpaper</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -1927,6 +1929,7 @@ export default function ChatScreen() {
       </Modal>
       <AIAssistantSheet visible={aiOpen} onClose={() => setAiOpen(false)} context={aiContext} unreadContext={unreadContext} isGroup={inGroup} onSearchTerms={(terms) => { setAiSearchTerms(terms); setMsgSearch(''); setShowSearch(true); setAiOpen(false); }} />
       {isFocused ? <ChatCaptureGuard /> : null}
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, FlatList, TouchableOpacity, TextInput, ActivityIndicator, StatusBar, Alert, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, ActivityIndicator, StatusBar, Alert, StyleSheet, KeyboardAvoidingView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as api from '../services/api';
 import { Header } from '../components/Header';
@@ -54,7 +55,8 @@ export default function GroupChatScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={['left', 'right']}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <Header title="New Group" onBack={() => navigation.goBack()} />
       <View style={[styles.inputWrap, { backgroundColor: c.background }]}>
@@ -110,6 +112,7 @@ export default function GroupChatScreen() {
           {creating ? 'Creating...' : 'Create Group'}
         </Text>
       </TouchableOpacity>
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

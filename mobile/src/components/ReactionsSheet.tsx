@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as social from '../services/social';
 import { Avatar } from './Avatar';
@@ -13,6 +14,7 @@ interface Props {
 
 /** Bottom sheet listing everyone who reacted, filterable by reaction; a tap opens the person's profile. */
 export const ReactionsSheet = ({ kind, id, onClose }: Props) => {
+  const insets = useSafeAreaInsets();
   const { c } = useAppColors();
   const nav = useNavigation() as any;
   const [items, setItems] = useState<social.Reactor[] | null>(null);
@@ -37,7 +39,7 @@ export const ReactionsSheet = ({ kind, id, onClose }: Props) => {
   return (
     <Modal visible={!!id} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, { backgroundColor: c.background }]} onPress={() => {}}>
+        <Pressable style={[styles.sheet, { backgroundColor: c.background, paddingBottom: 24 + insets.bottom }]} onPress={() => {}}>
           <View style={[styles.grab, { backgroundColor: c.border }]} />
           <Text style={[styles.title, { color: c.text }]}>Reactions</Text>
           {counts.size > 1 ? (

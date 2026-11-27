@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '../theme/useAppColors';
 import { Icon } from './Icon';
 
@@ -7,11 +8,12 @@ export interface SheetOption { label: string; onPress: () => void; danger?: bool
 
 /** Bottom sheet with a list of actions. */
 export const OptionSheet = ({ visible, title, options, onClose }: { visible: boolean; title?: string; options: SheetOption[]; onClose: () => void }) => {
+  const insets = useSafeAreaInsets();
   const { c } = useAppColors();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-      <View style={[styles.sheet, { backgroundColor: c.card, borderColor: c.border }]}>
+      <View style={[styles.sheet, { backgroundColor: c.card, borderColor: c.border, paddingBottom: 28 + insets.bottom }]}>
         <View style={[styles.handle, { backgroundColor: c.textMuted }]} />
         {title ? <Text style={[styles.title, { color: c.textSecondary, borderBottomColor: c.border }]}>{title}</Text> : null}
         <ScrollView style={{ maxHeight: 420 }}>

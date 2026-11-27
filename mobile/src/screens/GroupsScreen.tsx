@@ -186,7 +186,7 @@ function CreateGroupModal({ visible, onClose, onCreate, name, onNameChange, desc
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView behavior="padding">
         <View style={styles.modalContainer}>
           <View style={styles.grab} />
           <View style={styles.modalHeader}>

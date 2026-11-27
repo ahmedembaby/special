@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as api from '../services/api';
 import { useAppColors } from '../theme/useAppColors';
@@ -51,7 +52,8 @@ export default function TwoFactorScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={['left', 'right']}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <ScreenHeader title="Two-step verification" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={{ padding: 16 }}>
@@ -80,6 +82,7 @@ export default function TwoFactorScreen() {
           </>
         )}
       </ScrollView>
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

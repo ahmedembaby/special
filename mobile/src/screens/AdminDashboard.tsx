@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import {
-  SafeAreaView, View, Text, TouchableOpacity, ScrollView, StatusBar, StyleSheet, ActivityIndicator,
-  Alert, TextInput, RefreshControl, FlatList, Image,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, StyleSheet, ActivityIndicator, Alert, TextInput, RefreshControl, FlatList, Image, KeyboardAvoidingView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import api from '../services/api';
 import { resolveUrl } from '../config';
@@ -36,7 +34,8 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: c.background }]}>
+    <SafeAreaView style={[s.container, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <View style={[s.header, { borderBottomColor: c.border, flexDirection: lang === 'ar' ? 'row-reverse' : 'row' }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8} style={{ padding: 8 }} accessibilityRole="button" accessibilityLabel="Back">
@@ -53,6 +52,7 @@ export default function AdminDashboard() {
         ))}
       </View>
       {tab === 'overview' ? <Overview c={c} s={s} t={t} /> : tab === 'users' ? <Users c={c} s={s} /> : tab === 'reports' ? <Reports c={c} s={s} /> : tab === 'audit' ? <AuditLog c={c} s={s} /> : <Content c={c} s={s} />}
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

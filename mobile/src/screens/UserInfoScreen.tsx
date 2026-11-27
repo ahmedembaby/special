@@ -54,7 +54,7 @@ export default function UserInfoScreen() {
   const underline = focused ? c.primary : c.text;
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.container, { backgroundColor: c.background }]}>
+    <KeyboardAvoidingView behavior="padding" style={[styles.container, { backgroundColor: c.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <AuthHeader
         title="Register"

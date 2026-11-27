@@ -1,5 +1,6 @@
 import React from 'react';
-import { SafeAreaView, View, Text, ScrollView, TouchableOpacity, StatusBar, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StatusBar, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppColors } from '../theme/useAppColors';
@@ -18,7 +19,7 @@ export default function TermsScreen({ route }: any) {
   const title: string = route?.params?.title || 'Term of Service';
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: c.background, paddingTop: insets.top + 12 }]}>
+    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: c.background, paddingTop: insets.top + 12 }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <View style={styles.top}>
         <TouchableOpacity
@@ -31,7 +32,7 @@ export default function TermsScreen({ route }: any) {
         <Text style={[styles.title, { color: c.text }]}>{title}</Text>
         <View style={styles.back} />
       </View>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 24 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         <Text style={[styles.p, { color: c.text }]}>{P1}</Text>
         <Text style={[styles.p, { color: c.text }]}>{P2}</Text>
       </ScrollView>

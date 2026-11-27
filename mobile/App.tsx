@@ -79,8 +79,17 @@ const DarkNavTheme = mkTheme(DarkTheme, Colors.dark);
 
 const noHeader = { headerShown: false };
 
+// Screens without a tab bar sit under the system navigation bar (edge-to-edge), so give them a bottom inset.
+const useStackPad = (hiddenOnly: boolean) => {
+  const insets = useSafeAreaInsets();
+  return ({ route }: { route: { name: string } }) => ({
+    headerShown: false,
+    cardStyle: { paddingBottom: !hiddenOnly || HIDE_TABBAR.includes(route.name) ? insets.bottom : 0 },
+  });
+};
+
 const HomeStackScreen = () => (
-  <HomeStack.Navigator screenOptions={noHeader}>
+  <HomeStack.Navigator screenOptions={useStackPad(true)}>
     <HomeStack.Screen name="Feed" component={HomeScreen} />
     <HomeStack.Screen name="PostDetail" component={PostDetailScreen} />
   </HomeStack.Navigator>
@@ -96,7 +105,7 @@ const MessagesStackScreen = () => (
 );
 
 const ProfileStackScreen = () => (
-  <ProfileStack.Navigator screenOptions={noHeader}>
+  <ProfileStack.Navigator screenOptions={useStackPad(true)}>
     <ProfileStack.Screen name="ProfileHome" component={ProfileScreen} />
     <ProfileStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
     <ProfileStack.Screen name="Settings" component={SettingsScreen} />
@@ -186,6 +195,8 @@ const MainTabs = () => {
 };
 
 function RootNavigator() {
+  const bottomInset = useSafeAreaInsets().bottom;
+  const padScreens = (skip: string[]) => ({ route }: { route: { name: string } }) => ({ headerShown: false, cardStyle: { paddingBottom: skip.includes(route.name) ? 0 : bottomInset } });
   const { token, loading } = useAuth();
   const { locked, ready } = useAppLock();
   const { darkMode } = useThemeSettings();
@@ -216,7 +227,7 @@ function RootNavigator() {
     <NavigationContainer ref={navigationRef} theme={darkMode ? DarkNavTheme : LightNavTheme}>
       <StatusBar style={darkMode ? 'light' : 'dark'} />
       {token ? (
-        <RootStack.Navigator screenOptions={noHeader}>
+        <RootStack.Navigator screenOptions={padScreens(['Main'])}>
           <RootStack.Screen name="Main" component={MainTabs} />
           <RootStack.Screen name="Search" component={SearchScreen} />
           <RootStack.Screen name="Messages" component={MessagesStackScreen} />
@@ -232,7 +243,7 @@ function RootNavigator() {
           <RootStack.Screen name="Compose" component={ComposeScreen} options={{ presentation: 'modal' }} />
         </RootStack.Navigator>
       ) : (
-        <AuthStack.Navigator screenOptions={noHeader}>
+        <AuthStack.Navigator screenOptions={padScreens(['Welcome'])}>
           <AuthStack.Screen name="Welcome" component={WelcomeScreen} />
           <AuthStack.Screen name="Login" component={LoginScreen} />
           <AuthStack.Screen name="OTP" component={OTPScreen} />

@@ -78,7 +78,7 @@ export default function PostDetailScreen() {
   }, [post?.comments]);
 
   return (
-    <KeyboardAvoidingView style={[styles.root, { backgroundColor: c.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={[styles.root, { backgroundColor: c.background }]} behavior="padding">
       <ScreenHeader title="Post" onBack={() => nav.goBack()} />
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
