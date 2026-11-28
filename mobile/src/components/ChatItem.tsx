@@ -52,7 +52,7 @@ export const ChatItem = ({ item, onPress, draft }: ChatItemProps) => {
 
   return (
     <TouchableOpacity
-      style={[styles.item, { borderBottomColor: c.divider }]}
+      style={[styles.item, { backgroundColor: c.card, borderColor: c.border }]}
       onPress={onPress}
       activeOpacity={0.72}
       accessibilityRole="button"
@@ -61,7 +61,7 @@ export const ChatItem = ({ item, onPress, draft }: ChatItemProps) => {
       <Avatar
         source={item.type === 'group' ? item.avatar : participant.avatar}
         name={name}
-        size={54}
+        size={50}
         status={item.type === 'group' ? undefined : participant.status}
         userId={item.type === 'group' ? undefined : participant.id}
       />
@@ -99,11 +99,14 @@ export const ChatItem = ({ item, onPress, draft }: ChatItemProps) => {
 const styles = StyleSheet.create({
   item: {
     flexDirection: 'row',
-    marginHorizontal: 18,
-    paddingVertical: 15,
+    marginHorizontal: 14,
+    marginVertical: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 22,
     alignItems: 'center',
     gap: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   body: { flex: 1, minWidth: 0, gap: 6 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
