@@ -15,7 +15,7 @@ import { Icon } from '../components/Icon';
 export default function PhoneAuthScreen() {
   const navigation = useNavigation() as any;
   const { c, isDark } = useAppColors();
-  const [country, setCountry] = useState<Country>(COUNTRIES[1]);
+  const [country, setCountry] = useState<Country>(COUNTRIES[0]);
   const [phone, setPhone] = useState('');
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
