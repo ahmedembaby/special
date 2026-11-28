@@ -162,10 +162,12 @@ const MainTabs = () => {
             display: hide ? 'none' : 'flex',
             backgroundColor: c.card,
             borderTopWidth: 0,
+            borderTopLeftRadius: 26,
+            borderTopRightRadius: 26,
             height: 70 + insets.bottom,
             paddingTop: 6,
             paddingBottom: Math.max(insets.bottom, 8),
-            shadowColor: '#10152B',
+            shadowColor: '#14122B',
             shadowOpacity: darkMode ? 0.18 : 0.06,
             shadowRadius: 18,
             shadowOffset: { width: 0, height: -5 },
@@ -176,7 +178,7 @@ const MainTabs = () => {
             const label = t(route.name === 'Messages' ? 'Messages' : route.name);
             return (
               <View style={{ width: '100%', minWidth: 0, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                <View style={{ width: 42, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? c.primaryLight : 'transparent' }}>
+                <View style={{ width: 46, height: 34, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? c.primaryLight : 'transparent' }}>
                   <Icon name={f ? on : off} size={21} color={color} strokeWidth={f ? 2.2 : 1.75} />
                 </View>
                 <Text numberOfLines={1} ellipsizeMode="tail" style={{ width: '100%', textAlign: 'center', fontSize: 10, lineHeight: 13, letterSpacing: 0.1, fontWeight: f ? '800' : '600', color }}>{label}</Text>
