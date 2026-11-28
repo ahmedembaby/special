@@ -41,7 +41,7 @@ export const ChatComposerField = ({ value, onChangeText, placeholder, micProps, 
 };
 
 const styles = StyleSheet.create({
-  mic: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginEnd: 6 },
+  mic: { width: 40, height: 40, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginEnd: 6 },
   input: { flex: 1, fontSize: 16, paddingVertical: 10, paddingHorizontal: 8, backgroundColor: 'transparent', borderWidth: 0, minHeight: 40, maxHeight: 120, textAlignVertical: 'center' },
-  send: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginStart: 8 },
+  send: { width: 42, height: 42, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginStart: 8 },
 });
