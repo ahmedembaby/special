@@ -17,7 +17,7 @@ export const RoundArrowButton = ({
       style={styles.btn}
     >
       <LinearGradient
-        colors={(disabled ? [c.disabledBtn, c.disabledBtn] : [c.primary, c.primary]) as [string, string]}
+        colors={(disabled ? [c.disabledBtn, c.disabledBtn] : [c.gradientStart, c.gradientEnd]) as [string, string]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill as any}
@@ -29,7 +29,7 @@ export const RoundArrowButton = ({
 
 const styles = StyleSheet.create({
   btn: {
-    width: 60, height: 60, borderRadius: 30, overflow: 'hidden',
+    width: 60, height: 60, borderRadius: 22, overflow: 'hidden',
     alignItems: 'center', justifyContent: 'center',
   },
 });
