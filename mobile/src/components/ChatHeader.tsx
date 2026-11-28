@@ -20,21 +20,21 @@ interface Props {
 /** Chat top bar: brand-colour bar with white content in light mode, the plain card bar in dark mode. */
 export const ChatHeader = ({ name, avatarUri, subtitle, statusIcons, online, actions, onBack, onProfile }: Props) => {
   const { c, isDark } = useAppColors();
-  const bar = isDark ? c.card : c.primary;
-  const fg = isDark ? c.text : '#FFFFFF';
-  const sub = isDark ? (online ? c.success : c.textSecondary) : online ? '#D9FFE6' : 'rgba(255,255,255,0.82)';
-  const iconCol = isDark ? c.primary : '#FFFFFF';
-  const btnBg = isDark ? c.surface : 'rgba(255,255,255,0.18)';
+  const bar = c.card;
+  const fg = c.text;
+  const sub = online ? c.success : c.textSecondary;
+  const iconCol = c.primary;
+  const btnBg = c.background;
   return (
     <View style={[styles.header, { backgroundColor: bar, shadowColor: c.shadow, borderBottomColor: c.divider }]}>
-      <TouchableOpacity style={styles.back} onPress={onBack} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Back">
-        <Icon name="arrowLeft" size={24} color={iconCol} />
+      <TouchableOpacity style={[styles.back, { backgroundColor: c.background, borderColor: c.border }]} onPress={onBack} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Back">
+        <Icon name="arrowLeft" size={20} color={c.text} />
       </TouchableOpacity>
       <TouchableOpacity style={styles.info} activeOpacity={onProfile ? 0.7 : 1} onPress={onProfile} accessibilityRole={onProfile ? 'button' : undefined}>
         {avatarUri ? (
           <CachedImage source={{ uri: avatarUri }} style={styles.avatar} />
         ) : (
-          <View style={[styles.avatar, { backgroundColor: isDark ? c.primary : 'rgba(255,255,255,0.28)' }]}>
+          <View style={[styles.avatar, { backgroundColor: c.primary }]}>
             <Text style={styles.initial}>{name ? name.charAt(0).toUpperCase() : 'U'}</Text>
           </View>
         )}
@@ -50,7 +50,7 @@ export const ChatHeader = ({ name, avatarUri, subtitle, statusIcons, online, act
       </TouchableOpacity>
       <View style={styles.actions}>
         {actions.map((a) => (
-          <TouchableOpacity key={a.label} style={[styles.btn, { backgroundColor: btnBg }]} activeOpacity={0.8} onPress={a.onPress} accessibilityRole="button" accessibilityLabel={a.label}>
+          <TouchableOpacity key={a.label} style={[styles.btn, { backgroundColor: btnBg, borderColor: c.border }]} activeOpacity={0.8} onPress={a.onPress} accessibilityRole="button" accessibilityLabel={a.label}>
             <Icon name={a.icon} size={20} color={iconCol} />
           </TouchableOpacity>
         ))}
@@ -61,14 +61,14 @@ export const ChatHeader = ({ name, avatarUri, subtitle, statusIcons, online, act
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 66, marginBottom: 2, borderBottomWidth: StyleSheet.hairlineWidth },
-  back: { padding: 6 },
+  back: { width: 38, height: 38, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1, minWidth: 0, marginStart: 6, flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: 42, height: 42, borderRadius: 21, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginEnd: 10 },
+  avatar: { width: 42, height: 42, borderRadius: 15, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginEnd: 10 },
   initial: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   names: { flex: 1, minWidth: 0 },
-  name: { fontSize: 17, fontWeight: '700' },
+  name: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
   sub: { fontSize: 13, flexShrink: 1 },
   subRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
   actions: { flexDirection: 'row', gap: 8 },
-  btn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  btn: { width: 38, height: 38, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
 });
