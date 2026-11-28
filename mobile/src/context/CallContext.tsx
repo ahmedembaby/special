@@ -295,7 +295,7 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
           <View style={styles.controls}>
             {phase === 'ringing' ? (
               <>
-                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Decline call" style={[styles.btn, styles.endBtn]} onPress={reject}><Icon name="close" size={25} color="#FFFFFF" /></TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Decline call" style={[styles.btn, styles.endBtn]} onPress={reject}><View style={{ transform: [{ rotate: '135deg' }] }}><Icon name="phone" size={25} color="#FFFFFF" /></View></TouchableOpacity>
                 <TouchableOpacity accessibilityRole="button" accessibilityLabel="Accept call" style={[styles.btn, styles.acceptBtn]} onPress={accept}><Icon name="phone" size={25} color="#FFFFFF" /></TouchableOpacity>
               </>
             ) : (
@@ -308,7 +308,7 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
                     <TouchableOpacity accessibilityRole="button" accessibilityLabel={screenSharing ? 'Stop screen sharing' : 'Share screen'} style={[styles.btn, screenSharing && styles.btnOn]} onPress={toggleScreenShare}><Icon name="share" size={23} color="#FFFFFF" /></TouchableOpacity>
                   </>
                 ) : null}
-                <TouchableOpacity accessibilityRole="button" accessibilityLabel="End call" style={[styles.btn, styles.endBtn]} onPress={hangUp}><Icon name="close" size={25} color="#FFFFFF" /></TouchableOpacity>
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="End call" style={[styles.btn, styles.endBtn]} onPress={hangUp}><View style={{ transform: [{ rotate: '135deg' }] }}><Icon name="phone" size={25} color="#FFFFFF" /></View></TouchableOpacity>
               </>
             )}
           </View>
@@ -319,18 +319,18 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#101426', justifyContent: 'space-between', paddingTop: Platform.OS === 'ios' ? 84 : 64, paddingBottom: Platform.OS === 'ios' ? 52 : 38, paddingHorizontal: 22 },
+  screen: { flex: 1, backgroundColor: '#14112E', justifyContent: 'space-between', paddingTop: Platform.OS === 'ios' ? 84 : 64, paddingBottom: Platform.OS === 'ios' ? 52 : 38, paddingHorizontal: 22 },
   top: { alignItems: 'center', gap: 12, paddingTop: 28 },
   avatar: { width: 116, height: 116, borderRadius: 38, borderWidth: 3, borderColor: 'rgba(255,255,255,0.14)' },
-  avatarFallback: { backgroundColor: '#5558D9', alignItems: 'center', justifyContent: 'center' },
+  avatarFallback: { backgroundColor: '#5B4CF0', alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontSize: 44, fontWeight: '800' },
   name: { color: '#fff', fontSize: 28, fontWeight: '800', letterSpacing: -0.6, marginTop: 12 },
   status: { color: 'rgba(235,239,255,0.72)', fontSize: 14, fontWeight: '600', letterSpacing: 0.2 },
   local: { position: 'absolute', top: 58, right: 18, width: 104, height: 152, borderRadius: 22, overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.28)' },
   controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 18, paddingHorizontal: 14, paddingVertical: 18, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.10)' },
-  btn: { width: 58, height: 58, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
-  btnOn: { backgroundColor: '#5558D9' },
-  endBtn: { backgroundColor: '#E54858' },
+  btn: { width: 58, height: 58, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
+  btnOn: { backgroundColor: '#5B4CF0' },
+  endBtn: { backgroundColor: '#EF4444' },
   acceptBtn: { backgroundColor: '#16A878' },
   
 });
