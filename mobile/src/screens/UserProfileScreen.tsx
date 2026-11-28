@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   circle: { position: 'absolute', start: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
   info: { paddingHorizontal: PROFILE.padX, paddingBottom: PROFILE.padBottom },
   avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: PROFILE.avatarOverlap, marginBottom: PROFILE.avatarRowGap },
-  avatarRing: { borderWidth: 4, borderRadius: 48 },
+  avatarRing: { borderWidth: 4, borderRadius: 32 },
   outBtn: { width: PROFILE.actionHeight, height: PROFILE.actionHeight, borderWidth: StyleSheet.hairlineWidth, borderRadius: PROFILE.actionRadius, alignItems: 'center', justifyContent: 'center' },
   followBtn: { borderRadius: PROFILE.actionRadius, paddingHorizontal: 20, height: PROFILE.actionHeight, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: PROFILE.nameSize, fontWeight: '800', letterSpacing: -0.7 },
