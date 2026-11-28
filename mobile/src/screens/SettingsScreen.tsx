@@ -27,22 +27,36 @@ export default function SettingsScreen() {
   const { darkMode, setDarkMode } = useThemeSettings();
 
   const Row = ({ icon, title, sub, onPress, right, danger }: { icon: IconName; title: string; sub?: string; onPress?: () => void; right?: React.ReactNode; danger?: boolean }) => (
-    <TouchableOpacity style={[styles.row, { backgroundColor: c.card, borderColor: c.border, borderWidth: StyleSheet.hairlineWidth }]} onPress={onPress} activeOpacity={onPress ? 0.7 : 1} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={title}>
-      <View style={[styles.iconBox, { backgroundColor: danger ? c.background : c.primaryLight }]}><Icon name={icon} size={20} color={danger ? c.danger : c.primary} /></View>
+    <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={onPress ? 0.7 : 1} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={title}>
+      <View style={[styles.iconBox, { backgroundColor: danger ? c.background : c.primaryLight, borderRadius: 13 }]}><Icon name={icon} size={20} color={danger ? c.danger : c.primary} /></View>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: danger ? c.danger : c.text, fontSize: 16, fontWeight: '600' }}>{title}</Text>
+        <Text style={{ color: danger ? c.danger : c.text, fontSize: 15.5, fontWeight: '600' }}>{title}</Text>
         {sub ? <Text style={{ color: c.textSecondary, fontSize: 13, marginTop: 2 }}>{sub}</Text> : null}
       </View>
       {right ?? (onPress && !danger ? <Icon name="chevronRight" size={18} color={c.textMuted} /> : null)}
     </TouchableOpacity>
   );
-  const Section = ({ t }: { t: string }) => <Text style={[styles.section, { color: c.text }]}>{t}</Text>;
+  const Section = ({ t }: { t: string }) => <Text style={[styles.section, { color: c.textMuted }]}>{t}</Text>;
+  const Group = ({ children }: { children: React.ReactNode }) => {
+    const items = React.Children.toArray(children).filter(Boolean);
+    return (
+      <View style={[styles.group, { backgroundColor: c.card, borderColor: c.border }]}>
+        {items.map((ch, i) => (
+          <View key={i}>
+            {ch}
+            {i < items.length - 1 ? <View style={[styles.divider, { backgroundColor: c.divider }]} /> : null}
+          </View>
+        ))}
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       <ScreenHeader title={t('Settings')} onBack={() => nav.goBack()} />
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <Section t="Your account" />
+        <Group>
         <Row icon="user" title={t('Account information')} sub={t('Name, bio and profile photo')} onPress={() => nav.navigate('ProfileEdit')} />
         <Row
           icon="eyeOff"
@@ -59,26 +73,34 @@ export default function SettingsScreen() {
         <Row icon="checkCircle" title="Two-step verification" sub="Require an authenticator code when signing in" onPress={() => nav.navigate('TwoFactor')} />
         <Row icon="verified" title="Account verification" sub="Request the verified badge" onPress={() => nav.navigate('Verification')} />
         <Row icon="phone" title="Devices and sessions" sub="Review and sign out devices connected to your account" onPress={() => nav.navigate('Sessions')} />
+        </Group>
 
         {user?.is_admin ? (
           <>
             <Section t="Administration" />
+            <Group>
             <Row icon="settings" title="Admin dashboard" sub="Users, conversations and broadcasts" onPress={() => nav.navigate('AdminDashboard')} />
+            </Group>
           </>
         ) : null}
 
         <Section t="Display" />
+        <Group>
         <Row
           icon="moon" title="Dark mode" sub="Lights out for your eyes"
           right={<Switch value={darkMode} onValueChange={setDarkMode} accessibilityLabel="Dark mode" trackColor={{ false: c.inputBorder, true: c.primary }} thumbColor="#FFFFFF" />}
         />
         <Row icon="globe" title={t('Language')} sub={lang === 'ar' ? 'العربية' : 'English'} onPress={() => setLangSheet(true)} />
+        </Group>
         <OptionSheet visible={langSheet} title={t('Language')} onClose={() => setLangSheet(false)} options={[{ label: 'English', selected: lang === 'en', onPress: () => setLang('en') }, { label: 'العربية', selected: lang === 'ar', onPress: () => setLang('ar') }]} />
 
         <Section t="Notifications" />
+        <Group>
         <Row icon="bell" title="Notification preferences" sub="Manage message, activity and quiet-hour alerts" onPress={() => nav.navigate('PrivacySettings')} />
+        </Group>
 
         <Section t="About" />
+        <Group>
         <Row
           icon="file"
           title="Download my data"
@@ -92,8 +114,10 @@ export default function SettingsScreen() {
         <Row icon="trash" title={t('Delete account')} danger onPress={() => nav.navigate('DeleteAccount')} />
         <Row icon="file" title={t('Terms of Service')} onPress={() => nav.navigate('Terms', { title: 'Term of Service' })} />
         <Row icon="help" title="About app" onPress={() => nav.navigate('Terms', { title: 'About App' })} />
+        </Group>
 
-        <View style={[styles.sep, { backgroundColor: c.border }]} />
+        <View style={{ height: 12 }} />
+        <Group>
         <Row
           icon="logout" title="Log out" danger
           onPress={() => Alert.alert('Log out', 'Are you sure you want to log out?', [
@@ -101,6 +125,7 @@ export default function SettingsScreen() {
             { text: 'Log out', style: 'destructive', onPress: logout },
           ])}
         />
+        </Group>
       </ScrollView>
     </View>
   );
@@ -108,8 +133,10 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  section: { fontSize: 11, fontWeight: '800', letterSpacing: 1.1, textTransform: 'uppercase', opacity: 0.62, paddingHorizontal: 22, paddingTop: 28, paddingBottom: 7 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 15, marginHorizontal: 16, marginTop: 9, paddingHorizontal: 16, paddingVertical: 15, borderRadius: 22 },
-  iconBox: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  section: { fontSize: 12, fontWeight: '800', letterSpacing: 0.6, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 8 },
+  group: { marginHorizontal: 16, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  divider: { height: StyleSheet.hairlineWidth, marginStart: 66 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 14, paddingVertical: 12 },
+  iconBox: { width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   sep: { height: StyleSheet.hairlineWidth, marginVertical: 12 },
 });

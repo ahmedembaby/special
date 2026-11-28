@@ -108,9 +108,9 @@ export default function OTPScreen() {
         <TouchableOpacity activeOpacity={1} onPress={() => inputRef.current?.focus()} style={styles.boxes} accessibilityRole="button" accessibilityLabel={`Verification code, ${code.length} of ${LENGTH} digits entered`}>
           {Array.from({ length: LENGTH }).map((_, i) => {
             const active = i === Math.min(code.length, LENGTH - 1) && !error;
-            const line = error ? c.danger : active ? focusColor : c.text;
+            const line = error ? c.danger : active ? focusColor : c.border;
             return (
-              <View key={i} style={[styles.box, { borderBottomColor: line }]}>
+              <View key={i} style={[styles.box, { borderColor: line, backgroundColor: c.surface }]}>
                 <Text style={[styles.digit, { color: c.text }]}>{code[i] || ''}</Text>
               </View>
             );
@@ -164,8 +164,8 @@ const styles = StyleSheet.create({
   resend: { fontSize: 14, textDecorationLine: 'underline' },
   resendActive: { fontWeight: '700' },
   boxes: { flexDirection: 'row', justifyContent: 'space-between' },
-  box: { width: 64, height: 60, borderBottomWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  digit: { fontSize: 32, fontWeight: '500' },
+  box: { width: 66, height: 66, borderWidth: 1.5, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  digit: { fontSize: 28, fontWeight: '800' },
   hidden: { position: 'absolute', opacity: 0, width: 1, height: 1 },
   error: { fontSize: 14, textAlign: 'center', marginTop: 14 },
   btnWrap: { alignItems: 'flex-end', marginTop: 4 },

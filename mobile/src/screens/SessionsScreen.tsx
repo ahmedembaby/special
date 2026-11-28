@@ -41,7 +41,7 @@ export default function SessionsScreen() {
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <ScreenHeader title="Devices and sessions" onBack={() => navigation.goBack()} />
       {loading ? <ActivityIndicator color={c.primary} style={{ marginTop: 32 }} /> : failed ? (
-        <EmptyState icon="phone" title={t('Could not load devices')} subtitle={t('Check your connection and try again.')} actionLabel={t('Try again')} onAction={load} />
+        <EmptyState icon="warning" title={t('Could not load devices')} subtitle={t('Check your connection and try again.')} actionLabel={t('Try again')} onAction={load} />
       ) : (
         <FlatList data={sessions} keyExtractor={(item) => item.id} contentContainerStyle={{ padding: 14, paddingBottom: 32 }}
           ListEmptyComponent={<Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 44, paddingHorizontal: 28, lineHeight: 22 }}>No other devices are currently connected to your account.</Text>}

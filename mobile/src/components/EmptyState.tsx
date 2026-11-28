@@ -15,8 +15,8 @@ export const EmptyState = ({ title, subtitle, icon = 'chat', actionLabel, onActi
   const { c } = useAppColors();
   return (
     <View style={[styles.container, { backgroundColor: c.background }]}>
-      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.iconWrap}>
-        <Icon name={icon} size={52} color={c.textMuted} />
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.iconWrap, { backgroundColor: c.primaryLight }]}>
+        <Icon name={icon} size={40} color={c.primary} />
       </View>
       <Text accessibilityRole="header" style={[styles.title, { color: c.text }]}>{title}</Text>
       {subtitle ? <Text style={[styles.subtitle, { color: c.textSecondary }]}>{subtitle}</Text> : null}
@@ -38,9 +38,9 @@ const styles = StyleSheet.create({
     paddingVertical: 44,
     gap: 10,
   },
-  iconWrap: { width: 88, height: 88, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
-  title: { ...Typography.h3, color: '#1B1730', textAlign: 'center' },
+  iconWrap: { width: 88, height: 88, borderRadius: 30, marginBottom: 6, alignItems: 'center', justifyContent: 'center' },
+  title: { ...Typography.h3, textAlign: 'center' },
   action: { marginTop: 8, minHeight: 44, paddingHorizontal: 22, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   actionText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
-  subtitle: { ...Typography.bodySmall, color: '#5E5A78', textAlign: 'center' },
+  subtitle: { ...Typography.bodySmall, textAlign: 'center' },
 });

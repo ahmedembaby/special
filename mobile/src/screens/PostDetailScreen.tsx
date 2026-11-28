@@ -83,7 +83,7 @@ export default function PostDetailScreen() {
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
       ) : !post && failed ? (
-        <EmptyState icon="bell" title={t('Could not load this post')} subtitle={t('Check your connection and try again.')} actionLabel={t('Try again')} onAction={() => { setLoading(true); load(); }} />
+        <EmptyState icon="warning" title={t('Could not load this post')} subtitle={t('Check your connection and try again.')} actionLabel={t('Try again')} onAction={() => { setLoading(true); load(); }} />
       ) : !post ? (
         <Text style={{ color: c.textSecondary, textAlign: 'center', marginTop: 40 }}>This post is no longer available.</Text>
       ) : (

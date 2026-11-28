@@ -349,19 +349,19 @@ export const GroupCallProvider = ({ children }: { children: React.ReactNode }) =
 };
 
 const styles = StyleSheet.create({
-  modal: { flex: 1, backgroundColor: '#10131B', paddingTop: 58, paddingHorizontal: 16, paddingBottom: 28 },
+  modal: { flex: 1, backgroundColor: '#0E0D1A', paddingTop: 58, paddingHorizontal: 16, paddingBottom: 28 },
   top: { alignItems: 'center', marginBottom: 18 },
   title: { color: '#FFFFFF', fontSize: 21, fontWeight: '800' },
-  subtitle: { color: '#AAB2C5', fontSize: 13, marginTop: 5 },
+  subtitle: { color: '#9A98B8', fontSize: 13, marginTop: 5 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center', paddingBottom: 20 },
-  tile: { width: '47%', aspectRatio: 0.78, backgroundColor: '#252B3A', borderRadius: 18, overflow: 'hidden', justifyContent: 'flex-end' },
+  tile: { width: '47%', aspectRatio: 0.78, backgroundColor: '#1F1E38', borderRadius: 22, overflow: 'hidden', justifyContent: 'flex-end' },
   tileLabel: { backgroundColor: 'rgba(0,0,0,0.45)', padding: 8 },
   tileName: { color: '#FFFFFF', fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  audioTile: { width: '44%', minHeight: 125, borderRadius: 18, backgroundColor: '#252B3A', alignItems: 'center', justifyContent: 'center', gap: 9 },
-  audioAvatar: { width: 58, height: 58, borderRadius: 29, textAlign: 'center', textAlignVertical: 'center', overflow: 'hidden', color: '#FFFFFF', backgroundColor: '#5364D8', fontSize: 25, fontWeight: '800' },
+  audioTile: { width: '44%', minHeight: 125, borderRadius: 22, backgroundColor: '#1F1E38', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  audioAvatar: { width: 58, height: 58, borderRadius: 29, textAlign: 'center', textAlignVertical: 'center', overflow: 'hidden', color: '#FFFFFF', backgroundColor: '#5B4CF0', fontSize: 25, fontWeight: '800' },
   controls: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, paddingTop: 12 },
-  control: { minWidth: 72, paddingHorizontal: 13, paddingVertical: 13, borderRadius: 14, backgroundColor: '#30394D', alignItems: 'center' },
-  controlOn: { backgroundColor: '#46598C' },
-  hangup: { backgroundColor: '#C83248' },
+  control: { minWidth: 72, paddingHorizontal: 13, paddingVertical: 13, borderRadius: 18, backgroundColor: '#2A2945', alignItems: 'center' },
+  controlOn: { backgroundColor: '#5B4CF0' },
+  hangup: { backgroundColor: '#EF4444' },
   controlText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
 });

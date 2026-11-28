@@ -17,10 +17,10 @@ export interface TypographyStyles {
 }
 
 export const Typography = {
-  h1: { fontSize: 32, fontWeight: '700' as const, lineHeight: 40 },
-  h2: { fontSize: 24, fontWeight: '600' as const, lineHeight: 32 },
-  h3: { fontSize: 20, fontWeight: '600' as const, lineHeight: 28 },
-  screenTitle: { fontSize: 22, fontWeight: '700' as const, lineHeight: 28 },
+  h1: { fontSize: 32, fontWeight: '800' as const, lineHeight: 40, letterSpacing: -0.8 },
+  h2: { fontSize: 24, fontWeight: '800' as const, lineHeight: 32, letterSpacing: -0.6 },
+  h3: { fontSize: 20, fontWeight: '700' as const, lineHeight: 28, letterSpacing: -0.4 },
+  screenTitle: { fontSize: 22, fontWeight: '800' as const, lineHeight: 28, letterSpacing: -0.6 },
   body: { fontSize: 16, fontWeight: '400' as const, lineHeight: 24 },
   bodySmall: { fontSize: 14, fontWeight: '400' as const, lineHeight: 20 },
   caption: { fontSize: 12, fontWeight: '400' as const, lineHeight: 16 },

@@ -76,6 +76,10 @@ const removeReaction = (list: api.MessageReaction[] | undefined, userId: string 
     })
     .filter((x) => x.count > 0);
 
+const SENDER_COLORS = ['#F59E0B', '#EC4899', '#06B6D4', '#10B981', '#8B5CF6', '#F97316'];
+/** Stable colour per group member so names are easy to tell apart. */
+const senderColor = (id: any) => { const k = String(id ?? ''); let h = 0; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0; return SENDER_COLORS[h % SENDER_COLORS.length]; };
+
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
@@ -1464,7 +1468,7 @@ export default function ChatScreen() {
                       ) : (
                         <View style={[styles.msgAvatar, { backgroundColor: c.primary }]} />
                       )}
-                      <Text style={[styles.senderName, { color: X_BLUE }]} numberOfLines={1}>{item.sender_name || ''}</Text>
+                      <Text style={[styles.senderName, { color: senderColor(item.sender_id) }]} numberOfLines={1}>{item.sender_name || ''}</Text>
                     </View>
                   ) : null}
                   <View pointerEvents={selectMode ? 'none' : 'auto'} style={[styles.bubbleContainer, isOwn ? styles.bubbleContainerOwn : styles.bubbleContainerOther]}>
