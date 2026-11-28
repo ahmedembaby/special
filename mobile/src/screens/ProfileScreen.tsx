@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   circle: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
   info: { paddingHorizontal: PROFILE.padX, paddingBottom: PROFILE.padBottom },
   avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: PROFILE.avatarOverlap, marginBottom: PROFILE.avatarRowGap },
-  avatarRing: { borderWidth: 4, borderRadius: 48 },
+  avatarRing: { borderWidth: 4, borderRadius: 32 },
   editBtn: { borderWidth: StyleSheet.hairlineWidth, borderRadius: PROFILE.actionRadius, paddingHorizontal: 20, height: PROFILE.actionHeight, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: PROFILE.nameSize, fontWeight: '800', letterSpacing: -0.7 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: PROFILE.sectionGap },
