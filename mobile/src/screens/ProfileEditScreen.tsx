@@ -154,6 +154,6 @@ const styles = StyleSheet.create({
   coverPillText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
   coverRemove: { position: 'absolute', top: 12, end: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
   avatarWrap: { position: 'absolute', start: PROFILE.padX, bottom: PROFILE.avatarOverlap },
-  avatarRing: { borderWidth: 4, borderRadius: 48 },
+  avatarRing: { borderWidth: 4, borderRadius: 32 },
   cam: { position: 'absolute', end: -2, bottom: -2, width: 30, height: 30, borderRadius: 15, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
 });
